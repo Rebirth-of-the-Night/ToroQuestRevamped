@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "LL",
+        "LL"
+    ],
+    "key": {
+        "L": {
+            "item": "minecraft:leather"
+        }
+    },
+    
+    "result":
+    {
+        "item": "toroquest:toro_leather",
+        "count": 1
+    }
+}

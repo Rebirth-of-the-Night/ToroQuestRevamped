@@ -1,0 +1,169 @@
+        Pw
+  CsCsCsCsCsCsCs
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+PwCsDrDrDrDrDrCsPw
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
+  CsCsCsCsCsCsCs
+        Pw
+######################################
+        Sv
+  SbCsCsCsCsCsSb
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+S>CsCsCsCsCsCsCsS<
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+  CsCsCsCsCsCsCs
+  SbCsCsCsCsCsSb
+        S^
+######################################
+  
+  SbPwPwdvPwPwSb
+  PwXXXX--XXXXPw
+  Pwxxxx--xxxxPw
+  d>----------d<
+  Pwl<------l>Pw
+  Pwc^c^--c^c^Pw
+  PwPwPwx1PwPwPw
+  Pw  b<x1b>  Pw
+  Pw  b<x1b>  Pw
+  Pw  b<x1b>  Pw
+  Pw  b<x1b>  Pw
+  SbPwPwd^PwPwSb
+######################################
+  
+  *R*R*R  *R*R*R
+  *R----------*R
+  *R----------*R
+    ----------  
+  *Rl<------l>*R
+  *R----------*R
+  *R*R*R--*R*R*R
+  *R----------*R
+  *R----------*R
+  *R----------*R
+  *R----------*R
+  *R*R*R  *R*R*R
+######################################
+  
+  SbPwPwPwPwPwSb
+  Pw----t^----Pw
+  Pw----------Pw
+  Pwt<------t>Pw
+  Pwl<------l>Pw
+  Pw----------Pw
+  PwPwPw--PwPwPw
+  Pw----------Pw
+  Pwt<------t>Pw
+  Pwt<------t>Pw
+  Pw----------Pw
+  SbPwPwPwPwPwSb
+#######################################
+  
+  LgLgLgLgLgLgLg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  Lgl<PwPwPwl>Lg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  LgPwPwPwPwPwLg
+  LgLgLgLgLgLgLg
+######################################
+  
+  FwFwFwFwFwFwFw
+  Fw----Fw--xxFw
+  Fw----Fw----Fw
+  Fw----Fw----Fw
+  Fwtd--Fw--tdFw
+  Fw----Fw----Fw
+  Fw----Fw----Fw
+  Fw----Fw----Fw
+  Fw----Fw----Fw
+  Fw----Fw----Fw
+  Fwxx--Fw----Fw
+  FwFwFwFwFwFwFw
+######################################
+  
+  --------------
+  --------------
+  ------Fw------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+######################################
+  
+  --------------
+  --------------
+  ------Fw------
+  ----------*R--
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+######################################
+  
+  --------------
+  --------------
+  ------Fc------
+  --------*R----
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+######################################
+  
+  --------------
+  --------------
+  ------*R*R----
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+######################################
+
+  --------------
+  --------------
+  ------*R------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------

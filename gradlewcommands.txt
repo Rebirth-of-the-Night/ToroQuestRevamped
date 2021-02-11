@@ -1,0 +1,5 @@
+./gradlew
+
+setupDecompWorkspace
+eclipse
+build
