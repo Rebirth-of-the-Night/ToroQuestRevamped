@@ -136,7 +136,7 @@ public class EntityAIBanditAttack extends EntityAITarget
 
 	protected boolean shouldExecuteNonPlayer()
 	{
-		List<EntityLivingBase> list = this.taskOwner.world.<EntityLivingBase>getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.taskOwner.getPosition()).grow(40, 24, 40), targetEntitySelector);
+		List<EntityLivingBase> list = this.taskOwner.world.<EntityLivingBase>getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.taskOwner.getPosition()).grow(32, 16, 32), targetEntitySelector);
 	
 		if (list.isEmpty())
 		{

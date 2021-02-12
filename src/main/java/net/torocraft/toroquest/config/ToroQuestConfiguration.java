@@ -61,9 +61,6 @@ public class ToroQuestConfiguration
 	public static boolean showProvinceEnterLeaveMessage = true;
 	public static boolean sendRepLevelMessage = true;
 	
-	public static String guardTargetBlacklist = "Bull";
-	public static String[] guardTargetBlacklistLIST = null;
-	
 	public static boolean entityMobAttackGuardsTask = true;
 	public static boolean entityMobAttackVillagersTask = true;
 	public static boolean angryBulls = true;
@@ -97,7 +94,7 @@ public class ToroQuestConfiguration
 	public static int donateTrophyRepGain = 50;
 	
 	public static String scrollTradeItem = "minecraft:emerald";
-	public static int scrollTradeAmount = 4;
+	public static int scrollTradeAmount = 3;
 	
 	public static int destroyedVillagesNearSpawnDistance = 320;
 	public static boolean useBiomeSpecificProvinces = true;
@@ -279,9 +276,6 @@ public class ToroQuestConfiguration
 			
 			guardsHaveDialogue = config.getBoolean("guardsHaveDialogue", CATEGORY_MOBS, true,
 					"Enable to allow guards to speak in the chat.");
-			
-			guardTargetBlacklist = config.getString("guardTargetBlacklist", CATEGORY_MOBS, "Bull",
-					"Guards will not attack these entities, list seperated by comma. Example: Bull,Wolf,Zombie");
 			
 			guardDamageMultiplierToMobs = config.getFloat("guardDamageMultiplierToMobs", CATEGORY_MOBS, 1.5f, 0.25f, 5f,
 					"guard damage is muliplied by this amount to mobs (and not the player).");
@@ -958,7 +952,7 @@ public class ToroQuestConfiguration
 			scrollTradeItem = config.getString("scrollTradeItem", CATEGORY_TRADES, "minecraft:emerald",
 					"The item you will use to trade for a shopkeeper's teleport scroll. Delete this text to disable trade.");
 			
-			scrollTradeAmount = config.getInt("scrollTradeAmount", CATEGORY_TRADES, 4, 0, 128,
+			scrollTradeAmount = config.getInt("scrollTradeAmount", CATEGORY_TRADES, 3, 0, 128,
 					"The amount of scrollTradeItem a shopkeeper's teleport scroll will cost you. Set to 0 to disable this trade.");
 			// BANDIT =-=-=-=-=-=-=-=-=-=-=
 
@@ -1237,11 +1231,11 @@ public class ToroQuestConfiguration
 				}
 			}
 			
-			if ( !guardTargetBlacklist.isEmpty() )
-			{
-				guardTargetBlacklistLIST = guardTargetBlacklist.split(",");
-			}
-			
+//			if ( !guardTargetBlacklist.isEmpty() )
+//			{
+//				guardTargetBlacklistLIST = guardTargetBlacklist.split(",");
+//			}
+//			
 			config.save();
 		}
 		catch (Exception e)

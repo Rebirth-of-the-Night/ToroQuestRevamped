@@ -57,14 +57,6 @@ public class EntityAINearestAttackableBanditTarget extends EntityAITarget
 					return true;
 				}
 				
-				for ( String entity : ToroQuestConfiguration.guardTargetBlacklistLIST )
-				{
-					if ( target.getName().equals(entity) )
-					{
-						return false;
-					}
-				}
-				
 				if ( target instanceof IMob || target instanceof EntityMob )
 				{
 					 return true;

@@ -123,18 +123,14 @@ public class EntityAINearestAttackableCivTarget extends EntityAITarget {
 
 		return false;
 	}
-
+	
 	protected boolean shouldExecutePlayer()
 	{
-		//ItemStack itemstack = this.taskOwner.getActiveItemStack();
-
-		double maxXZDistance = getTargetDistance();
-		double maxYDistance = getTargetDistance();
 
 		targetEntity = taskOwner.world.getNearestAttackablePlayer(taskOwner.posX, taskOwner.posY + (double) taskOwner.getEyeHeight(), taskOwner.posZ,
-				maxXZDistance, maxYDistance, null, targetEntitySelector);
+				32, 16, null, targetEntitySelector);
 
-		if ( targetEntity != null && this.taskOwner.getDistance(targetEntity) < (getTargetDistance()) ) // ( ( this.taskOwner.canEntityBeSeen(targetEntity ) || ( itemstack != null && ( itemstack.getItem() instanceof ItemBow ) ) ) ) )
+		if ( targetEntity != null && this.taskOwner.getDistance(targetEntity) < 32 ) // ( ( this.taskOwner.canEntityBeSeen(targetEntity ) || ( itemstack != null && ( itemstack.getItem() instanceof ItemBow ) ) ) ) )
 		{
 			return true;
 		}
@@ -154,7 +150,7 @@ public class EntityAINearestAttackableCivTarget extends EntityAITarget {
 	 */
 	public void startExecuting()
 	{
-		if ( this.targetEntity != null && !this.targetEntity.isDead )
+		if ( this.targetEntity != null && this.targetEntity.isEntityAlive() )
 		{
 			this.taskOwner.setAttackTarget(this.targetEntity);
 		}

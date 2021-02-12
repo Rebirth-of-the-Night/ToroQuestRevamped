@@ -106,6 +106,7 @@ public class EntityToro extends EntityTameable
 		super(worldIn);
 		this.setSize(0.8F, 1.95F);
 		this.setScaleForAge(this.isChild());
+		this.setTamed(true);
 	}
 
 	@Override
@@ -137,7 +138,7 @@ public class EntityToro extends EntityTameable
 		this.getAttributeMap().registerAttribute(SharedMonsterAttributes.ATTACK_DAMAGE);
 		
 		this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(10.0D * ToroQuestConfiguration.toroAttackDamageMultiplier);
-		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(16.0D);
 		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.3D);
 	}
 

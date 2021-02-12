@@ -44,10 +44,19 @@ public class EntityAIPatrolVillage extends EntityAIBase
      */
     public boolean shouldExecute()
     {
+    	if ( rand.nextInt(256) != 0 )
+    	{
+    		return false;
+    	}
+    	
+    	if ( this.entity.isAnnoyed() )
+    	{
+    		return false;
+    	}
+
         this.resizeDoorList();
         {
-        	if ( this.entity.isAnnoyed() ) return false;
-            Village village = this.entity.world.getVillageCollection().getNearestVillage(new BlockPos(this.entity), 96);
+            Village village = this.entity.world.getVillageCollection().getNearestVillage(new BlockPos(this.entity), 88);
 
             if (village == null)
             {
@@ -55,11 +64,6 @@ public class EntityAIPatrolVillage extends EntityAIBase
             }
             else
             {
-            	if ( rand.nextInt(96) != 0 )
-            	{
-            		return false;
-            	}
-            	
                 this.doorInfo = this.findNearestDoor(village);
 
                 if (this.doorInfo == null)

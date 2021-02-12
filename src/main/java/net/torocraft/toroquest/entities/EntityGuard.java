@@ -22,10 +22,7 @@ import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.IRangedAttackMob;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAILookIdle;
-import net.minecraft.entity.ai.EntityAIMoveIndoors;
-import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.ai.EntityAIOpenDoor;
-import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.RandomPositionGenerator;
@@ -63,7 +60,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.village.Village;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -195,10 +191,10 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob
 		//door
 		// this.tasks.addTask(2, new EntityAIMoveIndoors(this));
         //this.tasks.addTask(2, new EntityAIAvoidTooClose(this, EntityToroNpc.class, 1.5F, 0.5D, 0.5D));
-        this.tasks.addTask(8, new EntityAIMoveIndoors(this));
-        this.tasks.addTask(9, new EntityAIRestrictOpenDoor(this));
+        	// this.tasks.addTask(8, new EntityAIMoveIndoors(this));
+        	// this.tasks.addTask(9, new EntityAIRestrictOpenDoor(this));
         this.tasks.addTask(10, new EntityAIOpenDoor(this, false));
-        this.tasks.addTask(11, new EntityAIMoveTowardsRestriction(this, 0.45D));
+        	// this.tasks.addTask(11, new EntityAIMoveTowardsRestriction(this, 0.45D));
         // this.tasks.addTask(5, new EntityAIMoveTowardsRestriction(this, 0.4D));
         // movement
         this.tasks.addTask(8, new EntityAISmartTempt(this, 0.45D, Item.getByNameOrId("toroquest:recruitment_papers"))
@@ -353,7 +349,6 @@ public void readEntityFromNBT(NBTTagCompound compound)
 		{
 			return;
 		}
-		
 		
        	if ( this.ticksExisted % 100 == 0 )
     	{
@@ -798,7 +793,11 @@ public void readEntityFromNBT(NBTTagCompound compound)
 		            }
 				}
 			}
-			return super.attackEntityFrom(source, amount);
+			if ( source.isFireDamage() || source.isExplosion() || source.isMagicDamage() || source.isProjectile() )
+			{
+				return super.attackEntityFrom(source, amount);
+			}
+			return false;
 		}
 
 		if ( e instanceof EntityToroNpc || e instanceof EntityVillager )
@@ -839,7 +838,7 @@ public void readEntityFromNBT(NBTTagCompound compound)
 		
 		if ( e instanceof EntityPlayer )
 		{
-			if ( this.hitSafety )
+			if ( this.hitSafety && this.getAttackTarget() != e )
 			{
 				this.hitSafety = false;
 				return false;
@@ -1505,15 +1504,6 @@ public boolean canBeLeashedTo(EntityPlayer player)
 	return false;
 }
 	
-@Nullable
-Village village;
-
-@Override
-public Village getVillage()
-{
-	return this.village = this.world.getVillageCollection().getNearestVillage(new BlockPos(this), 16);
-}
-	
 //	protected boolean isFoe(EntityPlayer target)
 //	{
 //		EntityToroNpc npc = (EntityToroNpc) this;
@@ -1640,119 +1630,147 @@ public Village getVillage()
 				EntityPlayer player = (EntityPlayer)victim;
 				if ( !player.world.isRemote )
 				{
-
-				switch ( rand.nextInt(100) )
-				{
-					case 0:
+					if ( rand.nextInt(16) == 0 )
 					{
-						chat(player,"I hope you rot in the Nether, coward!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 1:
-					{
-						chat(player,"Criminal!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 2:
-					{
-						chat(player,"Your kind disgusts me!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 3:
-					{
-						chat(player,"Your death will be swift!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 4:
-					{
-						chat(player,"Go ahead. Try me.");
-						break;
-					}
-					case 5:
-					{
-						chat(player,"There will be justice!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 6:
-					{
-						if ( this.getCivilization() != null )
-						{
-							chat(player,"For the king!");
-						}
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 7:
-					{
-						chat(player,"Filthy outlaw!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 8:
-					{
-						chat(player,"Taste my steel!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 9:
-					{
-						chat(player,"There's a bounty on your head, " + player.getDisplayNameString() + ".");
-						break;
-					}
-					case 10:
-					{
-						chat(player,"How dare you show your face here, criminal!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 11:
-					{
-						chat(player,"Die you coward!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 12:
-					{
-						chat(player,"I'll break you like you broke the law!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 13:
-					{
-						chat(player,"Pay with your blood!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 14:
-					{
-						chat(player,"I'll gut you!");
-						//this.setAttackTarget(player);
-						break;
-					}
-					case 15:
-					{
-						chat(player,"Die, filth!");
-						//this.setAttackTarget(player);
-						break;
+						insult(player);
 					}
 				}
-			}}
-			
+			}
 			return true;
-			
-//		if (victim instanceof EntityPlayer && !isFoe( (EntityPlayer) victim ) )
-//		{
-//			setAttackTarget(null);
-//		}
-//		return true;
 	}
 	
-	
+	public void insult(EntityPlayer player)
+	{
+		switch ( rand.nextInt(21) )
+		{
+			case 0:
+			{
+				chat(player,"Taste my steel!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 1:
+			{
+				chat(player,"How dare you show your face here, criminal!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 2:
+			{
+				chat(player,"I will paint the earth red with your blood, filthy outlaw!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 3:
+			{
+				chat(player,"You will pay for your crimes!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 4:
+			{
+				chat(player,"How dare you show your face here, criminal!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 5:
+			{
+				chat(player,"Die you coward!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 6:
+			{
+				chat(player,"I'll break you like you broke the law!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 7:
+			{
+				chat(player,"Pay with your blood!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 8:
+			{
+				chat(player,"I'll gut you!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 9:
+			{
+				chat(player,"Die, filth!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 10:
+			{
+				chat(player,"Weakling!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 11:
+			{
+				chat(player,"I will be your End.");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 12:
+			{
+				chat(player,"Griefer!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 13:
+			{
+				chat(player,"I hope you rot in the Nether, coward!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 14:
+			{
+				chat(player,"Criminal!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 15:
+			{
+				chat(player,"Your kind disgusts me!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 16:
+			{
+				chat(player,"Your death will be swift!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 17:
+			{
+				chat(player,"There will be justice!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 18:
+			{
+				chat(player,"For the king!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 19:
+			{
+				chat(player,"Filthy outlaw!");
+				this.setAttackTarget(player);
+				break;
+			}
+			case 20:
+			{
+				chat(player,"Go ahead. Try me.");
+				this.setAttackTarget(player);
+				break;
+			}
+		}
+	}
 	
 	public void attackTargetEntityWithCurrentItem(Entity targetEntity)
 	{
@@ -1957,7 +1975,6 @@ public Village getVillage()
 	}
 	
 	@Override
-	@Nullable
     protected SoundEvent getHurtSound(DamageSource damageSourceIn)
     {
 		if ( rand.nextInt(4) == 0 )
@@ -1968,7 +1985,6 @@ public Village getVillage()
     }
 	
 	@Override
-	@Nullable
     protected SoundEvent getDeathSound()
     {
 		if ( rand.nextBoolean() )
@@ -1983,7 +1999,6 @@ public Village getVillage()
     }
 
 	@Override
-    @Nullable
     protected SoundEvent getAmbientSound()
     {
         return null;
@@ -2008,50 +2023,7 @@ public Village getVillage()
 				this.actionTimer = 30;
 				if ( !this.world.isRemote )
 				{
-					switch ( rand.nextInt(7) )
-					{
-						case 0:
-						{
-							chat(player,"I hope you rot in the Nether, coward!");
-							this.setAttackTarget(player);
-							break;
-						}
-						case 1:
-						{
-							chat(player,"Your kind disgusts me!");
-							this.setAttackTarget(player);
-							break;
-						}
-						case 2:
-						{
-							chat(player,"Your death will be swift!");
-							this.setAttackTarget(player);
-							break;
-						}
-						case 3:
-						{
-							chat(player,"Go ahead. Try me.");
-							break;
-						}
-						case 4:
-						{
-							chat(player,"There will be justice!");
-							this.setAttackTarget(player);
-							break;
-						}
-						case 5:
-						{
-							chat(player,"Filthy outlaw!");
-							this.setAttackTarget(player);
-							break;
-						}
-						case 6:
-						{
-							chat(player,"Taste my steel!");
-							this.setAttackTarget(player);
-							break;
-						}
-					}
+					insult(player);
 				}
 			}
 			else
@@ -2192,84 +2164,12 @@ public Village getVillage()
 		{
 			if ( !this.world.isRemote )
 			{
-				switch ( rand.nextInt(12) )
-				{
-					case 0:
-					{
-						chat(player,"I hope you rot in the Nether, coward!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 1:
-					{
-						chat(player,"Criminal!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 2:
-					{
-						chat(player,"Your kind disgusts me!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 3:
-					{
-						chat(player,"Your death will be swift!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 4:
-					{
-						chat(player,"Go ahead. Try me.");
-						break;
-					}
-					case 5:
-					{
-						chat(player,"There will be justice!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 6:
-					{
-						chat(player,"For the king!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 7:
-					{
-						chat(player,"Filthy outlaw!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 8:
-					{
-						chat(player,"Taste my steel!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 9:
-					{
-						chat(player,"There's a bounty on your head, " + player.getDisplayNameString() + ".");
-						break;
-					}
-					case 10:
-					{
-						chat(player,"How dare you show your face here, criminal!");
-						this.setAttackTarget(player);
-						break;
-					}
-					case 11:
-					{
-						chat(player,"I will paint the earth red with your blood, filthy outlaw!");
-						this.setAttackTarget(player);
-						break;
-					}
-				}
+				insult(player);
 			}
 		}
 		else if ( this.isAnnoyed )
 		{
-			switch ( rand.nextInt(6) )
+			switch ( rand.nextInt(10) )
 			{
 				case 0:
 				{
@@ -2299,6 +2199,21 @@ public Village getVillage()
 				case 5:
 				{
 					chat(player,"Stop. You are causing a disturbance.");
+					break;
+				}
+				case 6:
+				{
+					chat(player,"I'm keeping an eye on you.");
+					break;
+				}
+				case 7:
+				{
+					chat(player,"This is your last warning.");
+					break;
+				}
+				case 8:
+				{
+					chat(player,"Go ahead. Try me.");
 					break;
 				}
 			}
@@ -2341,7 +2256,7 @@ public Village getVillage()
 		}
 		else if ( rep < 250 )
 		{
-			switch ( rand.nextInt(21) )
+			switch ( rand.nextInt(30) )
 			{
 				case 0:
 				{
@@ -2496,11 +2411,60 @@ public Village getVillage()
 					}
 					break;
 				}
+				case 21:
+				{
+					chat(player,"Come to trade with our village?");
+					break;
+				}
+				case 22:
+				{
+					chat(player,"Great. More outsiders...");
+					break;
+				}
+				case 23:
+				{
+					chat(player,"These bandit raids have been getting worse...");
+					break;
+				}
+				case 24:
+				{
+					chat(player,"Move along.");
+					break;
+				}
+				case 25:
+				{
+					chat(player,"Speak with our village lord, he has work for you.");
+					break;
+				}
+				case 26:
+				{
+					chat(player,"Welcome. Our village has much to offer.");
+					break;
+				}
+				case 27:
+				{
+					chat(player,"Which province do you hail from?");
+					break;
+				}
+				case 28:
+				{
+					chat(player,"Keep the peace or keep out.");
+					break;
+				}
+				case 29:
+				{
+					int time = (int)this.world.getWorldTime();
+					if ( time > 9000 && time < 13000 ) chat(player,"Good evening.");
+					else if ( time >= 4000 && time < 9000 ) chat(player,"Good morning.");
+					else if ( time <= 9000 ) chat(player,"Good afternoon.");
+					else chat(player,"Stay safe. Monsters roam the night.");
+					break;
+				}
 			}
 		}
 		else if ( rep < 1000 )
 		{
-			switch ( rand.nextInt(28) )
+			switch ( rand.nextInt(30) )
 			{
 				case 0:
 				{
@@ -2672,7 +2636,7 @@ public Village getVillage()
 					}
 					else if ( item instanceof ItemAxe )
 					{
-						chat(player,"Can I AXE what you plan to do with that? Haha... ha... sorry won't happen again.");
+						chat(player,"Can I AXE what you plan to do with that? Haha... ha... sorry won't happen again sir.");
 					}
 					else if ( item instanceof ItemHoe )
 					{
@@ -2684,7 +2648,7 @@ public Village getVillage()
 					}
 					else if ( item instanceof ItemSpade )
 					{
-						chat(player,"Find any treasure?");
+						chat(player,"Dig up any treasure?");
 					}
 					else
 					{
@@ -2694,14 +2658,48 @@ public Village getVillage()
 				}
 				case 27:
 				{
-					chat(player,"Your orders?");
+					Item item = player.getHeldItemMainhand().getItem();
+					if ( item instanceof ItemSword )
+					{
+						chat(player,"Impressive weapon you got there...");
+					}
+					else if ( item instanceof ItemAxe )
+					{
+						chat(player,"Can I AXE what you plan to do with that? Haha... ha... sorry won't happen again sir.");
+					}
+					else if ( item instanceof ItemHoe )
+					{
+						chat(player,"Planting more crops I see. We can use all the help we can get.");
+					}
+					else if ( item instanceof ItemPickaxe )
+					{
+						chat(player,"Mining again, are we? How many diamonds have you found?");
+					}
+					else if ( item instanceof ItemSpade )
+					{
+						chat(player,"Dig up any treasure?");
+					}
+					else
+					{
+						chat(player,"Your orders?");
+					}
+					break;
+				}
+				case 28:
+				{
+					chat(player,"These bandit raids have been getting worse...");
+					break;
+				}
+				case 29:
+				{
+					chat(player,"Our scouts have not reported back. I'm worried...");
 					break;
 				}
 			}
 		}
 		else
 		{
-			switch ( rand.nextInt(21) )
+			switch ( rand.nextInt(30) )
 			{
 				case 0:
 				{
@@ -2750,9 +2748,9 @@ public Village getVillage()
 				case 8:
 				{
 					int time = (int)this.world.getWorldTime();
-					if ( time > 9000 && time < 13000 ) chat(player,"I hope you're enjoying this fine evening, " + player.getDisplayNameString() + ".");
-					else if ( time >= 4000 && time < 9000 ) chat(player,"I hope you're enjoying this fine morning, " + player.getDisplayNameString() + ".");
-					else if ( time <= 9000 ) chat(player,"I hope you're enjoying this fine afternoon, " + player.getDisplayNameString() + ".");
+					if ( time > 9000 && time < 13000 ) chat(player,"Good evening, " + player.getDisplayNameString() + ".");
+					else if ( time >= 4000 && time < 9000 ) chat(player,"Good morning, " + player.getDisplayNameString() + ".");
+					else if ( time <= 9000 ) chat(player,"Good afternoon, " + player.getDisplayNameString() + ".");
 					else chat(player,"Stay safe, " + player.getDisplayNameString() + ". Monsters roam the night.");
 					break;
 				}
@@ -2800,7 +2798,7 @@ public Village getVillage()
 					}
 					else if ( item instanceof ItemAxe )
 					{
-						chat(player,"That's a hefty axe. You off to go chop down some bandits?");
+						chat(player,"That's a hefty axe. You off to go chop up some bandits?");
 					}
 					else if ( item instanceof ItemHoe )
 					{
@@ -2822,7 +2820,31 @@ public Village getVillage()
 				}
 				case 17:
 				{
-					chat(player,"Gut anymore of those filthy bandits?");
+					Item item = player.getHeldItemMainhand().getItem();
+					if ( item instanceof ItemSword )
+					{
+						chat(player,"Impressive weapon!");
+					}
+					else if ( item instanceof ItemAxe )
+					{
+						chat(player,"That's a hefty axe. You off to go chop up some bandits?");
+					}
+					else if ( item instanceof ItemHoe )
+					{
+						chat(player,"I took you for a fighter not a farmer!");
+					}
+					else if ( item instanceof ItemPickaxe )
+					{
+						chat(player,"May you find many diamonds!");
+					}
+					else if ( item instanceof ItemSpade )
+					{
+						chat(player,"You're digging bandit graves, I hope.");
+					}
+					else
+					{
+						chat(player,"Gut anymore of those filthy bandits?");
+					}
 					break;
 				}
 				case 18:
@@ -2838,6 +2860,51 @@ public Village getVillage()
 				case 20:
 				{
 					chat(player,"Stay safe.");
+					break;
+				}
+				case 21:
+				{
+					chat(player,"Sir!");
+					break;
+				}
+				case 22:
+				{
+					chat(player,"Reporting for duty!");
+					break;
+				}
+				case 23:
+				{
+					chat(player,"I've heard tales of your heroic deeds!");
+					break;
+				}
+				case 24:
+				{
+					chat(player,"We stand at the ready.");
+					break;
+				}
+				case 25:
+				{
+					chat(player,"We've sent a party of scouts to investigate the recent attacks, Sir.");
+					break;
+				}
+				case 26:
+				{
+					chat(player,"What is your command?");
+					break;
+				}
+				case 27:
+				{
+					chat(player,"We appreciate your service to the king, " + player.getDisplayNameString() + "." );
+					break;
+				}
+				case 28:
+				{
+					chat(player,"These bandit raids have been getting worse...");
+					break;
+				}
+				case 29:
+				{
+					chat(player,"Our scouts have not reported back. I'm worried...");
 					break;
 				}
 			}
