@@ -43,14 +43,13 @@ public class VillageLordGuiHandler implements IGuiHandler
 	private IVillageLordInventory getVillageLordInventory(World world, EntityPlayer player, int x, int y, int z)
 	{
 		EntityVillageLord lord = getVillageLord(world, x, y, z);
-		if(lord == null)
+		if( lord == null )
 		{
 			return null;
 		}
 		return lord.getInventory(player.getUniqueID());
 	}
 	
-
 	public static EntityVillageLord getVillageLord(World world, int x, int y, int z)
 	{
 		// TODO is this really the best way to get the village lord reference,
@@ -64,12 +63,12 @@ public class VillageLordGuiHandler implements IGuiHandler
 		for (int i = 1; i < 15; i++)
 		{
 			lords = world.getEntitiesWithinAABB(EntityVillageLord.class, new AxisAlignedBB(new BlockPos(x, y, z)).grow(i, i, i));
-			if (lords != null && lords.size() > 0)
+			if ( lords != null && lords.size() > 0 )
 			{
 				return lords.get(0);
 			}
 		}
-
-		throw new NullPointerException("village lord not found");
+		return null;
+		// throw new NullPointerException("village lord not found");
 	}
 }

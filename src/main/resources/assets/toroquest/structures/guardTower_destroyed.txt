@@ -1,101 +1,136 @@
-SbSbSbSbSb
-SbPwPwPwSb
-SbPwLgPwSb
-SbPwPwPwSb
-SbSbSbSbSb
+            
+  SbSbSbSbSb
+  SbPwPwPwSb
+  SbPwLgPwSb
+  SbPwPwPwSb
+  SbSbSbSbSb
+            
 #####################
-BBPwPwPwSb
-BB--lv--Pw
---BBLg--FF
-Pw------Pw
-SbPwPwPwSb
+      BB  Sc
+  SbCs--CsSbCs
+ScCs------CsSc
+  ----Lg----
+  --------Cs
+  BB----CsSb
+    ScBB    
 #####################
---PwPwPwSb
-----lv--Pw
-----Lg----
-Pw------Pw
-SbPwPwPwSb
+            
+  SbPw--PwSb
+  Pw------Pw
+  ----Lg----
+  --------Pw
+  ------PwSb
+            
 #####################
---PwPwPw--
-Pw--lv--Pw
-Pw--Lg--Pw
-Pw------Pw
-SbPwPwPwSb
+      Tv    
+  Sb--Lz--Sb
+  ----------
+T>----Lg--LxT<
+  ----l^----
+  ----Lz--Sb
+      T^    
 #####################
---PwPwPw--
-Pw--lv--Pw
-Pw--Lg--Pw
-Pw------Pw
-SbPw--PwSb
+            
+  SbPw--PwSb
+  --SwSwSwPw
+  --SwLgSwFF
+  PwSwtdSwPw
+  Sb----PwSb
+            
 #####################
---PwPwPwSb
-Pw--lv--Pw
-Pw--Lg--Pw
-Pw------Pw
-SbPw--PwSb
+            
+  Sb--FwFwSb
+  Fw------Fw
+  Fw--Lg--Fw
+  Fw--l^--Fw
+  SbFw----Sb
+            
 #####################
-----*R*R*R
-*R--lvPw*R
-*RPwLgPw*R
-*RPwPwPw*R
-*R----*R--
+            
+  Sb------Sb
+  --------Lz
+  Lz--Lg--Lz
+  Lz--l^--Lz
+  SbLxLxLxSb
+            
 #####################
-SbPwPwPwSb
-Pw--td--Pw
-Pw--Lg--Pw
-Pw--l^--Pw
-SbPwPwPwSb
+            
+  Sb--PwPwSb
+  --SwSwSw--
+  PwSwLgSwPw  
+  PwSwtdSwPw
+  Sb----PwSb
+            
 #####################
---------Sb
-----------
-----Lgt<--
-----l^----
-Sb------Sb
+            
+  Sb----tiSb
+  --------ti
+  ti--Lg--ti
+  ti--l^--ti
+  Sb--titiSb
+            
 #####################
---PwPwPwSb
-Pw------Pw
-Pw--Lg--Pw
-Pw--l^----
-SbPwPwPw--
+            
+  FFcTcTcTSb
+  cT------cT
+  ----Lgt<cT
+  cT--l^----
+  SbcTcTcTSb
+            																																				
 #####################
---LgLgLgLg
-LgPwPwPwLg
-LgPwLgPwLg
-LgPwl^Pw--
-LgLgLg----
+            
+  --LgLgLgLg
+  ----pTpTLg
+  LgpTLgpTLg
+  LgpT--pTLg
+  LgLgLgLgLg
+            
 #####################
-FwFwFwFwFw
-Fwxx----Fw
-Fw--Fw--Fw
-Fw--td--Fw
-FwFwFwFwFw
+            
+  ----FwFwFw
+  --------Fw
+  Fw--------
+  Fw--------
+  FwFwFwFw--
+            
 #####################
-----------
-----------
-----Fw----
-----------
-----------
+            
+  --------Fw
+  ----------
+  ----------
+  ----------
+  Fw------Fw
+            
 #####################
-----------
-----------
-----Fw----
---------*R
-----------
+            
+  ------stsb
+  --------st
+  ----------
+  --------st
+  sbst--stsb
+            
 #####################
-----------
-----------
-----Fc----
-------*R--
-----------
+            
+  ----sb----
+  ----spsb--
+  sbspspsp--
+  --sb--sb--
+  ----sb----
+            
 #####################
-----------
-----------
-----*R*R--
-----------
-----------
+            
+  ----------
+  ----------
+  ----sp----
+  ----------
+  ----------
+            
 #####################
-----------
-----------
-----*RFF--
-----------
-----------
+            
+  ----------
+  ----------
+  ----Fw----
+  ----------
+  ----------
+            
+#####################

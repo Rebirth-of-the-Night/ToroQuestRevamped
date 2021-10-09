@@ -1,6 +1,5 @@
 package net.torocraft.toroquest.entities;
 
-import java.util.List;
 import java.util.Random;
 
 import javax.annotation.Nullable;
@@ -8,7 +7,6 @@ import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
 
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.entity.ai.EntityAIHurtByTarget;
@@ -22,6 +20,7 @@ import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.EntityAnimal;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.passive.EntityWolf;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -29,7 +28,6 @@ import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.torocraft.toroquest.ToroQuest;
@@ -38,17 +36,16 @@ import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 
 public class EntityWolfRaider extends EntityWolf implements IMob
 {
-	public boolean despawn = false;
+	protected boolean despawn = false;
 	public Integer raidX = null;
 	public Integer raidZ = null;
 	protected Random rand = new Random();
-	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 1.2D, 48);
+	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 1.2D, 16, 32);
     public int despawnTimer = 100;
 	
 @Override
 public void readEntityFromNBT(NBTTagCompound compound)
 {
-    super.readEntityFromNBT(compound);
     if ( compound.hasKey("raidX") && compound.hasKey("raidZ") )
     {
     	this.raidX = compound.getInteger("raidX");
@@ -59,6 +56,7 @@ public void readEntityFromNBT(NBTTagCompound compound)
     {
     	this.despawnTimer = compound.getInteger("despawnTimer");
     }
+    super.readEntityFromNBT(compound);
 }
 
 @Override
@@ -82,7 +80,7 @@ public void writeEntityToNBT(NBTTagCompound compound)
 protected void applyEntityAttributes()
 {
 	super.applyEntityAttributes();
-    this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(48.0D);
+    this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(35.0D);
 }
 
 /* Set the direction for bandits to move to */
@@ -119,15 +117,6 @@ public void setRaidLocation(Integer x, Integer z)
 		return false;
 	}
 	
-//	@Nullable
-//	@Override
-//	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata)
-//	{
-//		livingdata = super.onInitialSpawn(difficulty, livingdata);
-//		this.despawnTimer = 100;
-//		return livingdata;
-//	}
-	
 	@Override
 	public void onLivingUpdate()
     {
@@ -149,13 +138,14 @@ public void setRaidLocation(Integer x, Integer z)
     		{
 				if ( world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32)).isEmpty() )
 				{
+					this.despawn = true;
 	    			this.setHealth( 0 );
 	    			this.setDead();
 	    			return;
 				}
     		}
     		
-			if ( rand.nextBoolean() )
+			if ( this.rand.nextBoolean() )
 			{
 				vector3d = null;
 			}
@@ -238,18 +228,26 @@ public void setRaidLocation(Integer x, Integer z)
                 return ( despawnTimer < 80 && !( p_apply_1_ instanceof EntityWolf ) );
             }
         }));
-		this.targetTasks.addTask(5, new EntityAINearestAttackableTarget<EntityToroVillager>(this, EntityToroVillager.class, 8, false, false, new Predicate<EntityToroVillager>()
+		this.targetTasks.addTask(5, new EntityAINearestAttackableTarget<EntityVillager>(this, EntityVillager.class, 20, false, false, new Predicate<EntityVillager>()
 		{
 			@Override
-			public boolean apply(EntityToroVillager target)
+			public boolean apply(EntityVillager target)
 			{
 				return true;
 			}
 		}));
-        this.targetTasks.addTask(6, new EntityAINearestAttackableTarget<EntityToroNpc>(this, EntityToroNpc.class, 16, true, false, new Predicate<EntityToroNpc>()
+        this.targetTasks.addTask(6, new EntityAINearestAttackableTarget<EntityToroNpc>(this, EntityToroNpc.class, 20, true, false, new Predicate<EntityToroNpc>()
 		{
 			@Override
 			public boolean apply(EntityToroNpc target)
+			{
+				return true;
+			}
+		}));
+        this.targetTasks.addTask(7, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, 20, false, false, new Predicate<EntityPlayer>()
+		{
+			@Override
+			public boolean apply(EntityPlayer target)
 			{
 				return true;
 			}

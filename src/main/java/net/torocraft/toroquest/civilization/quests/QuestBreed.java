@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityExpBottle;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.passive.EntityAnimal;
 import net.minecraft.entity.passive.EntityChicken;
 import net.minecraft.entity.passive.EntityCow;
@@ -16,7 +18,11 @@ import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
+import net.minecraft.init.PotionTypes;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.PotionUtils;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -30,6 +36,7 @@ import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity.DataWrappe
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
 
 public class QuestBreed extends QuestBase implements Quest
 {
@@ -68,6 +75,7 @@ public class QuestBreed extends QuestBase implements Quest
 		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
 
 		DataWrapper quest = new DataWrapper();
+		
 		for (QuestData data : quests)
 		{
 			try
@@ -91,7 +99,7 @@ public class QuestBreed extends QuestBase implements Quest
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 		}
 	}
@@ -110,15 +118,15 @@ public class QuestBreed extends QuestBase implements Quest
 			return false;
 		}
 
-		if ( !quest.data.getCompleted() )
+		if ( !quest.getData().getCompleted() )
 		{
 			quest.setCurrentAmount(quest.getCurrentAmount() + 1);
-			quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+			quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 			
 			if (quest.getCurrentAmount() >= quest.getTargetAmount())
 			{
-				quest.data.setCompleted(true);
-				chatCompletedQuest(quest.data);
+				quest.getData().setCompleted(true);
+				chatCompletedQuest(quest.getData());
 			}
 			return true;
 		}
@@ -130,73 +138,82 @@ public class QuestBreed extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
-		if (!quest.getCompleted())
+		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
+
+		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
+		{
+			return null;
+		}
+		
+		if ( !quest.getCompleted() )
 		{
 			if ( quest.getChatStack() == "" )
 			{
-				quest.setChatStack( "You haven't bred enough animals!" );
+				quest.setChatStack( "breed.incomplete", quest.getPlayer(), null );
 				this.setData(quest);
 			}
 			// quest.getPlayer().closeScreen();
 			return null;
 		}
 
-		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
-
-		if ( province == null || province.id == null || !province.id.equals(quest.getProvinceId()) )
-		{
-			return null;
-		}
-
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
-
-		// quest.setChatStack( "I knew I could count on you, " + quest.getPlayer().getName() + "." );
-		this.setData(quest);
 		
-		List<ItemStack> rewards = getRewardItems(quest); // TODO
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(province.civilization) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		
+		List<ItemStack> rewards = getRewardItems(quest);
+		
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
 		
+		quest.setChatStack( "breed.complete", quest.getPlayer(), null );
+		this.setData(quest);
 		return items;
 	}
-	Random rand = new Random();
+		
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		//if (data.getPlayer().world.isRemote)
+		switch ( i(data.getiData().get("animalType")) )
 		{
-			switch ( i(data.getiData().get("animalType")) )
+			case 0:
 			{
-				case 0:
-				{
-					if ( rand.nextBoolean() ) data.setChatStack("We had to cull some of our livestock in preparation for a great feast! I will need you to breed several animals to strengthen their numbers.");
-					else 					  data.setChatStack("A terrible disease has wiped out much of our livestock. I will need you to breed several animals to strengthen their numbers.");
-					break;
-				}
-				case 1:
-				{
-					if ( rand.nextBoolean() ) data.setChatStack("A racoon broke into the coop and killed most of our chickens, bloody mess it was! I will need you to breed more chickens because a lot of them died.");
-					else 					  data.setChatStack("A §ofowl§r disease has wiped out most of our chickens. Get it? A §oFOWL§r disease? Haha... ha... anyways... I will need you to breed more chickens because most of them are dead.");
-					break;
-				}
-				case 2:
-				{
-					data.setChatStack("As you know, the villagers love having bacon for breakfast. I'll need you to breed more pigs because we've been going through bacon like crazy.");
-					break;
-				}
-				case 3:
-				{
-					data.setChatStack("Wolves wiped out a flock of sheep a few days ago. I'll need you to breed more sheep.");
-					break;
-				}
-				case 4:
-				{
-					if ( rand.nextBoolean() ) data.setChatStack("The bandits in the last raid stole a herd of cattle from one of the cowherds. Help them out and breed a few cows.");
-					else 					  data.setChatStack("I will need you to breed more cows to strengthen their numbers.");
-					break;
-				}
+				data.setChatStack( "breed.acceptany", data.getPlayer(), null );
+				break;
+			}
+			case 1:
+			{
+				data.setChatStack( "breed.acceptchicken", data.getPlayer(), null );
+				break;
+			}
+			case 2:
+			{
+				data.setChatStack( "breed.acceptpig", data.getPlayer(), null );
+				break;
+			}
+			case 3:
+			{
+				data.setChatStack( "breed.acceptsheep", data.getPlayer(), null );
+				break;
+			}
+			case 4:
+			{
+				data.setChatStack( "breed.acceptcow", data.getPlayer(), null );
+				break;
 			}
 		}
 		this.setData(data);
@@ -206,7 +223,12 @@ public class QuestBreed extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "Ah, I understand. Does causing animals to love eachother make you uncomfortable, then?" );
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack( "breed.reject", data.getPlayer(), null );
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -269,7 +291,7 @@ public class QuestBreed extends QuestBase implements Quest
 		{
 			rep = 0;
 		}
-		if ( rep < 200 )
+		if ( rep < 200 || ToroQuestConfiguration.anyAnimalForBreedQuest )
 		{
 			q.setAnimalType(0);
 		}
@@ -284,10 +306,10 @@ public class QuestBreed extends QuestBase implements Quest
 		}
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 		
-		int roll = rand.nextInt(5)*2+8+((Math.round(rep/200))*2);
-		int em = Math.round(roll/2);
+		int roll = MathHelper.clamp(rand.nextInt(5)*2+4+(Math.round(rep/200)*2),8,24);
+		int em = Math.round(roll/3)+6;
 		q.setRewardRep(em*2);
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}

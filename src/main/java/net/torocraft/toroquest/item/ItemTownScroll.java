@@ -37,8 +37,10 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.CivilizationType;
+import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
 import net.torocraft.toroquest.civilization.Province;
+import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.QuestBase;
 
 @Mod.EventBusSubscriber
@@ -59,7 +61,7 @@ public class ItemTownScroll extends Item
     			//this.setData( province );
 		this.setHasSubtypes(true);
         this.setMaxStackSize(16);
-        this.setCreativeTab(CreativeTabs.MISC);
+        // this.setCreativeTab(CreativeTabs.MISC);
     }
     
     @SubscribeEvent
@@ -177,12 +179,17 @@ public class ItemTownScroll extends Item
     {
     	tooltip.add("Teleport scroll not bound.");
     }
-    
+	
+	@Override
+	public void onUsingTick(ItemStack stack, EntityLivingBase player, int count)
+    {
+		player.addPotionEffect(new PotionEffect(MobEffects.NAUSEA, 5, 1, true, false));
+    }
+	    
     @Override
     public ItemStack onItemUseFinish(ItemStack stack, World worldIn, EntityLivingBase entityLiving)
     {
         EntityPlayer entityplayer = entityLiving instanceof EntityPlayer ? (EntityPlayer)entityLiving : null;
-        
         try
         {
         	if ( !stack.hasTagCompound() || stack.isEmpty() )
@@ -212,8 +219,8 @@ public class ItemTownScroll extends Item
 	        {
 	        	return stack;
 	        }
-
-	        if ( entityplayer != null && !entityplayer.capabilities.isCreativeMode )
+			
+	        if ( entityplayer != null && !entityplayer.capabilities.isCreativeMode ) // && province.civilization != null && PlayerCivilizationCapabilityImpl.get(entityplayer).getReputation(province.civilization) < 2000 )
             {
                 stack.shrink(1);
             }
@@ -225,11 +232,11 @@ public class ItemTownScroll extends Item
 
         	//entityplayer.world.playSound((EntityPlayer)null, entityplayer.posX, entityplayer.posY, entityplayer.posZ, SoundEvents.BLOCK_PORTAL_TRAVEL, SoundCategory.PLAYERS, 1.0F, 1.5F);
 
-			if ( !worldIn.isRemote )
+			//if ( !worldIn.isRemote )
 	        {
 	        	entityplayer.setPositionAndUpdate(teleportLocation.getX()+0.5,teleportLocation.getY()+0.5,teleportLocation.getZ()+0.5);
 	        }
-
+			entityplayer.addPotionEffect(new PotionEffect(MobEffects.BLINDNESS, 30, 1, true, false));
         	entityplayer.world.playSound((EntityPlayer)null, entityplayer.posX, entityplayer.posY, entityplayer.posZ, SoundEvents.BLOCK_PORTAL_TRAVEL, SoundCategory.PLAYERS, 1.0F, 1.5F);
         }
         catch ( Exception e )

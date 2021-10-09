@@ -64,7 +64,14 @@ public class EntityAIAvoidBanditPlayer<T extends Entity> extends EntityAIBase
      */
     public boolean shouldExecute()
     {
-        List<T> list = this.entity.world.<T>getEntitiesWithinAABB(this.classToAvoid, this.entity.getEntityBoundingBox().grow((double)this.avoidDistance, 3.0D, (double)this.avoidDistance), Predicates.and(EntitySelectors.CAN_AI_TARGET, this.canBeSeenSelector, this.avoidTargetSelector));
+    	
+        if ( this.entity.getRNG().nextInt(30) != 0 )
+        {
+        	return false;
+        }
+        
+        @SuppressWarnings("unchecked")
+		List<T> list = this.entity.world.<T>getEntitiesWithinAABB(this.classToAvoid, this.entity.getEntityBoundingBox().grow((double)this.avoidDistance, 3.0D, (double)this.avoidDistance), Predicates.and(EntitySelectors.CAN_AI_TARGET, this.canBeSeenSelector, this.avoidTargetSelector));
 
         if (list.isEmpty())
         {
@@ -88,7 +95,7 @@ public class EntityAIAvoidBanditPlayer<T extends Entity> extends EntityAIBase
     			return false;
     		}
     		
-    		if ( PlayerCivilizationCapabilityImpl.get((EntityPlayer)this.closestLivingEntity).getReputation(civ) >= -300 )
+    		if ( PlayerCivilizationCapabilityImpl.get((EntityPlayer)this.closestLivingEntity).getReputation(civ) > -50 )
     		{
     			return false;
     		}
@@ -140,7 +147,7 @@ public class EntityAIAvoidBanditPlayer<T extends Entity> extends EntityAIBase
      */
     public void updateTask()
     {
-        if (this.entity.getDistanceSq(this.closestLivingEntity) < 50.0D)
+        if (this.entity.getDistanceSq(this.closestLivingEntity) < 40.0D)
         {
             this.entity.getNavigator().setSpeed(this.nearSpeed);
         }

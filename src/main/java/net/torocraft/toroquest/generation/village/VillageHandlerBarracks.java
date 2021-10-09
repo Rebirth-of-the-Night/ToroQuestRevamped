@@ -76,14 +76,14 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 		{
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
-			if ( i >= 0 && Math.abs(x) < i && Math.abs(z) < i )
+			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )
 			{
 				 nameType += "_destroyed";
 			}
 			
 			BlockPos size = new BlockMapMeasurer(nameType).measure();
 			
-			StructureBoundingBox bounds = StructureBoundingBox.getComponentToAddBoundingBox(x, y, z, 0, 0, -3, size.getX(), size.getY(), size.getZ(), EnumFacing.NORTH);
+			StructureBoundingBox bounds = StructureBoundingBox.getComponentToAddBoundingBox(x, y, z, 0, 0, -2, size.getX(), size.getY(), size.getZ(), EnumFacing.NORTH);
 			return canVillageGoDeeper(bounds) && StructureComponent.findIntersecting(structures, bounds) == null ? new VillagePieceBarracks(nameType, start, p_175850_7_, rand, bounds, EnumFacing.NORTH) : null;
 		}
 
@@ -155,6 +155,8 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 		
 		protected void setChestBlockState(World worldIn, IBlockState blockstateIn, int x, int y, int z, StructureBoundingBox boundingboxIn)
 	    {
+			if ( worldIn.isRemote ) return;
+
 	        BlockPos blockpos = new BlockPos(this.getXWithOffset(x, z), this.getYWithOffset(y), this.getZWithOffset(x, z));
 
 	        if (boundingboxIn.isVecInside(blockpos))
@@ -167,54 +169,69 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 				if ( tileentity instanceof TileEntityChest )
 				{
 					TileEntityChest t = (TileEntityChest) tileentity;
-					if ( !worldIn.isRemote )
+					//if ( !worldIn.isRemote )
 					{
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
+						
+						if ( worldIn.rand.nextBoolean() )
 						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.ARROW, 16));
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOWL, 1));
+							}
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.MUSHROOM_STEW, 1));
+							}
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BEETROOT_SOUP, 1));
+							}
+							for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.APPLE, worldIn.rand.nextInt(3)+1));
+							}
+							for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BREAD, worldIn.rand.nextInt(3)+1));
+							}
 						}
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
+						else
 						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOW, 1));
-						}
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.IRON_SWORD, 1));
-						}
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.SHIELD, 1));
-						}
-						if ( worldIn.rand.nextInt(3) == 0 )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.LEATHER_BOOTS, 1));
-						}
-						if ( ToroQuestConfiguration.toroSpawnChance > 0 && worldIn.rand.nextInt(3) == 0 )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Item.getByNameOrId("toroquest:toro_leather"), 1));
-						}
-					}
-					else
-					{
-						if ( worldIn.rand.nextInt(3) == 0 )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOWL, 1));
-						}
-						if ( worldIn.rand.nextInt(3) == 0 )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.MUSHROOM_STEW, 1));
-						}
-						if ( worldIn.rand.nextInt(3) == 0 )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BEETROOT_SOUP, 1));
-						}
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.APPLE, worldIn.rand.nextInt(3)+1));
-						}
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BREAD, worldIn.rand.nextInt(3)+1));
+							for ( int i = worldIn.rand.nextInt(4)+2; i > 0; i-- )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.ARROW, 16));
+							}
+							for ( int i = worldIn.rand.nextInt(2)+1; i > 0; i-- )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOW, 1));
+							}
+							for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.IRON_SWORD, 1));
+							}
+							for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
+							{
+								Item shield = Item.getByNameOrId("spartanshields:shield_basic_wood");
+								if ( shield == null )
+								{
+									shield = Items.SHIELD;
+								}
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(shield, 1));
+							}
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.LEATHER_BOOTS, 1));
+							}
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.CHAINMAIL_CHESTPLATE, 1));
+							}
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOOK, 1));
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.PAPER, 1));
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.FEATHER, 1));
+							}
 						}
 					}
 				}

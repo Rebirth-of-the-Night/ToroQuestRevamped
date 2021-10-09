@@ -49,7 +49,7 @@ public class RenderSpiderLord extends RenderCaveSpider
         f = f * f;
         float f2 = (1.0F + f * 0.3F) * f1;
         float f3 = (1.0F + f * 0.2F) / f1;
-        GlStateManager.scale(4.2F*f2, 3.9F*f3, 4.2F*f2);
+        GlStateManager.scale(4.0F*f2, 3.8F*f3, 4.0F*f2);
     }
 
     /**

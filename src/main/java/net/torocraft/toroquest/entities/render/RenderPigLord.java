@@ -39,7 +39,7 @@ public class RenderPigLord extends RenderBiped<EntityPigLord>
 	protected void preRenderCallback(EntityPigLord entitylivingbaseIn, float partialTickTime)
 	{
 		//GL11.glScalef(3.5F, 4F, 3.5F);
-		GlStateManager.scale(3.0F, 3.0F, 3.0F);
+		GlStateManager.scale(2.5F, 2.5F, 2.5F);
 		super.preRenderCallback(entitylivingbaseIn, partialTickTime);
 	}
 

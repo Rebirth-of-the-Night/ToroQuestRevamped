@@ -54,7 +54,7 @@ public class ItemTrophyBeholder extends ItemTrophy
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: You harness the limitless power of the beholder; your trophy effects are twice as potent while in that provice.\n\n§oWhen you stare deep into the eye you can see a dark reflection of yourself staring back. You know what they say... beauty is in the eye of the beholder.");
+		tooltip.add("Give this trophy to a Village Lord: Harness the limitless power of the Obsidian Beholder, trophy effects are twice as potent while in that provice.\n\n§oWhen you stare deep into the eye you can see a dark reflection of yourself staring back. You know what they say... beauty is in the eye of the beholder.");
     }
 
 }

@@ -3,20 +3,14 @@ package net.torocraft.toroquest.entities.render;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.entity.RenderBiped;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.client.renderer.entity.layers.LayerArrow;
 import net.minecraft.client.renderer.entity.layers.LayerBipedArmor;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.config.ToroQuestConfiguration;
-import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntityVillageLord;
 import net.torocraft.toroquest.entities.model.ModelGuard;
-import net.torocraft.toroquest.entities.model.ModelSentry;
-import net.torocraft.toroquest.entities.model.ModelVillageLord;
 
 @SideOnly(Side.CLIENT)
 public class RenderVillageLord extends RenderBiped<EntityVillageLord>

@@ -12,12 +12,14 @@ import net.minecraft.block.BlockChest;
 import net.minecraft.block.BlockColored;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.IEntityLivingData;
+import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EnumFacing;
@@ -44,6 +46,12 @@ import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityVillageLord;
 import net.torocraft.toroquest.generation.village.util.BlockMapMeasurer;
 import net.torocraft.toroquest.generation.village.util.VillagePieceBlockMap;
+import net.torocraft.toroquest.item.ItemScrollEarth;
+import net.torocraft.toroquest.item.ItemScrollFire;
+import net.torocraft.toroquest.item.ItemScrollMoon;
+import net.torocraft.toroquest.item.ItemScrollSun;
+import net.torocraft.toroquest.item.ItemScrollWater;
+import net.torocraft.toroquest.item.ItemScrollWind;
 
 public class VillageHandlerKeep implements IVillageCreationHandler
 {
@@ -88,13 +96,13 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 		{
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
-			if ( i >= 0 && Math.abs(x) < i && Math.abs(z) < i )
+			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )
 			{
 				 nameType += "_destroyed";
 			}
 			
 			BlockPos size = new BlockMapMeasurer(nameType).measure();
-			StructureBoundingBox bounds = StructureBoundingBox.getComponentToAddBoundingBox(x, y, z, 0, 0, -6, size.getX(), size.getY(), size.getZ(), EnumFacing.NORTH);
+			StructureBoundingBox bounds = StructureBoundingBox.getComponentToAddBoundingBox(x, y, z, 1, 0, -4, size.getX(), size.getY(), size.getZ(), EnumFacing.NORTH);
 			return canVillageGoDeeper(bounds) && StructureComponent.findIntersecting(structures, bounds) == null ? new VillagePieceKeep(nameType, start, p_175850_7_, rand, bounds, EnumFacing.NORTH) : null;
 		}
 
@@ -144,6 +152,82 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 				setChestBlockState(world, Blocks.TRAPPED_CHEST.getDefaultState().withProperty(BlockChest.FACING, EnumFacing.WEST), x, y, z, boundingBox);
 				return true;
 			}
+//			else if ( c.contains("lll") )
+//			{
+//				try
+//				{
+//					EnumFacing facing = EnumFacing.NORTH;
+//					
+//					switch ( c.substring(1) )
+//					{
+//						case "v":
+//						{
+//							facing = EnumFacing.NORTH;
+//							break;
+//						}
+//						case "<":
+//						{
+//							facing = EnumFacing.WEST;
+//							break;
+//						}
+//						case ">":
+//						{
+//							facing = EnumFacing.EAST;
+//							break;
+//						}
+//						case "^":
+//						{
+//							facing = EnumFacing.SOUTH;
+//							break;
+//						}
+//					}
+//					
+////					if ( 1==1 )
+////					{
+////						setRedBanner(world, new BlockPos(x,y,z), facing);
+////					}
+//					
+//					CivilizationType civ = CivilizationUtil.getProvinceAt(world, x*16, z*16).civilization;
+//					
+//					switch ( civ )
+//					{
+//						case FIRE:
+//						{
+//							//setRedBanner(world, new BlockPos(x,y,z), facing);
+//							return true;
+//						}
+//						case EARTH:
+//						{
+//							setGreenBanner(world, new BlockPos(x,y,z), facing);
+//							return true;
+//						}
+//						case WATER:
+//						{
+//							setBlueBanner(world, new BlockPos(x,y,z), facing);
+//							return true;
+//						}
+//						case MOON:
+//						{
+//							setBlackBanner(world, new BlockPos(x,y,z), facing);
+//							return true;
+//						}
+//						case WIND:
+//						{
+//							setBrownBanner(world, new BlockPos(x,y,z), facing);
+//							return true;
+//						}
+//						case SUN:
+//						{
+//							setYellowBanner(world, new BlockPos(x,y,z), facing);
+//							return true;
+//						}
+//					}
+//				}
+//				catch ( Exception e )
+//				{
+//					
+//				}
+//		}
 			return false;
 		}
 		
@@ -151,31 +235,142 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 		
 		protected void setChestBlockState(World worldIn, IBlockState blockstateIn, int x, int y, int z, StructureBoundingBox boundingboxIn)
 	    {
+			if ( worldIn.isRemote ) return;
+
 	        BlockPos blockpos = new BlockPos(this.getXWithOffset(x, z), this.getYWithOffset(y), this.getZWithOffset(x, z));
 
 	        if (boundingboxIn.isVecInside(blockpos))
 	        {
 	            // worldIn.setBlockState(blockpos, blockstateIn, 2);
-	        	
 	            setBlockState( worldIn, blockstateIn, x, y, z, boundingBox );
 				TileEntity tileentity = worldIn.getTileEntity( blockpos );
 				// ((TileEntityChest) tileentity).setLootTable(LootTableList.CHESTS_VILLAGE_BLACKSMITH, worldIn.rand.nextLong());
 				if ( tileentity instanceof TileEntityChest )
 				{
 					TileEntityChest t = (TileEntityChest) tileentity;
-					if ( !worldIn.isRemote )
 					{
-						for ( int i = worldIn.rand.nextInt(5); i > 0; i-- )
+						setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Item.getByNameOrId("toroquest:recruitment_papers")), 1 ));
+						
+						for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
 						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.PAPER, 1) );
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), 5 ));
 						}
-						setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), worldIn.rand.nextInt(5) ));
-						if ( worldIn.rand.nextBoolean() ) setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), worldIn.rand.nextInt(5) ));
-						if ( worldIn.rand.nextBoolean() ) setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), worldIn.rand.nextInt(5) ));
-						if ( worldIn.rand.nextBoolean() ) setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Item.getByNameOrId("toroquest:recruitment_papers")), 1 ));
-						if ( worldIn.rand.nextBoolean() ) setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.IRON_SWORD), 1 ));
-						if ( worldIn.rand.nextBoolean() ) setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.SHIELD), 1 ));
+						for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+						{
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), 1 ));
+						}
+						for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+						{
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_INGOT), 1 ));
+						}
+						for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+						{
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_NUGGET), worldIn.rand.nextInt(5)+1 ));
+						}
 					}
+					
+//					Province province = CivilizationUtil.getProvinceAt( worldIn, x/16, z/16);
+//					
+//					if ( province != null && province.civilization != null )
+//					{
+//						switch ( province.civilization )
+//						{
+//							case EARTH:
+//							{
+//								ItemScrollEarth scroll = (ItemScrollEarth)Item.getByNameOrId("toroquest:scroll_earth");
+//								ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//								itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//								itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//								itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//								banner.setStackDisplayName(ToroQuestConfiguration.greenName + " Banner");
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								break;
+//							}
+//							case FIRE:
+//							{
+//								ItemScrollFire scroll = (ItemScrollFire)Item.getByNameOrId("toroquest:scroll_fire");
+//								ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//								itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//								itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//								itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//								banner.setStackDisplayName(ToroQuestConfiguration.redName + " Banner");
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//								
+//								break;
+//							}
+//							case SUN:
+//							{
+//								ItemScrollSun scroll = (ItemScrollSun)Item.getByNameOrId("toroquest:scroll_sun");
+//								ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//								itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//								itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//								itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//								banner.setStackDisplayName(ToroQuestConfiguration.yellowName + " Banner");
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//								
+//								break;
+//							}
+//							case WATER:
+//							{
+//								ItemScrollWater scroll = (ItemScrollWater)Item.getByNameOrId("toroquest:scroll_water");
+//								ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//								itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//								itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//								itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//								banner.setStackDisplayName(ToroQuestConfiguration.blueName + " Banner");
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//								
+//								break;
+//							}
+//							case MOON:
+//							{
+//								ItemScrollMoon scroll = (ItemScrollMoon)Item.getByNameOrId("toroquest:scroll_moon");
+//								ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//								itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//								itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//								itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//								banner.setStackDisplayName(ToroQuestConfiguration.blackName + " Banner");
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//								
+//								break;
+//							}
+//							case WIND:
+//							{
+//								ItemScrollWind scroll = (ItemScrollWind)Item.getByNameOrId("toroquest:scroll_wind");
+//								ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//								itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//								itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//								itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//
+//								ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//								banner.setStackDisplayName(ToroQuestConfiguration.brownName + " Banner");
+//								setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//								
+//								break;
+//							}
+//							default:
+//							{
+//								break;
+//							}
+//						}
+//					}
 				}
 	        }
 	    }

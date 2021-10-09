@@ -9,14 +9,11 @@ import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
-import net.minecraft.entity.passive.EntityAnimal;
-import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.util.DamageSource;
@@ -28,12 +25,11 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.render.RenderVampireBat;
@@ -76,8 +72,10 @@ public class EntityVampireBat extends EntityMob implements IMob
 	{
 		super(worldIn);
 		this.setSize(0.95F, 0.95F);
-		this.experienceValue = 2;
+		this.experienceValue = 0;
+		this.isImmuneToFire = true;
 	}
+
 
 	protected void entityInit() {
 		super.entityInit();
@@ -85,11 +83,12 @@ public class EntityVampireBat extends EntityMob implements IMob
 
 	protected void initEntityAI()
 	{
-		tasks.addTask(2, new EntityAIAttackMelee(this, 0.4D, false));
+		this.isImmuneToFire = true;
+		tasks.addTask(2, new EntityAIAttackMelee(this, 0.6D, false));
 		targetTasks.addTask(2, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, true));
-		targetTasks.addTask(3, new EntityAINearestAttackableTarget<EntityToroNpc>(this, EntityToroNpc.class, true));
-		targetTasks.addTask(4, new EntityAINearestAttackableTarget<EntityVillager>(this, EntityVillager.class, false));
-		targetTasks.addTask(5, new EntityAINearestAttackableTarget<EntityAnimal>(this, EntityAnimal.class, false));
+//		targetTasks.addTask(3, new EntityAINearestAttackableTarget<EntityToroNpc>(this, EntityToroNpc.class, true));
+//		targetTasks.addTask(4, new EntityAINearestAttackableTarget<EntityVillager>(this, EntityVillager.class, false));
+//		targetTasks.addTask(5, new EntityAINearestAttackableTarget<EntityAnimal>(this, EntityAnimal.class, false));
 	}
 	
 	@Override
@@ -99,12 +98,10 @@ public class EntityVampireBat extends EntityMob implements IMob
         {
     		if ( nearbyBas != null )
     		{
-    			//if ( this.world.isRemote )
-    			{
-    				this.spawnAuraParticle( this );
-        			this.spawnAuraParticle( nearbyBas );
-    			}
-    			nearbyBas.heal(20.0F);
+    			nearbyBas.heal(16.0F);
+    			this.spawnSweepParticles();
+    			this.playSound(SoundEvents.ENTITY_GENERIC_DRINK, 1.0F, 0.9F + rand.nextFloat()/5.0F );
+    			this.playSound(SoundEvents.ENTITY_WITCH_DRINK, 1.0F, 0.9F + rand.nextFloat()/5.0F );
     		}
         	return true;
         }
@@ -112,17 +109,17 @@ public class EntityVampireBat extends EntityMob implements IMob
     }
 	
 //	@SideOnly(Side.CLIENT)
-	public void spawnAuraParticle( EntityLivingBase e )
-	{
-		double x = e.posX;
-	    double y = e.posY;
-	    double z = e.posZ;
-		for ( int i = 32; i > 0; i-- )
-		{
-    		e.world.spawnParticle(EnumParticleTypes.DRAGON_BREATH, x+rand.nextDouble()*2-1, y+rand.nextDouble(), z+rand.nextDouble()*2-1, rand.nextDouble()-0.5, rand.nextDouble()-0.5, rand.nextDouble()-0.5, 0);
-    		e.world.spawnParticle(EnumParticleTypes.PORTAL, x+rand.nextDouble()*2-1, y+rand.nextDouble(), z+rand.nextDouble()*2-1, rand.nextDouble()-0.5, rand.nextDouble()-0.5, rand.nextDouble()-0.5, 0);
-		}
-	}
+//	public void spawnAuraParticle( EntityLivingBase e )
+//	{
+//		double x = e.posX;
+//	    double y = e.posY;
+//	    double z = e.posZ;
+//		for ( int i = 32; i > 0; i-- )
+//		{
+//    		e.world.spawnParticle(EnumParticleTypes.DRAGON_BREATH, x+rand.nextDouble()*2-1, y+rand.nextDouble(), z+rand.nextDouble()*2-1, rand.nextDouble()-0.5, rand.nextDouble()-0.5, rand.nextDouble()-0.5, 0);
+//    		e.world.spawnParticle(EnumParticleTypes.PORTAL, x+rand.nextDouble()*2-1, y+rand.nextDouble(), z+rand.nextDouble()*2-1, rand.nextDouble()-0.5, rand.nextDouble()-0.5, rand.nextDouble()-0.5, 0);
+//		}
+//	}
 
 	/**
 	 * Returns the volume for the sounds this mob makes.
@@ -197,7 +194,7 @@ public class EntityVampireBat extends EntityMob implements IMob
 
 		Entity target = getAttackTarget();
 
-		if (target == null || rand.nextInt(100) > 50)
+		if ( target == null || rand.nextInt(100) > 50 )
 		{
 			this.spawnPosition = nonAttackLocation();
 		}
@@ -220,16 +217,16 @@ public class EntityVampireBat extends EntityMob implements IMob
 
 	protected BlockPos nonAttackLocation()
 	{
-		if (nearbyBas == null || nearbyBas.isDead)
+		if ( nearbyBas == null || nearbyBas.isDead )
 		{
-			if (rand.nextInt(100) > 90)
+			if ( rand.nextInt(10) == 0 )
 			{
 				searchForBas();
 			}
 			return randomNearByPlace();
 		}
 
-		return new BlockPos((int) nearbyBas.posX + rand.nextInt(30) - 15, (int) nearbyBas.posY + rand.nextInt(8) + 2,
+		return new BlockPos((int) nearbyBas.posX + rand.nextInt(30) - 15, (int) nearbyBas.posY + rand.nextInt(8) + 4,
 				(int) nearbyBas.posZ + rand.nextInt(30) - 15);
 	}
 
@@ -240,11 +237,26 @@ public class EntityVampireBat extends EntityMob implements IMob
 
 	private void searchForBas()
 	{
-		List<EntityBas> list = world.getEntitiesWithinAABB(EntityBas.class, new AxisAlignedBB(getPosition()).grow(96, 64, 96));
+		List<EntityBas> list = world.getEntitiesWithinAABB(EntityBas.class, new AxisAlignedBB(getPosition()).grow(64, 32, 64));
 		if (list.size() < 1) {
 			return;
 		}
 		nearbyBas = list.get(rand.nextInt(list.size()));
+	}
+	
+    public void spawnSweepParticles()
+	{
+		double xx = this.posX + (double) (-MathHelper.sin(this.rotationYaw * 0.017453292F));
+		double yy = this.posY + 0.5D + (double) this.height * 0.5D;
+		double zz = this.posZ + (double) MathHelper.cos(this.rotationYaw * 0.017453292F);
+
+		if (this.world instanceof WorldServer)
+		{
+			for ( int i = 16; i > 0; i-- )
+			{
+				((WorldServer) this.world).spawnParticle(EnumParticleTypes.REDSTONE, xx+this.rand.nextGaussian()/6.0D, yy+this.rand.nextGaussian()/6.0D, zz+this.rand.nextGaussian()/6.0D, 0, 0, 0, 0, 0.02D, new int[0]);
+			}
+		}
 	}
 
 	/**

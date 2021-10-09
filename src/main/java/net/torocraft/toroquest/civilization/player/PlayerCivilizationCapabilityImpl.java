@@ -29,6 +29,7 @@ import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity;
 import net.torocraft.toroquest.civilization.quests.QuestCaptureFugitives;
 import net.torocraft.toroquest.civilization.quests.QuestCourier;
 import net.torocraft.toroquest.civilization.quests.QuestEnemyEncampment;
+import net.torocraft.toroquest.civilization.quests.QuestEnemyGolem;
 import net.torocraft.toroquest.civilization.quests.QuestEnemySpiderPit;
 import net.torocraft.toroquest.civilization.quests.QuestFarm;
 import net.torocraft.toroquest.civilization.quests.QuestGather;
@@ -56,55 +57,80 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 
 
 		// ============================================== POSSIBLE QUESTS TO GIVE ===============================================================
-		
+	Random rand = new Random();
+
 	private QuestData generateNextQuestFor(Province province)
 	{
 		QuestData q;
-		Random rand = new Random();
 		int rep = getReputation(province.civilization);
 		List<Quest> possibleQuests = new ArrayList<Quest>();
 		{
+			// TESTER CODE
+//			for ( int i = 0; i < 8; i++ )
+//			{
+//				possibleQuests.add(QuestKillBossBanditLord.INSTANCE);
+//				possibleQuests.add(QuestKillBossBastion.INSTANCE);
+//				possibleQuests.add(QuestKillBossGraveTitan.INSTANCE);
+//			}
+			
 			if ( rep >= 100 )
 			{
-				if ( rand.nextBoolean() )
+				if ( rep < 300 )
 				{
+					if ( rand.nextBoolean() )
+					{
 											possibleQuests.add(QuestFarm.INSTANCE);
+					}
 				}
 			}
-			else							possibleQuests.add(QuestFarm.INSTANCE);
-			if ( rep >= 25 )	   			possibleQuests.add(QuestMine.INSTANCE);
-			if ( rep >= 500 )
+			else				
 			{
-				if ( rand.nextBoolean() )
+											possibleQuests.add(QuestFarm.INSTANCE);
+			}
+			if ( rep >= 10 )
+			{
+											possibleQuests.add(QuestMine.INSTANCE);
+				if ( rep < 250 )
+				{
+					if ( rand.nextBoolean() )
+					{
+											possibleQuests.add(QuestRecruit.INSTANCE);
+					}
+				}
+				else
+				{
+											possibleQuests.add(QuestRecruit.INSTANCE);
+				}
+			}
+			if ( rep >= 50 )			   	possibleQuests.add(QuestKillMobs.INSTANCE);
+			if ( rep >= 100 )				possibleQuests.add(QuestBreed.INSTANCE);
+			if ( rep >= 150 )			   {if(!ToroQuestConfiguration.useDefaultVillagers)possibleQuests.add(QuestTradeWithVillagers.INSTANCE);possibleQuests.add(QuestKillMobs.INSTANCE);}
+			if ( rep >= 200 ) 				possibleQuests.add(QuestCaptureFugitives.INSTANCE);
+			if ( rep >= 250)
+			{
+											possibleQuests.add(QuestBuild.INSTANCE);
+											possibleQuests.add(QuestKillMobs.INSTANCE);
+				if ( rep <= 500 )
 				{
 											possibleQuests.add(QuestBuild.INSTANCE);
 				}
-			}
-			else if ( rep >= 50 )			possibleQuests.add(QuestBuild.INSTANCE);
-			if ( rep >= 75 )			   {possibleQuests.add(QuestKillMobs.INSTANCE);possibleQuests.add(QuestKillMobs.INSTANCE);}
-			if ( rep >= 125 )				possibleQuests.add(QuestBreed.INSTANCE);
-			if ( rep >= 150 )				possibleQuests.add(QuestTradeWithVillagers.INSTANCE);
-			if ( rep >= 200 ) 				possibleQuests.add(QuestCaptureFugitives.INSTANCE);
-			if ( rep >= 250) 			    possibleQuests.add(QuestRecruit.INSTANCE);
-			if ( rep >= 300)
-			{
-				if ( rand.nextBoolean() )   possibleQuests.add(QuestGather.INSTANCE);
-			}
-			if ( rep >= 350 )
-			{
-				if ( ToroQuestConfiguration.lostToroQuest && rand.nextBoolean() )
+				if ( rand.nextBoolean() )
 				{
 											possibleQuests.add(QuestCaptureEntity.INSTANCE);
 				}
+				else
+				{
+											possibleQuests.add(QuestGather.INSTANCE);
+				}
 			}
-			if ( rep >= 400 ) 				possibleQuests.add(QuestEnemyEncampment.INSTANCE);
-			if ( rep >= 450 )
+			if ( rep >= 300 ) 				possibleQuests.add(QuestEnemyEncampment.INSTANCE);
+			if ( rep >= 400 )
 			{
 				if ( rand.nextBoolean() )   possibleQuests.add(QuestCourier.INSTANCE);
 			}
 			if ( rep >= 500 )				possibleQuests.add(QuestEnemySpiderPit.INSTANCE);
 			// LEGENDARY QUESTS //
-			if ( rep >= 1000 )
+			if ( rep >= 1000 && rand.nextBoolean() )
 			{
 				CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(this.player.world);
 				if ( worldData != null )
@@ -125,22 +151,27 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 						possibleQuests.add(QuestKillBossZombiePig.INSTANCE);
 						flag = true;
 					}
-					if ( rep >= 1600 && !worldData.hasTrophySkeleton(province.id) && ToroQuestConfiguration.skeletonBoss )
+					if ( rep >= 1600 && !worldData.hasTrophyLord(province.id) && ToroQuestConfiguration.golemBoss )
+					{
+						possibleQuests.add(QuestEnemyGolem.INSTANCE);
+						flag = true;
+					}
+					if ( rep >= 1800 && !worldData.hasTrophySkeleton(province.id) && ToroQuestConfiguration.skeletonBoss )
 					{
 						possibleQuests.add(QuestKillBossBastion.INSTANCE);
 						flag = true;
 					}
-					if ( rep >= 1800 && !worldData.hasTrophyMage(province.id) && ToroQuestConfiguration.mageBoss )
+					if ( rep >= 2000 && !worldData.hasTrophyMage(province.id) && ToroQuestConfiguration.mageBoss )
 					{
 						possibleQuests.add(QuestKillBossArchmage.INSTANCE);
 						flag = true;
 					}
-					if ( rep >= 2000 && !worldData.hasTrophySpider(province.id) && ToroQuestConfiguration.spiderBoss )
+					if ( rep >= 2200 && !worldData.hasTrophySpider(province.id) && ToroQuestConfiguration.spiderBoss )
 					{
 						possibleQuests.add(QuestKillBossSpiderLord.INSTANCE);
 						flag = true;
 					}
-					if ( rep >= 2200 && !worldData.hasTrophyBeholder(province.id) && ToroQuestConfiguration.enderBoss )
+					if ( rep >= 2500 && !worldData.hasTrophyBeholder(province.id) && ToroQuestConfiguration.enderBoss )
 					{
 						possibleQuests.add(QuestKillBossMonolithEye.INSTANCE);
 						flag = true;
@@ -148,16 +179,17 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 					
 					if ( !flag )
 					{
-						if ( rep > 2200 ) rep = 2200;
+						if ( rep > 2500 ) rep = 2500;
 						switch ( rand.nextInt( 1 + (rep-1000)/200 ) )
 						{
 							case 0:{if(ToroQuestConfiguration.titanBoss)possibleQuests.add(QuestKillBossGraveTitan.INSTANCE);break;}
 							case 1:{if(ToroQuestConfiguration.banditBoss)possibleQuests.add(QuestKillBossBanditLord.INSTANCE);break;}
 							case 2:{if(ToroQuestConfiguration.pigBoss)possibleQuests.add(QuestKillBossZombiePig.INSTANCE);break;}
-							case 3:{if(ToroQuestConfiguration.skeletonBoss)possibleQuests.add(QuestKillBossBastion.INSTANCE);break;}
-							case 4:{if(ToroQuestConfiguration.mageBoss)possibleQuests.add(QuestKillBossArchmage.INSTANCE);break;}
-							case 5:{if(ToroQuestConfiguration.spiderBoss)possibleQuests.add(QuestKillBossSpiderLord.INSTANCE);break;}
-							case 6:{if(ToroQuestConfiguration.enderBoss)possibleQuests.add(QuestKillBossMonolithEye.INSTANCE);break;}
+							case 3:{if(ToroQuestConfiguration.golemBoss)possibleQuests.add(QuestEnemyGolem.INSTANCE);break;}
+							case 4:{if(ToroQuestConfiguration.skeletonBoss)possibleQuests.add(QuestKillBossBastion.INSTANCE);break;}
+							case 5:{if(ToroQuestConfiguration.mageBoss)possibleQuests.add(QuestKillBossArchmage.INSTANCE);break;}
+							case 6:{if(ToroQuestConfiguration.spiderBoss)possibleQuests.add(QuestKillBossSpiderLord.INSTANCE);break;}
+							case 7:{if(ToroQuestConfiguration.enderBoss)possibleQuests.add(QuestKillBossMonolithEye.INSTANCE);break;}
 						}
 					}
 				}

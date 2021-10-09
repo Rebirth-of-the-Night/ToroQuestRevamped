@@ -1,6 +1,9 @@
 package net.torocraft.toroquest.civilization;
 
 import net.minecraft.client.resources.I18n;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraftforge.server.command.TextComponentHelper;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
 
 public enum CivilizationType
 {
@@ -11,15 +14,19 @@ public enum CivilizationType
 		return "civilization." + this.toString().toLowerCase() + ".name";
 	}
 	
-	public String getCivName()
-	{
-		return this.toString().toLowerCase();
-	}
+//	public String getCivName()
+//	{
+//		return this.toString().toLowerCase();
+//	}
 
-	// @SideOnly(Side.CLIENT)
 	public String getLocalizedName()
 	{
 		return I18n.format(getUnlocalizedName(), new Object[0]);
+	}
+	
+	public String getDisplayName( EntityPlayer player )
+	{
+		return TextComponentHelper.createComponentTranslation(player, this.getUnlocalizedName(), new Object[0]).getFormattedText();//I18n.format(getUnlocalizedName());
 	}
 	
 	public static String biomeName(String s)
@@ -54,46 +61,43 @@ public enum CivilizationType
 		return "";
 	}
 	
-	public static String civServerName(String s)
+	public static String configHouseName(CivilizationType civ)
 	{
-		/*
-		civilization.earth.name=Wild
-		civilization.wind.name=Mithril
-		civilization.fire.name=Briar
-		civilization.moon.name=Moor
-		civilization.sun.name=Dawn
-		civilization.water.name=Glacier
-		*/
-		
-		switch ( s )
+		switch ( civ )
 		{
-			case "earth":
+			case EARTH:
 			{
-				return "Wild";
+				return ToroQuestConfiguration.greenName;
 			}
-			case "wind":
+			case WIND:
 			{
-				return "Mithril";
+				return ToroQuestConfiguration.brownName;
 			}
-			case "fire":
+			case FIRE:
 			{
-				return "Briar";
+				return ToroQuestConfiguration.redName;
 			}
-			case "water":
+			case WATER:
 			{
-				return "Glacier";
+				return ToroQuestConfiguration.blueName;
 			}
-			case "sun":
+			case SUN:
 			{
-				return "Dawn";
+				return ToroQuestConfiguration.yellowName;
 			}
-			case "moon":
+			case MOON:
 			{
-				return "Moor";
+				return ToroQuestConfiguration.blackName;
 			}
 		}
 		return "";
 	}
+	
+//	public static String civServerName(EntityPlayer player, String s)
+//	{
+//		return TextComponentHelper.createComponentTranslation(player, "civilization."+s.toLowerCase()+".name", new Object[0]).getFormattedText();
+//		// return I18n.format("civilization."+s.toLowerCase()+".name");
+//	}
 	
 	// @SideOnly(Side.CLIENT)
 	public String getFriendlyEnteringMessage(Province province) {

@@ -7,48 +7,30 @@ import java.util.UUID;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockDirt;
-import net.minecraft.block.BlockGravel;
+import net.minecraft.block.BlockGrass;
 import net.minecraft.block.BlockLog;
-import net.minecraft.block.BlockOre;
+import net.minecraft.block.BlockObsidian;
 import net.minecraft.block.BlockStone;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.init.SoundEvents;
-import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemTool;
-import net.minecraft.nbt.NBTTagString;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.BlockEvent.HarvestDropsEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
 
 public class QuestMine extends QuestBase implements Quest
 {
 	public static QuestMine INSTANCE;
-	
-	private static final Block[] BLOCK_TYPES =
-	{
-		Blocks.DIRT,
-		Blocks.STONE,
-		Blocks.GRAVEL,
-		Blocks.COAL_ORE,
-		Blocks.REDSTONE_ORE,
-		Blocks.LOG
-//		Blocks.STONE.getDefaultState().withProperty(BlockStone.VARIANT, BlockStone.EnumType.ANDESITE).getBlock(),
-//		Blocks.STONE.getDefaultState().withProperty(BlockStone.VARIANT, BlockStone.EnumType.DIORITE).getBlock(),
-//		Blocks.STONE.getDefaultState().withProperty(BlockStone.VARIANT, BlockStone.EnumType.GRANITE).getBlock()
-	};
-
 	public static int ID;
 
 	public static void init(int id)
@@ -59,157 +41,223 @@ public class QuestMine extends QuestBase implements Quest
 		ID = id;
 	}
 
-	@SubscribeEvent
-	public void onMine(HarvestDropsEvent event)
+//	@SubscribeEvent
+//	public void onMine(HarvestDropsEvent event)
+//	{
+//		EntityPlayer player = event.getHarvester();
+//		
+//		if ( player == null )
+//		{
+//			return;
+//		}
+//		
+////		ItemStack tool = player.getItemStackFromSlot(EntityEquipmentSlot.MAINHAND);
+////
+////		if ( tool == null )
+////		{
+////			return;
+////		}
+////		
+////		if (!tool.hasTagCompound())
+////		{
+////			return;
+////		}
+////
+////		if ( !tool.getTagCompound().hasKey("mine_quest") )
+////		{
+////			return;
+////		}
+////		String questId = tool.getTagCompound().getString("mine_quest");
+////		if ( !tool.getTagCompound().hasKey("provinceID") )
+////		{
+////			return;
+////		}
+////		String provinceId = tool.getTagCompound().getString("provinceID");
+////		if ( !tool.getTagCompound().hasKey("provinceName") )
+////		{
+////			return;
+////		}
+////		String provinceName = tool.getTagCompound().getString("provinceName");
+////
+////		if ( questId == null || provinceId == null || provinceName == null ) // || !provinceId.equals(inProvince.id.toString()))
+////		{
+////			return;
+////		}
+//
+//		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
+//
+//		DataWrapper quest = new DataWrapper();
+//		
+//		System.out.println("mine");
+//
+//		for (QuestData data : quests)
+//		{
+//			System.out.println("quest");
+//
+//			try
+//			{
+//				DataWrapper q = new DataWrapper().setData(data);
+//				
+//				int bt = q.getBlockType();
+//				
+//				System.out.println(bt);
+//				
+//				for ( ItemStack drop : event.getDrops() )
+//				{
+//					System.out.println(drop);
+//					if ( this.isCorrectBlock(drop.getItem(), bt) )
+//					{
+//						System.out.println("!!!");
+//
+//						this.perform(quest, drop.getCount());
+//					}
+//				}
+//			}
+//			catch (Exception e)
+//			{
+//				
+//			}
+//		}
+		
+		
+//		Block eventBlock = event.getState().getBlock();
+//		Block allowedBlock = BLOCK_TYPES[q.getBlockType()];
+//		
+//		if ( allowedBlock == null || eventBlock == null )
+//		{
+//			return;
+//		}
+//		
+//		for ( ItemStack itemstack: event.getDrops() )
+//		{
+//			String blockName = "blocks";
+//					
+//			if ( allowedBlock == Blocks.STONE )
+//			{
+//				if ( eventBlock instanceof BlockStone )
+//				{
+//					blockName = "Stone";
+//					itemstack.setCount(1);
+//					// itemstack = new ItemStack(Blocks.STONE, 1);
+//				}
+//				else return;
+//			}
+//			else if ( allowedBlock == Blocks.LOG )
+//			{
+//				if ( eventBlock instanceof BlockLog )
+//				{
+//					blockName = "Logs";
+//					itemstack.setCount(1);
+//					// itemstack = new ItemStack(Blocks.LOG, 1);
+//				}
+//				else return;
+//			}
+//			else if ( allowedBlock == Blocks.REDSTONE_ORE )
+//			{
+//				if ( eventBlock == Blocks.REDSTONE_ORE || itemstack.getItem() == Items.REDSTONE )
+//				{
+//					blockName = "Redstone";
+//					itemstack = new ItemStack(Items.REDSTONE, rand.nextInt(2)+4);
+//				}
+//				else return;
+//			}
+//			else if ( allowedBlock == Blocks.COAL_ORE )
+//			{
+//				if ( eventBlock == Blocks.COAL_ORE || itemstack.getItem() == Items.COAL )
+//				{
+//					blockName = "Coal";
+//					itemstack = new ItemStack(Items.COAL, 1);
+//				}
+//				else return;
+//			}
+//			else if ( allowedBlock == Blocks.GRAVEL )
+//			{
+//				if ( eventBlock instanceof BlockGravel || itemstack.getItem() == Items.FLINT )
+//				{
+//					blockName = "Flint";
+//					itemstack = new ItemStack(Items.FLINT, 1);
+//				}
+//				else return;
+//			}
+//			else if ( allowedBlock == Blocks.DIRT )
+//			{
+//				if ( eventBlock instanceof BlockDirt )
+//				{
+//					blockName = "Dirt";
+//					itemstack.setCount(1);
+//				}
+//				else return;
+//			}
+//			else
+//			{
+//				return;
+//			}
+//			
+//			event.setDropChance(0.0F);
+//			
+//			itemstack.setTagInfo("mine_quest", new NBTTagString(questId));
+//			itemstack.setTagInfo("provinceID", new NBTTagString(provinceId));
+//			itemstack.setTagInfo("provinceName", new NBTTagString(provinceName));
+//			itemstack.setStackDisplayName(blockName + " for " + provinceName);
+//			try{itemstack.addEnchantment(null, 0);}catch(Exception e){}
+//			
+//			if ( player.addItemStackToInventory(itemstack) )
+//			{
+//				player.playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1.0F, 1.0F);
+//			}
+//			
+//			else
+//			{
+//				EntityItem item = new EntityItem(event.getWorld(), event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), itemstack.copy() );
+//		    	item.setNoPickupDelay();
+//		    	event.getWorld().spawnEntity(item);
+//		    }
+			
+//			String blockName = "blocks";
+//
+//			q.setCurrentAmount( q.getCurrentAmount() + 1 );
+//			if ( q.getCurrentAmount() == q.getTargetAmount() )
+//			{
+//				data.setCompleted(true);
+//				if ( !player.world.isRemote )
+//				{
+//					player.sendStatusMessage( new TextComponentString( I18n.format("quest.quest_complete_message") ), ToroQuestConfiguration.showQuestCompletionAboveActionBar );
+//				}
+//				player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.1F, 1.1F);
+//			}
+//			player.sendStatusMessage( new TextComponentString( q.getCurrentAmount() + "/" + q.getTargetAmount() + " " + blockName ), true);
+//			
+//	    	return;
+//	}
+
+	public boolean perform(QuestData quest, int count)
 	{
-		EntityPlayer player = event.getHarvester();
-		
-		if ( player == null )
-		{
-			return;
-		}
 
-		ItemStack tool = player.getItemStackFromSlot(EntityEquipmentSlot.MAINHAND);
-
-		if ( tool == null )
+		if (quest.getPlayer().world.isRemote)
 		{
-			return;
+			return false;
 		}
 		
-		if (!tool.hasTagCompound())
+		if ( !(quest.getQuestType() == ID) )
 		{
-			return;
-		}
-
-		if ( !tool.getTagCompound().hasKey("mine_quest") )
-		{
-			return;
-		}
-		String questId = tool.getTagCompound().getString("mine_quest");
-		if ( !tool.getTagCompound().hasKey("provinceID") )
-		{
-			return;
-		}
-		String provinceId = tool.getTagCompound().getString("provinceID");
-		if ( !tool.getTagCompound().hasKey("provinceName") )
-		{
-			return;
-		}
-		String provinceName = tool.getTagCompound().getString("provinceName");
-
-		if ( questId == null || provinceId == null || provinceName == null ) // || !provinceId.equals(inProvince.id.toString()))
-		{
-			return;
-		}
-
-		QuestData data = getQuestById(player, questId);
-
-		if ( data == null )
-		{
-			return;
+			return false;
 		}
 		
-		DataWrapper q = new DataWrapper().setData(data);
-		
-		Block eventBlock = event.getState().getBlock();
-		Block allowedBlock = BLOCK_TYPES[q.getBlockType()];
-		
-		if ( allowedBlock == null || eventBlock == null )
-		{
-			return;
-		}
-		
-		for ( ItemStack itemstack: event.getDrops() )
-		{
-			String blockName = "blocks";
-					
-			if ( allowedBlock == Blocks.STONE )
-			{
-				if ( eventBlock instanceof BlockStone )
-				{
-					blockName = "Stone";
-					itemstack.setCount(1);
-					// itemstack = new ItemStack(Blocks.STONE, 1);
-				}
-				else return;
-			}
-			else if ( allowedBlock == Blocks.LOG )
-			{
-				if ( eventBlock instanceof BlockLog )
-				{
-					blockName = "Logs";
-					itemstack.setCount(1);
-					// itemstack = new ItemStack(Blocks.LOG, 1);
-				}
-				else return;
-			}
-			else if ( allowedBlock == Blocks.REDSTONE_ORE )
-			{
-				if ( eventBlock == Blocks.REDSTONE_ORE || itemstack.getItem() == Items.REDSTONE )
-				{
-					blockName = "Redstone";
-					itemstack = new ItemStack(Items.REDSTONE, rand.nextInt(2)+4);
-				}
-				else return;
-			}
-			else if ( allowedBlock == Blocks.COAL_ORE )
-			{
-				if ( eventBlock == Blocks.COAL_ORE || itemstack.getItem() == Items.COAL )
-				{
-					blockName = "Coal";
-					itemstack = new ItemStack(Items.COAL, 1);
-				}
-				else return;
-			}
-			else if ( allowedBlock == Blocks.GRAVEL )
-			{
-				if ( eventBlock instanceof BlockGravel || itemstack.getItem() == Items.FLINT )
-				{
-					blockName = "Flint";
-					itemstack = new ItemStack(Items.FLINT, 1);
-				}
-				else return;
-			}
-			else if ( allowedBlock == Blocks.DIRT )
-			{
-				if ( eventBlock instanceof BlockDirt )
-				{
-					blockName = "Dirt";
-					itemstack.setCount(1);
-				}
-				else return;
-			}
-			else
-			{
-				return;
-			}
-			
-			event.setDropChance(0.0F);
-			
-			itemstack.setTagInfo("mine_quest", new NBTTagString(questId));
-			itemstack.setTagInfo("provinceID", new NBTTagString(provinceId));
-			itemstack.setTagInfo("provinceName", new NBTTagString(provinceName));
-			itemstack.setStackDisplayName(blockName + " for " + provinceName);
-			
-			if ( player.addItemStackToInventory(itemstack) )
-			{
-				player.playSound(SoundEvents.ENTITY_ITEM_PICKUP, 1.0F, 1.0F);
-			}
-			else
-			{
-				EntityItem item = new EntityItem(event.getWorld(), event.getPos().getX(), event.getPos().getY(), event.getPos().getZ(), itemstack.copy() );
-		    	item.setNoPickupDelay();
-		    	event.getWorld().spawnEntity(item);
-		    }
-			
-			q.setCurrentAmount( q.getCurrentAmount() + 1 );
-			player.sendStatusMessage( new TextComponentString( q.getCurrentAmount() + "/" + q.getTargetAmount() + " " + blockName ), true);
-			
-	    	return;
-		}
+		quest.getiData().put("amount", quest.getiData().get("amount")+count);
+
+		quest.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getiData().get("amount"), 0, quest.getiData().get("target"))+"/"+quest.getiData().get("target")), true);
+//
+//		if ( !quest.data.getCompleted() && quest.getCurrentAmount() >= quest.getTargetAmount() )
+//		{
+//			if ( !quest.data.getPlayer().world.isRemote )
+//			{
+//				quest.data.getPlayer().sendStatusMessage( new TextComponentString( I18n.format("quest.quest_complete_message") ), ToroQuestConfiguration.showQuestCompletionAboveActionBar );
+//			}
+//			quest.data.getPlayer().world.playSound((EntityPlayer)null, quest.data.getPlayer().posX, quest.data.getPlayer().posY, quest.data.getPlayer().posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.1F, 1.1F);
+//		}
+
+		return true;
 	}
-
-
 
 
 
@@ -357,6 +405,12 @@ public class QuestMine extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
+
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		{
+			return null;
+		}
 		
 		if ( in == null || data == null )
 		{
@@ -365,226 +419,458 @@ public class QuestMine extends QuestBase implements Quest
 		
 		List<ItemStack> givenItems = copyItems(in);
 		DataWrapper q = new DataWrapper().setData(data);
-		int requiredLeft = q.getTargetAmount();
-		boolean toolIncluded = false;
+		
+		int target = q.getTargetAmount();
+		int total = 0;
 
 		for (ItemStack item : givenItems)
 		{
-			if (isForThisQuest(q.data, item))
+			if ( this.isCorrectBlock(data.getPlayer(), item.getItem(), q.getBlockType()) )
 			{
-				if (item.getItem() instanceof ItemTool)
-				{
-					toolIncluded = true;
-					item.setCount(0);
-				}
-				else
-				{
-					requiredLeft -= item.getCount();
-					item.setCount(0);
-				}
+				total += item.getCount();
+				item.setCount(MathHelper.clamp(total-target, 0, item.getCount()));
 			}
 		}
-
-		if ( requiredLeft > 0 )
+		
+		if ( total < target )
 		{
 			if ( data.getChatStack().equals("") )
 			{
-				Block block = BLOCK_TYPES[q.getBlockType()];
-				
-				if ( block == Blocks.STONE || block == Blocks.LOG )
+				int requiredLeft = target - total;
+
+				switch ( q.getBlockType() )
 				{
-					data.setChatStack( "My builders need " + requiredLeft + " more of the resource requested.");
-				}
-				else if ( block == Blocks.REDSTONE_ORE )
-				{
-					data.setChatStack( "My engineers need " + requiredLeft + " more of the resource requested.");
-				}
-				else if ( block == Blocks.COAL_ORE )
-				{
-					data.setChatStack( "My blacksmiths need " + requiredLeft + " more of the resource requested.");
-				}
-				else if ( block == Blocks.GRAVEL )
-				{
-					data.setChatStack( "My guards need " + requiredLeft + " more of the resource requested.");
-				}
-				else if ( block == Blocks.DIRT )
-				{
-					data.setChatStack( "My farmers need " + requiredLeft + " more of the resource requested.");
+					case 0:
+					{
+						data.setChatStack( "mine.logresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 1:
+					{
+						data.setChatStack( "mine.dirtresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 2:
+					{
+						data.setChatStack( "mine.stoneresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 3:
+					{
+						data.setChatStack( "mine.coalresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 4:
+					{
+						data.setChatStack( "mine.redstoneresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 5:
+					{
+						data.setChatStack( "mine.obsidianresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 6:
+					{
+						data.setChatStack( "mine.glowstoneresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 7:
+					{
+						data.setChatStack( "mine.lapisresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 8:
+					{
+						data.setChatStack( "mine.diamondresource.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
 				}
 				
 			}
 			this.setData(data);
 			return null;
 		}
-
-		int emeraldRemainingCount = 5;
-
-		if (!toolIncluded)
+		
+		if ( q.getCurrentAmount() < q.getTargetAmount() )
 		{
-			for (ItemStack item : givenItems)
+			if ( data.getChatStack().equals("") )
 			{
-				if (!item.isEmpty() && item.getItem() == Items.EMERALD)
+				int requiredLeft = q.getTargetAmount() - q.getCurrentAmount();
+
+				switch ( q.getBlockType() )
 				{
-					int decBy = Math.min(item.getCount(), emeraldRemainingCount);
-					emeraldRemainingCount -= decBy;
-					item.shrink(decBy);
+					case 0:
+					{
+						data.setChatStack( "mine.loggathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 1:
+					{
+						data.setChatStack( "mine.dirtgathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 2:
+					{
+						data.setChatStack( "mine.stonegathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 3:
+					{
+						data.setChatStack( "mine.coalgathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 4:
+					{
+						data.setChatStack( "mine.redstonegathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 5:
+					{
+						data.setChatStack( "mine.obsidiangathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 6:
+					{
+						data.setChatStack( "mine.glowstonegathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 7:
+					{
+						data.setChatStack( "mine.lapisgathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
+					case 8:
+					{
+						data.setChatStack( "mine.diamondgathered.incomplete", data.getPlayer(), ""+requiredLeft);
+						break;
+					}
 				}
 			}
-		}
-
-		if ( !toolIncluded && emeraldRemainingCount > 0 )
-		{
-			data.setChatStack( "Could you also return the tool I gave you? Or 5 emeralds to pay for it." );
 			this.setData(data);
 			return null;
 		}
+		
+		//boolean toolIncluded = false;
+
+//		for (ItemStack item : givenItems)
+//		{
+//				if (item.getItem() instanceof ItemTool)
+//				{
+//					item.setCount(0);
+//				}
+//		}
+
+//		if ( requiredLeft > 0 )
+//		{
+//			if ( data.getChatStack().equals("") )
+//			{
+//				Block block = BLOCK_TYPES[q.getBlockType()];
+//				
+//				if ( block == Blocks.STONE || block == Blocks.LOG )
+//				{
+//					data.setChatStack( "mine.stone.incomplete", data.getPlayer(), ""+requiredLeft);
+//				}
+//				else if ( block == Blocks.REDSTONE_ORE )
+//				{
+//					data.setChatStack( "mine.redstone.incomplete", data.getPlayer(), ""+requiredLeft);
+//				}
+//				else if ( block == Blocks.COAL_ORE )
+//				{
+//					data.setChatStack( "mine.coal.incomplete", data.getPlayer(), ""+requiredLeft);
+//				}
+//				else if ( block == Blocks.GRAVEL )
+//				{
+//					data.setChatStack( "mine.gravel.incomplete", data.getPlayer(), ""+requiredLeft);
+//				}
+//				else if ( block == Blocks.DIRT )
+//				{
+//					data.setChatStack( "mine.dirt.incomplete", data.getPlayer(), ""+requiredLeft);
+//				}
+//				
+//			}
+//			this.setData(data);
+//			return null;
+//		}
+
+		//int emeraldRemainingCount = 5;
+
+//		if (!toolIncluded)
+//		{
+//			for (ItemStack item : givenItems)
+//			{
+//				if (!item.isEmpty() && item.getItem() == Items.EMERALD)
+//				{
+//					int decBy = Math.min(item.getCount(), emeraldRemainingCount);
+//					emeraldRemainingCount -= decBy;
+//					item.shrink(decBy);
+//				}
+//			}
+//		}
+//
+//		if ( !toolIncluded && emeraldRemainingCount > 0 )
+//		{
+//			data.setChatStack( "completereturnitem", data.getPlayer(), null );
+//			this.setData(data);
+//			return null;
+//		}
 
 		givenItems = removeEmptyItemStacks(givenItems);
+		
 		addRewardItems(data, givenItems);
 		
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+		
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
 
-		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+
+		data.setChatStack( "mine.complete", data.getPlayer(), null );
 		data.setCompleted(true);
 		this.setData(data);
 		return givenItems;
 	}
+	
+//	protected boolean isForThisQuest(QuestData data, ItemStack item)
+//	{
+//		if (item.isEmpty())
+//		{
+//			return false;
+//		}
+//		
+//		switch ( data.getiData().get("block_type") )
+//		{
+//			case 0: // DIRT
+//			{
+//				return item.getItem() == Item.getItemFromBlock(Blocks.DIRT);
+//			}
+//			case 1: // STONE
+//			{
+//				return item.getItem() == Item.getItemFromBlock(Blocks.COBBLESTONE);
+//			}
+//			case 2: // GRAVEL
+//			{
+//				return item.getItem() == Item.getItemFromBlock(Blocks.GRAVEL);
+//			}
+//			case 3: // COAL
+//			{
+//				return item.getItem() == Items.COAL;
+//			}
+//			case 4: // REDSTONE
+//			{
+//				return item.getItem() == Items.REDSTONE;
+//			}
+//			case 5: // LOG
+//			{
+//				return item.getItem() == Item.getItemFromBlock(Blocks.LOG);
+//			}
+//		}
+//		return true;
+//	}
 
-	protected boolean isForThisQuest(QuestData data, ItemStack item)
-	{
-		if (!item.hasTagCompound() || item.isEmpty())
-		{
-			return false;
-		}
-		String wasMinedForQuestId = item.getTagCompound().getString("mine_quest");
-		return data.getQuestId().toString().equals(wasMinedForQuestId);
-	}
+//	protected boolean isForThisQuest(QuestData data, ItemStack item)
+//	{
+//		if (!item.hasTagCompound() || item.isEmpty())
+//		{
+//			return false;
+//		}
+//		String wasMinedForQuestId = item.getTagCompound().getString("mine_quest");
+//		return data.getQuestId().toString().equals(wasMinedForQuestId);
+//	}
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
+		
 		if (in == null)
 		{
-			data.setChatStack( "Return the tool I gave you, or 5 emeralds to pay for it." );
+			data.setChatStack( "mine.reject", data.getPlayer(), null );
+
+			// data.setChatStack( "rejectreturnitem", data.getPlayer(), null );
 			this.setData(data);
-			data.getPlayer().closeScreen();
+			//data.getPlayer().closeScreen();
 			return null;
 		}
 
-		List<ItemStack> givenItems = copyItems(in);
-
-		boolean toolIncluded = false;
-		int emeraldRemainingCount = 5;
-
-		for (ItemStack item : givenItems)
-		{
-			if (isForThisQuest(data, item))
-			{
-				if (item.getItem() instanceof ItemTool)
-				{
-					toolIncluded = true;
-					item.setCount(0);
-				}
-			}
-		}
-
-		if ( !toolIncluded )
-		{
-			for (ItemStack item : givenItems)
-			{
-				if (!item.isEmpty() && item.getItem() == Items.EMERALD && item.getCount() >= 5)
-				{
-					int decBy = Math.min(item.getCount(), emeraldRemainingCount);
-					emeraldRemainingCount -= decBy;
-					item.shrink(decBy);
-				}
-			}
-		}
-
-		if ( !toolIncluded && emeraldRemainingCount > 0 )
-		{
-			data.setChatStack( "Return the tool I gave you, or 5 emeralds to pay for it." );
-			this.setData(data);
-			data.getPlayer().closeScreen();
-			return null;
-		}
+//		List<ItemStack> givenItems = copyItems(in);
+//
+//		for (ItemStack item : givenItems)
+//		{
+//			if (isForThisQuest(data, item))
+//			{
+//				//q.setBlockType(blockType);
+//				//q.setTargetAmount((int)roll);
+//				item.setCount(0);
+//			}
+//		}
 		
-		data.setChatStack( "You have brought me back nothing but dissapointment!" );
+//		List<ItemStack> givenItems = copyItems(in);
+//
+//		boolean toolIncluded = false;
+//		int emeraldRemainingCount = 5;
+//
+//		for (ItemStack item : givenItems)
+//		{
+//			if (isForThisQuest(data, item))
+//			{
+//				if (item.getItem() instanceof ItemTool)
+//				{
+//					toolIncluded = true;
+//					item.setCount(0);
+//				}
+//			}
+//		}
+//
+//		if ( !toolIncluded )
+//		{
+//			for (ItemStack item : givenItems)
+//			{
+//				if (!item.isEmpty() && item.getItem() == Items.EMERALD && item.getCount() >= 5)
+//				{
+//					int decBy = Math.min(item.getCount(), emeraldRemainingCount);
+//					emeraldRemainingCount -= decBy;
+//					item.shrink(decBy);
+//				}
+//			}
+//		}
+//
+//		if ( !toolIncluded && emeraldRemainingCount > 0 )
+//		{
+//			data.setChatStack( "rejectreturnitem", data.getPlayer(), null );
+//			this.setData(data);
+//			//data.getPlayer().closeScreen();
+//			return null;
+//		}
+		
+		data.setChatStack( "mine.reject", data.getPlayer(), null );
 		this.setData(data);
 		data.getPlayer().closeScreen();
-		return givenItems;
+		return in;
 	}
 
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		try
-		{
-			DataWrapper q = new DataWrapper().setData(data);
-			Block type = BLOCK_TYPES[q.getBlockType()];
+//			DataWrapper q = new DataWrapper().setData(data);
 			
-			Province province = getQuestProvince(q.data);
+//			Province province = getQuestProvince(q.data);
 			
-			if ( type == null || province == null )
-			{
-				return null;
-			}
+//			if ( type == null || province == null )
+//			{
+//				return null;
+//			}
+//	
+//			// ItemStack tool;
+//	
+//			if ( type == Blocks.GRAVEL )
+//			{
+//				//tool = new ItemStack(Items.IRON_SHOVEL);
+//				{
+//					data.setChatStack( "mine.gravel.accept", data.getPlayer(), null );
+//				}
+//			}
+//			else if ( type == Blocks.DIRT )
+//			{
+//				//tool = new ItemStack(Items.IRON_SHOVEL);
+//				{
+//					data.setChatStack( "mine.dirt.accept", data.getPlayer(), null );
+//				}
+//			}
+//			else if ( type == Blocks.LOG )
+//			{
+//				//tool = new ItemStack(Items.IRON_AXE);
+//				{
+//					data.setChatStack( "mine.wood.accept", data.getPlayer(), null );
+//				}
+//			}
+//			else
+//			{
+//				//tool = new ItemStack(Items.IRON_PICKAXE);
+//				
+//				if ( type == Blocks.REDSTONE_ORE )
+//				{
+//					data.setChatStack( "mine.redstone.accept", data.getPlayer(), null );
+//				}
+//				else if ( type == Blocks.COAL_ORE )
+//				{					
+//					data.setChatStack( "mine.coal.accept", data.getPlayer(), null );
+//
+//				}
+//				else if ( type == Blocks.STONE )
+//				{					
+//					data.setChatStack( "mine.stone.accept", data.getPlayer(), null );
+//				}
+//			}
 	
-			ItemStack tool;
+//			tool.setStackDisplayName(tool.getDisplayName() + " of " + province.name.toString() );
+//			tool.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:unbreaking"), 1);
+//			tool.setTagInfo("mine_quest", new NBTTagString(q.data.getQuestId().toString()));
+//			tool.setTagInfo("provinceID", new NBTTagString(province.id.toString()));
+//			tool.setTagInfo("provinceName", new NBTTagString(province.name.toString()));
 	
-			if ( type == Blocks.GRAVEL )
-			{
-				tool = new ItemStack(Items.IRON_SHOVEL);
-				{
-					data.setChatStack( "My guards are firing through their arrows faster than a skeleton archer. Gather some flint to use as arrowheads and I will reward you." );
-				}
-			}
-			else if ( type == Blocks.DIRT )
-			{
-				tool = new ItemStack(Items.IRON_SHOVEL);
-				{
-					data.setChatStack( "My farmers need fertile soil for their crops. Gather some fresh dirt and return the supplies to me." );
-				}
-			}
-			else if ( type == Blocks.LOG )
-			{
-				tool = new ItemStack(Items.IRON_AXE);
-				{
-					data.setChatStack( "My builders need wood to repair several houses after the last storm. Take to the forest and bring back the supplies." );
-				}
-			}
-			else
-			{
-				tool = new ItemStack(Items.IRON_PICKAXE);
-				
-				if ( type == Blocks.REDSTONE_ORE )
-				{
-					data.setChatStack( "My engineers need redstone for their latest invention. If you could do them a favor and mine some, I will certainly reward you." );
-				}
-				else if ( type == Blocks.COAL_ORE )
-				{
-					data.setChatStack( "The blacksmiths are low on coal for their furnaces. I'll need you to mine some and return the supplies." );
-				}
-				else if ( type == Blocks.STONE )
-				{
-					data.setChatStack( "My builders need cobblestone to repair several houses after the last storm. Take to the mines and bring back the supplies." );
-				}
-			}
-	
-			tool.setStackDisplayName(tool.getDisplayName() + " of " + province.name.toString() );
-			tool.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:unbreaking"), 1);
-			tool.setTagInfo("mine_quest", new NBTTagString(q.data.getQuestId().toString()));
-			tool.setTagInfo("provinceID", new NBTTagString(province.id.toString()));
-			tool.setTagInfo("provinceName", new NBTTagString(province.name.toString()));
-	
-			in.add(tool);
-			this.setData(data);
-			return in;
-		}
-		catch ( Exception e )
+//			in.add(tool);
+		
+		switch ( data.getiData().get("block_type") )
 		{
-			return null;
+			case 0: // LOG
+			{
+				data.setChatStack( "mine.log.accept", data.getPlayer(), null );
+				break;
+			}
+			case 1: // DIRT
+			{
+				data.setChatStack( "mine.dirt.accept", data.getPlayer(), null );
+				break;
+			}
+			case 2: // STONE
+			{
+				data.setChatStack( "mine.stone.accept", data.getPlayer(), null );
+				break;
+			}
+			case 3: // COAL
+			{
+				data.setChatStack( "mine.coal.accept", data.getPlayer(), null );
+				break;
+			}
+			case 4: // REDSTONE
+			{
+				data.setChatStack( "mine.redstone.accept", data.getPlayer(), null );
+				break;
+			}
+			case 5: // OBSIDIAN
+			{
+				data.setChatStack( "mine.obsidian.accept", data.getPlayer(), null );
+				break;
+			}
+			case 6: // GLOWSTONE
+			{
+				data.setChatStack( "mine.glowstone.accept", data.getPlayer(), null );
+				break;
+			}
+			case 7: // LAPIS
+			{
+				data.setChatStack( "mine.lapis.accept", data.getPlayer(), null );
+				break;
+			}
+			case 8: // DIAMOND
+			{
+				data.setChatStack( "mine.diamond.accept", data.getPlayer(), null );
+				break;
+			}
 		}
+		this.setData(data);
+		return in;
 	}
 
 	@Override
@@ -597,18 +883,16 @@ public class QuestMine extends QuestBase implements Quest
 		DataWrapper q = new DataWrapper().setData(data);
 		int type = q.getBlockType();
 
-		if ( type == 0 || type == 2 )
-		{
-			return "quests.dig.title";
-		}
-		else if ( type == 5 )
+
+		if ( type == 0 )
 		{
 			return "quests.chop.title";
 		}
-		else
+		if ( type == 1 )
 		{
-			return "quests.mine.title";
+			return "quests.dig.title";
 		}
+		return "quests.mine.title";
 	}
 
 	@Override
@@ -619,45 +903,69 @@ public class QuestMine extends QuestBase implements Quest
 			return "";
 		}
 		
-		// BLOCK_TYPES[getBlockType(data)].getLocalizedName();
 		DataWrapper q = new DataWrapper().setData(data);
-		Block block = BLOCK_TYPES[q.getBlockType()];
+		int block = q.getBlockType();
+
 		String resource = "";
 		
-		if ( block == Blocks.STONE )
+		switch ( block )
 		{
-			resource = "Stone";
+			case 0: // LOG
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.log.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 1: // DIRT
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.dirt.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 2: // STONE
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.stone.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 3: // COAL
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.coal.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 4: // REDSTONE
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.redstone.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 5: // OBSIDIAN
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.obsidian.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 6: // GLOWSTONE
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.glowstone.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 7: // LAPIS
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.lapis.itemname", new Object[0]).getFormattedText();
+				break;
+			}
+			case 8: // DIAMOND
+			{
+				resource = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.diamond.itemname", new Object[0]).getFormattedText();
+				break;
+			}
 		}
-		else if ( block == Blocks.REDSTONE_ORE )
-		{
-			resource = "Redstone";
-		}
-		else if ( block == Blocks.COAL_ORE )
-		{
-			Block m = new BlockOre();
-			resource = "Coal";
-		}
-		else if ( block == Blocks.GRAVEL )
-		{
-			resource = "Flint";
-		}
-		else if ( block == Blocks.DIRT )
-		{
-			resource = "Dirt";
-		}
-		else
-		{
-			resource = "Logs";
-		}
+		
 		StringBuilder s = new StringBuilder();
-		int type = q.getBlockType();
-		if ( type == 0 || type == 2 )
-		{
-			s.append("quests.dig.description");
-		}
-		else if ( type == 5 )
+				
+		if ( block == 0 )
 		{
 			s.append("quests.chop.description");
+		}
+		else if ( block == 1 )
+		{
+			s.append("quests.dig.description");
 		}
 		else
 		{
@@ -670,6 +978,76 @@ public class QuestMine extends QuestBase implements Quest
 		s.append("|").append(getRewardRep(q.data));
 		return s.toString();
 	}
+	
+	// ========================================================================================
+	// ========================================================================================
+
+	public boolean isCorrectBlock(EntityPlayer player, Item item, int i)
+	{
+		switch ( i )
+		{
+			case 0: // LOG
+			{
+				Block b = Block.getBlockFromItem(item);
+				return ( b instanceof BlockLog );
+			}
+			case 1: // DIRT
+			{
+				Block b = Block.getBlockFromItem(item);
+				return ( b instanceof BlockDirt || b instanceof BlockGrass );
+			}
+			case 2: // STONE
+			{
+				Block b = Block.getBlockFromItem(item);
+				return ( b instanceof BlockStone );
+			}
+			case 3: // COAL
+			{
+				return item == Items.COAL;
+			}
+			case 4: // REDSTONE
+			{
+				if ( player.posY > 60 )
+				{
+					return false;
+				}
+				return item == Items.REDSTONE;
+			}
+			case 5: // OBSIDIAN
+			{
+				Block b = Block.getBlockFromItem(item);
+				return ( b instanceof BlockObsidian ); // || b instanceof BlockMushroom );
+			}
+			case 6: // GLOWSTONE
+			{
+				if ( player.world.getWorldType().getId() == 0 )
+				{
+					return false;
+				}
+				return item == Items.GLOWSTONE_DUST;
+			}
+			case 7: // LAPIS
+			{
+				if ( player.posY > 60 )
+				{
+					return false;
+				}
+				return item == Item.getByNameOrId("minecraft:dye:4");
+			}
+			case 8: // DIAMOND
+			{
+				if ( player.posY > 60 )
+				{
+					return false;
+				}
+				return item == Items.DIAMOND;
+			}
+		}
+		return false;
+	}
+	
+	// ========================================================================================
+	// ========================================================================================
 
 	@Override
 	public QuestData generateQuestFor(EntityPlayer player, Province questProvince)
@@ -687,57 +1065,97 @@ public class QuestMine extends QuestBase implements Quest
 		
 //		Blocks.DIRT,
 //		Blocks.STONE,
-//		Blocks.GRAVEL,
 //		Blocks.COAL_ORE,
 //		Blocks.REDSTONE_ORE
+//		OBSIDIAN
+//		GLOW
 		
-		int blockType = rand.nextInt(6);
+		int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(questProvince.civilization);
+		
+		int blockType = rand.nextInt(4);
+
+		if ( rep >= 750 )
+		{
+			blockType = rand.nextInt(9);
+		}
+		else if ( rep >= 500 )
+		{
+			blockType = rand.nextInt(7);
+		}
+		else if ( rep >= 250 )
+		{
+			blockType = rand.nextInt(5);
+		}
+		
+		if ( ToroQuestConfiguration.disableTreeChoppingQuest && blockType == 0 )
+		{
+			blockType = rand.nextInt(3)+1;
+		}
+		
 		q.setBlockType(blockType);
-		
+				
 		double roll = 0;
 		int em = 0;
 		
-		switch ( q.getBlockType() )
+		switch ( blockType )
 		{
-			case 0: // DIRT
+			case 0: // LOG
 			{
-				roll = (rand.nextInt(4)+3)*32;
-				em = (int)Math.round(roll/16)+2;
+				roll = (rand.nextInt(5)+2)*32;
+				em = (int)Math.round(roll/8)+4;
 				break;
 			}
-			case 1: // STONE
+			case 1: // DIRT
 			{
 				roll = (rand.nextInt(4)+3)*32;
-				em = (int)Math.round(roll/16)+2;
+				em = (int)Math.round(roll/16)+4;
 				break;
 			}
-			case 2: // GRAVEL
+			case 2: // STONE
 			{
-				roll = (rand.nextInt(3)+2)*8;
-				em = (int)Math.round(roll/4)+2;
+				roll = (rand.nextInt(4)+3)*32;
+				em = (int)Math.round(roll/16)+4;
 				break;
 			}
 			case 3: // COAL
 			{
 				roll = (rand.nextInt(3)+2)*8;
-				em = (int)Math.round(roll/4)+3;
+				em = (int)Math.round(roll/4)+4;
 				break;
 			}
 			case 4: // REDSTONE
 			{
 				roll = (rand.nextInt(3)+2)*8;
-				em = (int)Math.round(roll/4)+3;
+				em = (int)Math.round(roll/4)+6;
 				break;
 			}
-			case 5: // LOG
+			case 5: // OBSIDIAN
 			{
-				roll = (rand.nextInt(5)+2)*32;
-				em = (int)Math.round(roll/8)+3;
+				roll = (rand.nextInt(4)+2)*4;
+				em = (int)Math.round(roll/2)+8;
+				break;
+			}
+			case 6: // GLOWSTONE
+			{
+				roll = (rand.nextInt(5)+4)*8;
+				em = (int)Math.round(roll/4)+6;
+				break;
+			}
+			case 7: // LAPIS
+			{
+				roll = (rand.nextInt(5)+4)*2;
+				em = (int)Math.round(roll/2)+8;
+				break;
+			}
+			case 8: // DIAMOND
+			{
+				roll = 3;
+				em = 30;
 				break;
 			}
 		}
 		q.setRewardRep(em*2);
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(questProvince.civilization) >= 3000 )
+		if ( rep >= 2000 )
 		{
 			em *= 2;
 		}
@@ -758,10 +1176,10 @@ public class QuestMine extends QuestBase implements Quest
 	{
 		private QuestData data = new QuestData();
 
-		public int getBlockType()
-		{
-			return coalesce(i(data.getiData().get("block_type")), 0);
-		}
+//		public int getBlockType()
+//		{
+//			return coalesce(i(data.getiData().get("block_type")), 0);
+//		}
 
 		public int coalesce(Integer integer, int i)
 		{
@@ -775,6 +1193,11 @@ public class QuestMine extends QuestBase implements Quest
 		public void setBlockType( int blockType )
 		{
 			data.getiData().put("block_type", blockType);
+		}
+		
+		public Integer getBlockType()
+		{
+			return i(data.getiData().get("block_type"));
 		}
 		
 		public QuestData getData()

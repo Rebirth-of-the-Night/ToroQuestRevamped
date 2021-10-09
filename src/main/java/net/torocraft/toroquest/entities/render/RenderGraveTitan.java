@@ -1,23 +1,23 @@
 package net.torocraft.toroquest.entities.render;
 
-import net.minecraft.client.model.ModelZombieVillager;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.entity.RenderBiped;
+import net.minecraft.client.renderer.entity.RenderLiving;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.entities.EntityGraveTitan;
+import net.torocraft.toroquest.entities.model.ModelGraveTitan;
 
 @SideOnly(Side.CLIENT)
-public class RenderGraveTitan extends RenderBiped<EntityGraveTitan>
+public class RenderGraveTitan extends RenderLiving<EntityGraveTitan>
 {
-	private static final ResourceLocation SKELETON_TEXTURES = new ResourceLocation("textures/entity/zombie_villager/zombie_villager.png");
+	private static final ResourceLocation TEXTURE = new ResourceLocation(ToroQuest.MODID + ":textures/entity/grave_titan.png");
 
 	public RenderGraveTitan(RenderManager renderManagerIn)
 	{
-		super(renderManagerIn, new ModelZombieVillager(), 2.0F);
+		super(renderManagerIn, new ModelGraveTitan(), 5.0F);
 
 //		this.addLayer(new LayerBipedArmor(this)
 //		{
@@ -38,8 +38,8 @@ public class RenderGraveTitan extends RenderBiped<EntityGraveTitan>
 	@Override
 	protected void preRenderCallback(EntityGraveTitan entitylivingbaseIn, float partialTickTime)
 	{
-		float health = (entitylivingbaseIn.getHealth()+25)/entitylivingbaseIn.getMaxHealth();
-		GlStateManager.scale(8.0D * health, 8.0D * health, 8.0D * health);
+		float health = (entitylivingbaseIn.getHealth()+100)/entitylivingbaseIn.getMaxHealth();
+		GlStateManager.scale(health, health, health);
 	}
 
 	/**
@@ -49,7 +49,7 @@ public class RenderGraveTitan extends RenderBiped<EntityGraveTitan>
 	@Override
 	protected ResourceLocation getEntityTexture(EntityGraveTitan entity)
 	{
-		return SKELETON_TEXTURES;
+		return TEXTURE;
 	}
 
 }

@@ -26,6 +26,7 @@ import net.minecraft.world.gen.feature.WorldGenerator;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
+import net.torocraft.toroquest.entities.EntityMonolithEye;
 import net.torocraft.toroquest.entities.EntityPigLord;
 
 public class PigPortalGenerator extends WorldGenerator
@@ -43,20 +44,45 @@ public class PigPortalGenerator extends WorldGenerator
 		pos = getSurface( world, pos );
 		
 		this.createPatches(world, rand, pos);
-		this.generatePortal(world, pos);
-		this.spawnPigLord(world, rand, pos);
-		//this.addToroSpawner( world, pos, getDefaultEnemies() );
 		this.addPigs( world, pos, getPigs() );
+		this.generatePortal(world, pos);
+		this.spawnPigLord(world, pos);
+		//this.addToroSpawner( world, pos, getDefaultEnemies() );
 		return true;
 	}
 	
-	private void spawnPigLord(World world, Random rand, BlockPos origin)
+	private void spawnPigLord(World world, BlockPos pos)
 	{
-		EntityPigLord e = new EntityPigLord(world);
-		e.setPosition(origin.getX() + 0.5, origin.getY() + 1, origin.getZ() + 0.5);
-		e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
-		e.setRaidLocation( origin.getX(), origin.getZ(), origin.getY() );
-		world.spawnEntity(e);
+		addToroBossSpawner( world, pos, getDefaultEnemies() );
+	}
+	
+	private void addToroBossSpawner( World world, BlockPos blockpos, List<String> entities)
+	{
+		world.setBlockState(blockpos, BlockToroSpawner.INSTANCE.getDefaultState());
+		TileEntity tileentity = world.getTileEntity(blockpos);
+		if (tileentity instanceof TileEntityToroSpawner)
+		{
+			TileEntityToroSpawner spawner = (TileEntityToroSpawner) tileentity;
+			spawner.setTriggerDistance(80);
+			spawner.setEntityIds(entities);
+			spawner.setSpawnRadius(16);
+		}
+		else
+		{
+			EntityPigLord e = new EntityPigLord(world);
+			e.setPosition(blockpos.getX() + 0.5, blockpos.getY() + 1, blockpos.getZ() + 0.5);
+			e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
+			e.setRaidLocation( blockpos.getX(), blockpos.getZ(), blockpos.getY() );
+			world.spawnEntity(e);
+			System.out.println("tile entity is missing");
+		}
+	}
+
+	private List<String> getDefaultEnemies()
+	{
+		List<String> entity = new ArrayList<String>();
+		entity.add("toroquest:toroquest_pig_lord");
+		return entity;
 	}
 	
 	protected void createPortalPatch( World world, BlockPos start, boolean netherrack, int r )
@@ -197,26 +223,17 @@ public class PigPortalGenerator extends WorldGenerator
 			spawner.setTriggerDistance(80);
 			spawner.setEntityIds(entities);
 			spawner.setSpawnRadius(40);
-			// spawner.addEntityTag(data.getQuestId().toString());
-			// spawner.addEntityTag("capture_fugitives");
 		}
 		else
 		{
 			System.out.println("tile entity is missing");
 		}
 	}
-
-	private List<String> getDefaultEnemies()
-	{
-		List<String> entity = new ArrayList<String>();
-		entity.add("toroquest:toroquest_pig_lord");
-		return entity;
-	}
 	
 	private List<String> getPigs()
 	{
 		List<String> entity = new ArrayList<String>();
-		for ( int i = 0; 64 > i; i++ )
+		for ( int i = 0; 20 > i; i++ )
 		{
 			entity.add("minecraft:pig");
 		}

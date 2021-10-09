@@ -10,8 +10,9 @@ import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Items;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -22,9 +23,8 @@ import net.minecraft.world.storage.MapDecoration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
-import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.ItemMapCentered;
@@ -40,11 +40,7 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 	public static QuestKillBossArchmage INSTANCE;
 	
 	protected final String entityName = "toroquest:toroquest_archmage";
-	protected final String tag = "legendary_mage";
-	protected final String location = "The Archmage's Tower";
-	protected final int emeraldAmount = 7;
-	
-
+	protected final int emeraldAmount = 6;
 
 	public static void init(int id)
 	{
@@ -57,18 +53,42 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
+		
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
+
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		{
+			return null;
+		}
+		
 		if ( !data.getCompleted() )
 		{
 			if ( data.getChatStack().equals("") )
 			{
-				data.setChatStack( "My scouts report the archmage still lives!" );
+				data.setChatStack( "legendary_mage.incomplete", data.getPlayer(), null );
 				this.setData(data);
 			}
 			// data.getPlayer().closeScreen();
 			return null;
 		}
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
-		data.setChatStack( "You have saved us, " + data.getPlayer() + "! I will tell the people of your heroic deeds!" );
+		
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		
+		data.setChatStack( "legendary_mage.complete", data.getPlayer(), null );
 		this.setData(data);
 		in.addAll(getRewardItems(data));
 		return in;
@@ -77,7 +97,12 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "We are all doomed!" );
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack( "legendary_mage.reject", data.getPlayer(), null );
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -101,10 +126,10 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)4, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to " + location + "§r");
-			itemstack.setStackDisplayName("§lMap to " + location + "§r");
+			itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_mage.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_mage.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
-			data.setChatStack( "My scouts report an archmage has built his tower not too far from here. He can only be up to no good! Defeat him, " + data.getPlayer().getName() + ", before he wreaks havoc on our village!" );
+			data.setChatStack( "legendary_mage.accept", data.getPlayer(), null );
 			this.setData(data);
 		}
 		catch (Exception e)
@@ -121,7 +146,7 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 		{
 			return "";
 		}
-		return "quests." + tag + ".title";
+		return "quests.legendary_mage.title";
 	}
 
 	@Override
@@ -132,7 +157,7 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 			return "";
 		}
 		StringBuilder s = new StringBuilder();
-		s.append("quests." + tag + ".description");
+		s.append("quests.legendary_mage.description");
 		if (getSpawnPosition(data) != null)
 		{
 			s.append("|").append( " at §lLocation:§r [" + getDirections(getProvincePosition(getQuestProvince(data)), getSpawnPosition(data)) + "]\n\n" );
@@ -144,17 +169,6 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 		s.append("|").append(listItemsBlocks(getRewardItems(data))  + "\n" );
 		s.append("|").append(getRewardRep(data));
 		return s.toString();
-	}
-	private List<String> getEnemyType(QuestData data)
-	{
-		return getDefaultEnemies(data);
-	}
-
-	private List<String> getDefaultEnemies(QuestData data)
-	{
-		List<String> entity = new ArrayList<String>();
-		entity.add(entityName);
-		return entity;
 	}
 
 	@Override
@@ -170,13 +184,13 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 		
 		setRewardRep(data, emeraldAmount*18);
 		int em = emeraldAmount;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
 		
 		List<ItemStack> reward = new ArrayList<ItemStack>(1);
-		reward.add(new ItemStack(Items.EMERALD, em));
+		reward.add(new ItemStack(Blocks.EMERALD_BLOCK, em));
 		
 		setRewardItems(data, reward);
 		this.setData(data);
@@ -189,7 +203,7 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 
 		Entity victim = event.getEntity();
 		
-		if ( victim == null || !(victim instanceof EntityMage) )
+		if (!(victim instanceof EntityMage) )
 		{
 			return;
 		}
@@ -217,7 +231,7 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 			}
 		}
 		
-		CivilizationType civ = null;
+		//CivilizationType civ = null;
 		for ( EntityPlayer player : playerList )
 		{
 			Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
@@ -227,11 +241,11 @@ public class QuestKillBossArchmage extends QuestBase implements Quest
 				{
 					data.setCompleted(true);
 					chatCompletedQuest(data);
-					civ = data.getCiv();
+					//civ = data.getCiv();
 					//this.setData(data);
 				}
 			}
-			if ( !player.world.isRemote ) player.sendMessage(new TextComponentString( "§lThe Archmage has been slain!§r"));
+			player.sendMessage(new TextComponentString(TextComponentHelper.createComponentTranslation(player, "quests.legendary_mage.slain", new Object[0]).getFormattedText()));
 		}
 	}
 }

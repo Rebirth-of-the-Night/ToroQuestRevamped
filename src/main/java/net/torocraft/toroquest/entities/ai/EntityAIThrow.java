@@ -1,7 +1,5 @@
 package net.torocraft.toroquest.entities.ai;
 
-import java.util.Random;
-
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIAttackMelee;

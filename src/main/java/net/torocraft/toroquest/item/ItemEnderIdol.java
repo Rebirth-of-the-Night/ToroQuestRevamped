@@ -19,22 +19,26 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
 
 @Mod.EventBusSubscriber
-public class ItemEnderIdol extends Item {
+public class ItemEnderIdol extends Item
+{
 
 	public static ItemEnderIdol INSTANCE;
 	public static final String NAME = "ender_idol";
 	private static ResourceLocation REGISTRY_NAME = new ResourceLocation(ToroQuest.MODID, NAME);
 
 	@SubscribeEvent
-	public static void init(final RegistryEvent.Register<Item> event) {
+	public static void init(final RegistryEvent.Register<Item> event)
+	{
 		INSTANCE = new ItemEnderIdol();
 		INSTANCE.setRegistryName(REGISTRY_NAME);
 		event.getRegistry().register(INSTANCE);
 	}
 
-	public static void registerRenders() {
+	public static void registerRenders()
+	{
 		ModelResourceLocation model = new ModelResourceLocation(ToroQuest.MODID + ":" + NAME, "inventory");
 		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(INSTANCE, 0, model);
 		RenderItem renderItem = Minecraft.getMinecraft().getRenderItem();
@@ -51,7 +55,14 @@ public class ItemEnderIdol extends Item {
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("If this item is in your inventory when you die, every other item is returned to you in the next life.");
+		if ( ToroQuestConfiguration.enderIdolTeleport )
+		{
+			tooltip.add("This idol shatters on death, teleporting you to the nearest safe location instead.");
+		}
+		else
+		{
+			tooltip.add("If this item is in your inventory when you die, every other item is returned to you in the next life.");
+		}
     }
 
 }

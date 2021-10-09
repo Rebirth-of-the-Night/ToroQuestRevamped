@@ -1,5 +1,7 @@
 package net.torocraft.toroquest.generation;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import net.minecraft.block.Block;
@@ -24,7 +26,10 @@ import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.WorldGenerator;
+import net.torocraft.toroquest.block.BlockToroSpawner;
+import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
+import net.torocraft.toroquest.entities.EntityGraveTitan;
 import net.torocraft.toroquest.item.armor.ItemRoyalArmor;
 
 public class GraveyardGenerator extends WorldGenerator
@@ -51,31 +56,65 @@ public class GraveyardGenerator extends WorldGenerator
 		this.rand = rand;
 		this.origin = origin;
 
-		int rows = 1 + rand.nextInt(3);
-		int cols = 2 + rand.nextInt(4);
+		int rows = 3 + rand.nextInt(3);
+		int cols = 5 + rand.nextInt(4);
 		int theme = rand.nextInt(2);
 
-		if (!levelEnough(origin, rows, cols)) {
-			return false;
-		}
-
-		for (int row = 0; row < rows; row++) {
-			for (int col = 0; col < cols; col++) {
-				genGrave(theme, col * 2, row * 4);
+		if (levelEnough(origin, rows, cols))
+		{
+			for (int row = 0; row < rows; row++) {
+				for (int col = 0; col < cols; col++) {
+					genGrave(theme, col * 2, row * 4);
+				}
+			}
+	
+			for (int x = -2; x <= cols * 2; x++) {
+				place(fencePos(x, -2), getWall(theme));
+				place(fencePos(x, (rows * 4) - 1), getWall(theme));
+			}
+	
+			for (int z = -1; z <= rows * 4 - 2; z++) {
+				place(fencePos(-2, z), getWall(theme));
+				place(fencePos(2 * cols, z), getWall(theme));
 			}
 		}
 
-		for (int x = -2; x <= cols * 2; x++) {
-			place(fencePos(x, -2), getWall(theme));
-			place(fencePos(x, (rows * 4) - 1), getWall(theme));
-		}
-
-		for (int z = -1; z <= rows * 4 - 2; z++) {
-			place(fencePos(-2, z), getWall(theme));
-			place(fencePos(2 * cols, z), getWall(theme));
-		}
+		this.addToroSpawner( world, origin, getDefaultEnemies() );
 
 		return true;
+	}
+
+	private void spawnGraveTitan(World world, BlockPos pos)
+	{
+		EntityGraveTitan e = new EntityGraveTitan(world);
+		e.setPositionAndUpdate(pos.getX()+0.5,pos.getY()+0.5,pos.getZ()+0.5);
+		world.spawnEntity(e);
+	}
+	
+	private void addToroSpawner( World world, BlockPos blockpos, List<String> entities)
+	{
+		blockpos = blockpos.up(2);
+		world.setBlockState(blockpos, BlockToroSpawner.INSTANCE.getDefaultState());
+		TileEntity tileentity = world.getTileEntity(blockpos);
+		if (tileentity instanceof TileEntityToroSpawner)
+		{
+			TileEntityToroSpawner spawner = (TileEntityToroSpawner) tileentity;
+			spawner.setTriggerDistance(80);
+			spawner.setEntityIds(entities);
+			spawner.setSpawnRadius(20);
+		}
+		else
+		{
+			System.out.println("tile entity is missing");
+			this.spawnGraveTitan( world, blockpos.up() );
+		}
+	}
+
+	private List<String> getDefaultEnemies()
+	{
+		List<String> entity = new ArrayList<String>();
+		entity.add("toroquest:toroquest_grave_titan");
+		return entity;
 	}
 
 	private boolean levelEnough(BlockPos pos, int rows, int cols) {
@@ -192,7 +231,7 @@ public class GraveyardGenerator extends WorldGenerator
 		}
 	}
 
-	private static final Item[] NICE_STUFF = { Items.DIAMOND, Items.EMERALD, Items.GOLD_INGOT, ItemRoyalArmor.chestplateItem, ItemRoyalArmor.bootsItem, ItemRoyalArmor.leggingsItem,};
+	private static final Item[] NICE_STUFF = { Items.DIAMOND, Items.EMERALD, Items.GOLD_INGOT, Items.GOLDEN_CHESTPLATE, Items.GOLDEN_LEGGINGS, Items.GOLDEN_BOOTS,};
 
 	protected void addLootToChest(IInventory chest)
 	{
@@ -209,6 +248,10 @@ public class GraveyardGenerator extends WorldGenerator
 				chest.setInventorySlotContents(i, new ItemStack(Items.ROTTEN_FLESH, rand.nextInt(5) + 1));
 			}
 			else if (roll == 2)
+			{
+				chest.setInventorySlotContents(i, new ItemStack(Items.GOLD_NUGGET, 1 + rand.nextInt(2)*4));
+			}
+			else if (roll == 3)
 			{
 				if (rand.nextInt(20) == 0)
 				{

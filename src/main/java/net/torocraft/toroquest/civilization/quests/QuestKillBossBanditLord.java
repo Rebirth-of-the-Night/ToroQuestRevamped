@@ -11,8 +11,10 @@ import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
 
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -34,6 +36,7 @@ import net.minecraft.world.storage.MapDecoration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
@@ -55,10 +58,7 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 	
 	protected final String entityName = "toroquest:toroquest_bandit";
 	protected final String tag = "legendary_bandit";
-	protected final String location = "the Bandit Hideout";
-	protected final int emeraldAmount = 4;
-	
-
+	protected final int emeraldAmount = 3;
 
 	public static void init(int id)
 	{
@@ -71,27 +71,56 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
+		
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
+
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		{
+			return null;
+		}
+		
 		if ( !data.getCompleted() )
 		{
 			if ( data.getChatStack().equals("") )
 			{
-				data.setChatStack( "My scouts report the bandit lord still lives!" );
+				data.setChatStack( "legendary_bandit.incomplete", data.getPlayer(), null );
 				this.setData(data);
 			}
 			// data.getPlayer().closeScreen();
 			return null;
 		}
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
-		data.setChatStack( "You have saved us, " + data.getPlayer() + "! I will tell the people of your heroic deeds!" );
-		this.setData(data);
+		
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		
+		data.setChatStack( "legendary_bandit.complete", data.getPlayer(), null );
 		in.addAll(getRewardItems(data));
+		this.setData(data);
 		return in;
 	}
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "We are all doomed!" );
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack( "legendary_bandit.reject", data.getPlayer(), null );
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -102,7 +131,7 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 	{
 		try
 		{
-			BlockPos pos = searchForSuitableLocation(data, 950, 40);
+			BlockPos pos = searchForSuitableLocation(data, 950, -60);
 			if ( pos == null )
 			{
 				reject(data,in);
@@ -115,10 +144,10 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)4, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to " + location + "§r");
-			itemstack.setStackDisplayName("§lMap to " + location + "§r");
+			itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_bandit.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_bandit.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
-			data.setChatStack( "The infamous bandit, Sledge, has crowned himself as lord! Preposterous! I cannot have this be! It will only inspire others to turn against the law. Defeat this so-called bandit lord, so we can put an end to this madness." );
+			data.setChatStack( "legendary_bandit.accept", data.getPlayer(), null );
 			this.setData(data);
 		}
 		catch (Exception e)
@@ -159,18 +188,7 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 		s.append("|").append(getRewardRep(data));
 		return s.toString();
 	}
-	private List<String> getEnemyType(QuestData data)
-	{
-		return getDefaultEnemies(data);
-	}
-
-	private List<String> getDefaultEnemies(QuestData data)
-	{
-		List<String> entity = new ArrayList<String>();
-		entity.add(entityName);
-		return entity;
-	}
-
+	
 	@Override
 	public QuestData generateQuestFor(EntityPlayer player, Province province)
 	{
@@ -184,7 +202,7 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 		
 		setRewardRep(data, emeraldAmount*18);
 		int em = emeraldAmount;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
@@ -204,16 +222,12 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 		
 		// System.out.println(  victim  );
 		
-		if ( victim == null || !(victim instanceof EntityBanditLord) )
+		if (!(victim instanceof EntityBanditLord) )
 		{
 			return;
 		}
 
 		DamageSource source = event.getSource();
-		
-		System.out.println(  source  );
-
-		System.out.println(  source.getTrueSource()   );
 
 		if ( source == null || source.getTrueSource() == null )
 		{
@@ -236,7 +250,7 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 			}
 		}
 		
-		CivilizationType civ = null;
+		//CivilizationType civ = null;
 		for ( EntityPlayer player : playerList )
 		{
 			Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
@@ -246,11 +260,11 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 				{
 					data.setCompleted(true);
 					chatCompletedQuest(data);
-					civ = data.getCiv();
+					//civ = data.getCiv();
 					//this.setData(data);
 				}
 			}
-			if ( !player.world.isRemote ) player.sendMessage(new TextComponentString( "§lThe Bandit Lord has been slain!§r"));
+			player.sendMessage(new TextComponentString(TextComponentHelper.createComponentTranslation(player, "quests.legendary_bandit.slain", new Object[0]).getFormattedText()));
 		}
 	}
 }

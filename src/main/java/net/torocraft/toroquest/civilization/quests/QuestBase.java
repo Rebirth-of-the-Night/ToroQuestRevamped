@@ -15,7 +15,6 @@ import net.minecraft.block.BlockLog;
 import net.minecraft.block.BlockSlab;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
@@ -28,6 +27,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
+import net.minecraftforge.client.event.GuiOpenEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
@@ -66,20 +70,22 @@ public abstract class QuestBase implements Quest
 		{
 			return;
 		}
-		if ( !player.world.isRemote )
-		{
-			player.sendMessage(new TextComponentString( CivilizationUtil.chatColor(getQuestProvince(data).civilization) + "Lord of " + getQuestProvince(data).name + "§r: " + message));
-			player.world.playSound(player, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, SoundCategory.VOICE, 1.1F, 1.1F);
-		}
+		player.sendMessage(new TextComponentString( "§lVillage Lord§r: " + message));
+		//player.sendMessage(new TextComponentString( "§lLord of " + getQuestProvince(data).name + "§r: " + message));
+		player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, SoundCategory.VOICE, 1.0F, 1.1F);
+	}
+	
+	public static void chat( EntityPlayer player, String provinceName, String message )
+	{
+		player.sendMessage(new TextComponentString( "§lVillage Lord§r: " + message));
+		//player.sendMessage(new TextComponentString( "§lLord of " + provinceName+ "§r: " + message));
+		player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, SoundCategory.VOICE, 1.0F, 1.1F);
 	}
 	
 	public void chatCompletedQuest( QuestData data )
 	{
-		if ( !data.getPlayer().world.isRemote ) 
-		{
-			data.getPlayer().sendStatusMessage( new TextComponentString(CivilizationUtil.chatColor(getQuestProvince(data).civilization) + "Quest complete!§r"), ToroQuestConfiguration.showQuestCompletionAboveActionBar );
-			data.getPlayer().world.playSound(data.getPlayer(), data.getPlayer().posX, data.getPlayer().posY, data.getPlayer().posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.1F, 1.1F);
-		}
+		data.getPlayer().sendStatusMessage( TextComponentHelper.createComponentTranslation(data.getPlayer(), "quest.quest_complete_message", new Object[0]), ToroQuestConfiguration.showQuestCompletionAboveActionBar );
+		data.getPlayer().world.playSound((EntityPlayer)null, data.getPlayer().posX, data.getPlayer().posY, data.getPlayer().posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.PLAYERS, 1.1F, 1.1F);
 	}
 
 	protected static String listItems(List<ItemStack> rewardItems)
@@ -106,6 +112,45 @@ public abstract class QuestBase implements Quest
 			sb.append( item.getDisplayName() );
 			if ( item.getItem() == Items.EMERALD && item.getCount() > 1 )
 			{
+				sb.append( "s" );
+			}
+		}
+		return sb.toString();
+	}
+	
+	protected static String listKillMobItems(List<ItemStack> rewardItems)
+	{
+		if (rewardItems == null || rewardItems.isEmpty())
+		{
+			return "";
+		}
+		
+		StringBuilder sb = new StringBuilder();
+ 		boolean first = true;
+		
+		for (ItemStack item : rewardItems)
+		{
+			if (first)
+			{
+				first = false;
+			}
+			else
+			{
+				sb.append(", ");
+			}
+			if ( item.getItem() == Items.EMERALD )
+			{
+				sb.append(item.getCount() + " " );
+				sb.append( item.getDisplayName() );
+				if ( item.getItem() == Items.EMERALD && item.getCount() > 1 )
+				{
+					sb.append( "s" );
+				}
+			}
+			else
+			{
+				sb.append(item.getCount() * 9 + " " );
+				sb.append( new ItemStack(Items.EMERALD,1).getDisplayName() );
 				sb.append( "s" );
 			}
 		}
@@ -269,6 +314,10 @@ public abstract class QuestBase implements Quest
 
 	protected static Integer getRewardRep(QuestData data) {
 		return i(data.getiData().get("rep"));
+	}
+	
+	protected static Integer getTargetAmount(QuestData data) {
+		return i(data.getiData().get("target"));
 	}
 
 	protected static void setRewardRep(QuestData data, Integer rewardRep) {
@@ -514,7 +563,6 @@ public abstract class QuestBase implements Quest
 		Province province = getQuestProvince(data);
 		EntityPlayer player = data.getPlayer();
 		//random = new Random( rand.nextInt() + data.hashCode() + data.getQuestId().hashCode() );
-		random = new Random( player.world.getTotalWorldTime() );
 
 		if ( province == null || player == null )
 		{
@@ -573,28 +621,46 @@ public abstract class QuestBase implements Quest
 		}
 		
 		TileEntity tileentity;
-		int xx = occupiedRange/2;
-		int yy = occupiedRange/4;
-		int zz = occupiedRange/2;
 		
-		int s = -occupiedRange/2;
-		
-		while ( xx > s )
+		if ( occupiedRange < 0 )
 		{
-			while ( yy > s/2 )
+			int s = -occupiedRange/2;
+			
+			for ( int xx = x-s; x+s >= xx; xx++ )
 			{
-				while ( zz > s )
+				for ( int yy = 40; 55 >= yy; yy++ )
 				{
-					tileentity = data.getPlayer().world.getTileEntity(new BlockPos(xx, yy, zz));
-					if (tileentity instanceof TileEntityChest)
+					for ( int zz = z-s; z+s >= zz; zz++ )
 					{
-						return null;
+						tileentity = data.getPlayer().world.getTileEntity(new BlockPos(xx, yy, zz));
+						if (tileentity instanceof TileEntityChest)
+						{
+							//System.out.println("CHESTTATTTTTTTTTAAAAAAA");
+							return null;
+						}
 					}
-					zz--;
 				}
-				yy--;
 			}
-			xx--;
+		}
+		else if ( occupiedRange > 0 )
+		{
+			int s = occupiedRange/2;
+			
+			for ( int xx = x-s; x+s >= xx; xx++ )
+			{
+				for ( int yy = pos.getY()-s; pos.getY()+s >= yy; yy++ )
+				{
+					for ( int zz = z-s; z+s >= zz; zz++ )
+					{
+						tileentity = data.getPlayer().world.getTileEntity(new BlockPos(xx, yy, zz));
+						if (tileentity instanceof TileEntityChest)
+						{
+							//System.out.println("CHESTTATTTTTTTTTAAAAAAA");
+							return null;
+						}
+					}
+				}
+			}
 		}
 
 		return pos;
@@ -666,32 +732,29 @@ public abstract class QuestBase implements Quest
 	
 	// =-=-=-=-=
 	
-//	@SubscribeEvent
-//	@SideOnly(Side.CLIENT)
-//	protected void closeUI(GuiOpenEvent event)
+										//	@SideOnly(Side.CLIENT) CSTA
+										//	@SubscribeEvent
+										//	protected void closeUI(GuiOpenEvent event)
+										//	{	
+										//		if ( event.getGui() == null )
+										//		{
+										//			if ( this.data != null )
+										//			{
+										//				if ( this.data.getPlayer() != null )
+										//				{
+										//					if ( !(this.data.getChatStack().equals("")) )
+										//					{
+										//						QuestBase.chat( this.data, this.data.getChatStack() );
+										//						this.data.clearChatStack();
+										//					}
+										//				}
+										//			}
+										//		}
+										//	}
+	
+//	public static void messagePlayer()
 //	{
-//		// System.out.println(this.data);
 //		
-////		if (!(event.getEntity() instanceof EntityPlayerMP))
-////		{
-////			return;
-////		}
-////		EntityPlayerMP player = (EntityPlayerMP) event.getEntity();
-//		
-//		if ( this.data != null && event.getGui() == null )
-//		{
-//			System.out.println(this.data.getChatStack());
-//
-//			if ( !(this.data.getChatStack().equals("")) )
-//			{
-//				EntityPlayer player = data.getPlayer();
-//	            if ( player == null ) return;
-//				QuestBase.chat( this.data, this.data.getChatStack() );
-//			}
-//			this.data.setChatStack("");
-//		}
-//		
-//
 //	}
 	
 	protected QuestData data;
@@ -699,14 +762,6 @@ public abstract class QuestBase implements Quest
 	protected void setData( QuestData data )
 	{
 		this.data = data;
-		if ( this.data.getPlayer() != null && !this.data.getPlayer().world.isRemote )
-		{
-			if ( !(this.data.getChatStack().equals("")) )
-			{
-				QuestBase.chat( this.data, this.data.getChatStack() );
-			}
-			this.data.setChatStack("");
-		}
 	}
 	
 	// =-=-=-=-=

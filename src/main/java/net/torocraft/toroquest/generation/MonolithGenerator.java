@@ -19,6 +19,7 @@ import net.minecraft.world.gen.feature.WorldGenerator;
 import net.minecraft.world.storage.loot.LootTableList;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
+import net.torocraft.toroquest.entities.EntityMonolithEye;
 
 public class MonolithGenerator extends WorldGenerator
 {
@@ -46,61 +47,62 @@ public class MonolithGenerator extends WorldGenerator
 		return true;
 	}
 
-	private void placeDungeonRoom(World world, int xCenter, int zCenter)
-	{
-		int halfX = 6;
-		int halfZ = 6;
-		int height = 6;
+//	private void placeDungeonRoom(World world, int xCenter, int zCenter)
+//	{
+//		int halfX = 6;
+//		int halfZ = 6;
+//		int height = 6;
+//
+//		int xMin = xCenter - halfX;
+//		int zMin = zCenter - halfZ;
+//		int yMin = 10;
+//
+//		int xMax = xCenter + halfX;
+//		int zMax = zCenter + halfZ;
+//		int yMax = yMin + height;
+//
+//		IBlockState block;
+//		BlockPos pos;
+//		Random rand = new Random();
+//
+//		for (int y = yMin; y <= yMax; y++) {
+//			for (int x = xMin; x <= xMax; x++) {
+//				for (int z = zMin; z <= zMax; z++) {
+//					if (y == yMax) {
+//						block = Blocks.LAVA.getDefaultState();
+//					} else if (x == xMin || x == xMax || z == zMax || z == zMin || y == yMax - 1 || y == yMin) {
+//						block = Blocks.MOSSY_COBBLESTONE.getDefaultState();
+//					} else if (y == yMin + 1) {
+//						block = Blocks.LAVA.getDefaultState();
+//					} else {
+//						block = Blocks.AIR.getDefaultState();
+//					}
+//					pos = new BlockPos(x, y, z);
+//					setBlockAndNotifyAdequately(world, pos, block);
+//				}
+//			}
+//		}
+//
+//		for (int x = xMin + 1; x < xMax; x++) {
+//			for (int z = zMin + 1; z < zMax; z++) {
+//				if (rand.nextInt(100) < 3) {
+//					pos = new BlockPos(x, yMin + 1, z);
+//					placeChest(world, pos);
+//				}
+//			}
+//		}
+//
+//		for (int x = xMin + 1; x < xMax; x++) {
+//			for (int z = zMin + 1; z < zMax; z++) {
+//				if (rand.nextInt(100) < 3) {
+//					pos = new BlockPos(x, yMax - 1, z);
+//					placeSpawner(world, pos);
+//				}
+//			}
+//		}
+//
+//	}
 
-		int xMin = xCenter - halfX;
-		int zMin = zCenter - halfZ;
-		int yMin = 10;
-
-		int xMax = xCenter + halfX;
-		int zMax = zCenter + halfZ;
-		int yMax = yMin + height;
-
-		IBlockState block;
-		BlockPos pos;
-		Random rand = new Random();
-
-		for (int y = yMin; y <= yMax; y++) {
-			for (int x = xMin; x <= xMax; x++) {
-				for (int z = zMin; z <= zMax; z++) {
-					if (y == yMax) {
-						block = Blocks.LAVA.getDefaultState();
-					} else if (x == xMin || x == xMax || z == zMax || z == zMin || y == yMax - 1 || y == yMin) {
-						block = Blocks.MOSSY_COBBLESTONE.getDefaultState();
-					} else if (y == yMin + 1) {
-						block = Blocks.LAVA.getDefaultState();
-					} else {
-						block = Blocks.AIR.getDefaultState();
-					}
-					pos = new BlockPos(x, y, z);
-					setBlockAndNotifyAdequately(world, pos, block);
-				}
-			}
-		}
-
-		for (int x = xMin + 1; x < xMax; x++) {
-			for (int z = zMin + 1; z < zMax; z++) {
-				if (rand.nextInt(100) < 3) {
-					pos = new BlockPos(x, yMin + 1, z);
-					placeChest(world, pos);
-				}
-			}
-		}
-
-		for (int x = xMin + 1; x < xMax; x++) {
-			for (int z = zMin + 1; z < zMax; z++) {
-				if (rand.nextInt(100) < 3) {
-					pos = new BlockPos(x, yMax - 1, z);
-					placeSpawner(world, pos);
-				}
-			}
-		}
-
-	}
 	protected void placeChest(World world, BlockPos placementPos)
 	{
 		setBlockAndNotifyAdequately(world, placementPos, Blocks.CHEST.getDefaultState());
@@ -123,12 +125,7 @@ public class MonolithGenerator extends WorldGenerator
 
 	private void spawnMonolithEye(World world, BlockPos pos)
 	{
-		
 		addToroSpawner( world, pos, getDefaultEnemies() );
-//		EntityMonolithEye e = new EntityMonolithEye(world);
-//		e.setRaidLocation(pos.getX(), pos.getY(), pos.getZ());
-//		e.setPosition(pos.getX()+0.5,pos.getY()+0.5,pos.getZ()+0.5);
-//		world.spawnEntity(e);
 	}
 	
 	private void addToroSpawner( World world, BlockPos blockpos, List<String> entities)
@@ -141,11 +138,13 @@ public class MonolithGenerator extends WorldGenerator
 			spawner.setTriggerDistance(80);
 			spawner.setEntityIds(entities);
 			spawner.setSpawnRadius(0);
-			// spawner.addEntityTag(data.getQuestId().toString());
-			// spawner.addEntityTag("capture_fugitives");
 		}
 		else
 		{
+			EntityMonolithEye e = new EntityMonolithEye(world);
+			e.setRaidLocation(blockpos.getX(), blockpos.getY(), blockpos.getZ());
+			e.setPosition(blockpos.getX()+0.5,blockpos.getY()+0.5,blockpos.getZ()+0.5);
+			world.spawnEntity(e);
 			System.out.println("tile entity is missing");
 		}
 	}

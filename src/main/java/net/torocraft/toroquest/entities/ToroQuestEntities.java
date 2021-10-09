@@ -10,9 +10,6 @@ public class ToroQuestEntities
 		int id = 1;
 		EntityMage.init(id++);
 		EntityMonolithEye.init(id++);
-		EntityToro.init(id++);
-		EntityToroCow.init(id++);
-		EntityToroQuest.init(id++);
 		EntityVillageLord.init(id++);
 		EntityGuard.init(id++);
 		EntityShopkeeper.init(id++);
@@ -31,5 +28,8 @@ public class ToroQuestEntities
 		EntityCaravan.init(id++);
 		EntitySmartArrow.init(id++);
 		EntityOrc.init(id++);
+		EntityConstruct.init(id++);
+		EntityConstructQuest.init(id++);
+		EntityAdventurer.init(id++);
 	}
 }

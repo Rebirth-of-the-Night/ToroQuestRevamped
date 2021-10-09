@@ -19,8 +19,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.feature.WorldGenerator;
 import net.minecraft.world.storage.loot.LootTableList;
+import net.torocraft.toroquest.block.BlockToroSpawner;
+import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.entities.EntityMage;
+import net.torocraft.toroquest.entities.EntityMonolithEye;
 
 public class MageTowerGenerator extends WorldGenerator {
 
@@ -117,12 +120,39 @@ public class MageTowerGenerator extends WorldGenerator {
 		// return a[rand.nextInt(a.length)];
 		return a[0];
 	}
-
+	
 	private void spawnMage(World world, BlockPos pos)
 	{
-		EntityMage e = new EntityMage(world);
-		e.setPosition(pos.getX() + 3, pos.getY() + (floors * floorHieght) + 1, pos.getZ() + 3);
-		world.spawnEntity(e);
+		addToroSpawner( world, pos, getDefaultEnemies() );
+	}
+	
+	private void addToroSpawner( World world, BlockPos blockpos, List<String> entities)
+	{
+		blockpos = new BlockPos(blockpos.getX() + 3, blockpos.getY() + (floors * floorHieght) + 1, blockpos.getZ() + 3);
+
+		world.setBlockState(blockpos, BlockToroSpawner.INSTANCE.getDefaultState());
+		TileEntity tileentity = world.getTileEntity(blockpos);
+		if (tileentity instanceof TileEntityToroSpawner)
+		{
+			TileEntityToroSpawner spawner = (TileEntityToroSpawner) tileentity;
+			spawner.setTriggerDistance(80);
+			spawner.setEntityIds(entities);
+			spawner.setSpawnRadius(0);
+		}
+		else
+		{
+			EntityMage e = new EntityMage(world);
+			e.setPosition(blockpos.getX()+0.5,blockpos.getY()+0.5,blockpos.getZ()+0.5);
+			world.spawnEntity(e);
+			System.out.println("tile entity is missing");
+		}
+	}
+
+	private List<String> getDefaultEnemies()
+	{
+		List<String> entity = new ArrayList<String>();
+		entity.add("toroquest:toroquest_mage");
+		return entity;
 	}
 	
 	private BlockPos findSurface(World world, BlockPos start, boolean force)

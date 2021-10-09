@@ -2,211 +2,209 @@ package net.torocraft.toroquest.entities.ai;
 
 import java.util.Random;
 
-import net.minecraft.block.BlockAir;
+import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.init.Blocks;
-import net.minecraft.pathfinding.Path;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class EntityAIRaid extends EntityAIBase
 {
-	private final EntityCreature entity;
-	private int radiusSq;
-	private int radius;
-	private int centerX;
-	private int centerZ;
-	private double movePosX;
-	private double movePosY;
-	private double movePosZ;
+	public final EntityCreature entity;
+	private final int minDistanceFromCenter;
+	private final int moveDistance;
 	private final double movementSpeed;
-	boolean enabled = false;
+	
+	private Integer centerX;
+	private Integer centerZ;
+
+//	private double movePosX;
+//	private double movePosY;
+//	private double movePosZ;
 	
 	private Random rand = new Random();
 
-	public EntityAIRaid(EntityCreature entity, double speedIn, int radius)
+	public EntityAIRaid(EntityCreature entity, double speedIn, int md, int mdfc )
 	{
 		this.entity = entity;
 		this.movementSpeed = speedIn;
-		this.radiusSq = radius * radius;
-		this.radius = radius;
-		this.setMutexBits(4);
+		this.minDistanceFromCenter = mdfc;
+		this.moveDistance = md;
+		this.setMutexBits(1);
 	}
 
-	public void enable()
-	{
-		enabled = true;
-	}
-
-	public void disable()
-	{
-		enabled = false;
-	}
-
-	public void setCenter(int centerX, int centerZ)
+	public void setCenter(Integer centerX, Integer centerZ)
 	{
 		this.centerX = centerX;
 		this.centerZ = centerZ;
-		enable();
 	}
 	
-	public BlockPos getSurfacePosition(World world, BlockPos start)
+	private boolean move(World world, BlockPos start) // call mult times
+	{
+		double x = this.centerX - start.getX();
+		double z = this.centerZ - start.getZ();
+		
+		double xz = Math.abs(x) + Math.abs(z);
+		
+		if ( xz < this.minDistanceFromCenter )
+		{
+			return false;
+		}
+		
+		x = x/xz * this.moveDistance + start.getX() + (this.rand.nextInt(5)-2);
+		z = z/xz * this.moveDistance + start.getZ() + (this.rand.nextInt(5)-2);
+				
+		BlockPos moveTo = findValidSurface(world, new BlockPos(x, start.getY(), z), 8);
+		
+		if ( moveTo != null )
+		{
+			if ( this.entity.getNavigator().tryMoveToXYZ(moveTo.getX(), moveTo.getY(), moveTo.getZ(), this.movementSpeed) )
+			{
+				return true;
+			}
+		}
+		
+		if ( this.rand.nextBoolean() )
+		{
+			Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this.entity, 20, 8, new Vec3d(x,this.entity.posY,z));
+			
+			if ( vec3d == null || !this.entity.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, this.movementSpeed) )
+	        {
+				vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this.entity, 16, 8, new Vec3d(x,this.entity.posY,z));
+				
+				if ( vec3d == null || !this.entity.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, this.movementSpeed ) )
+				{
+					vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.entity, 8, 8, new Vec3d(x,this.entity.posY,z));
+					
+					if ( vec3d == null || !this.entity.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, this.movementSpeed ) )
+					{
+						return false;
+					}
+				}
+	        }
+			return true;
+		}
+		return false;
+	}
+	
+	public static BlockPos findValidSurface( World world, BlockPos startPos, int yOffset )
 	{
 		IBlockState blockState;
-				
-		int range = 32;
 		
-		int x = start.getX() - this.centerX + ( rand.nextInt(this.radius) * (rand.nextInt(2)*2 - 1) );
-		int z = start.getZ() - this.centerZ + ( rand.nextInt(this.radius) * (rand.nextInt(2)*2 - 1) );
+		// =-=-=-=-=-= SEARCH UP =-=-=-=-=-=
+		BlockPos pos = startPos.down();
+		boolean airspace = false;
+		boolean floor =  false;
+		int y = 0;
 		
-		int signX = -1;
-		int signZ = -1;
-		
-		if ( x < 0 )
+		while ( yOffset > y )
 		{
-			signX = 1;
-		}
-		if ( z < 0 )
-		{
-			signZ = 1;
-		}
-		
-		x = Math.abs(x);
-		z = Math.abs(z);
-		
-		double ratioX = (double)(x)/(double)(1+x+z);
-		double ratioZ = (double)(z)/(double)(1+x+z);
-		
-		x = (int)(ratioX * range);
-		z = (int)(ratioZ * range);
-				
-		x = MathHelper.clamp(x, 0, 32 ) * signX;
-		z = MathHelper.clamp(z, 0, 32 ) * signZ;
-
-		BlockPos search = new BlockPos(start.getX()+x, world.getActualHeight()/2, start.getZ()+z);
-		
-		while (search.getY() > 8)
-		{
-			search = search.down();
-			blockState = world.getBlockState(search);
-			if (isLiquid(blockState))
+			blockState = world.getBlockState(pos);
+			if ( blockState.getBlock() instanceof BlockLiquid && blockState.getBlock().getDefaultState() != Blocks.WATER )
 			{
-				break;
+				return null;
 			}
-			if ( !(blockState.getBlock() instanceof BlockAir) )
+			
+			if ( !blockState.getBlock().getDefaultState().isFullCube() )
 			{
-				break;
+				if ( floor )
+				{
+					if ( airspace )
+					{
+						return pos.down();
+					}
+					else
+					{
+						airspace = true;
+					}
+				}
 			}
+			else
+			{
+				floor = true;
+				airspace = false;
+			}
+			pos = pos.up();
+			y++;
 		}
-		return search.up();
-	}
-	private boolean isLiquid(IBlockState blockState)
-	{
-		return blockState.getBlock() == Blocks.WATER || blockState.getBlock() == Blocks.LAVA;
+		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+		
+		// =-=-=-=-= SEARCH DOWN =-=-=-=-=
+		pos = startPos.up();
+		airspace = false;
+		floor = false;
+		y = 0;
+		
+		while ( yOffset > y )
+		{
+			blockState = world.getBlockState(pos);
+			if ( blockState.getBlock() instanceof BlockLiquid && blockState.getBlock().getDefaultState() != Blocks.WATER )
+			{
+				return null;
+			}
+			
+			if ( !blockState.getBlock().getDefaultState().isFullCube() )
+			{
+				if ( airspace )
+				{
+					floor = true;
+				}
+				else
+				{
+					airspace = true;
+				}
+			}
+			else if ( airspace && floor )
+			{
+				return pos;
+			}
+			else
+			{
+				airspace = false;
+				floor = false;
+			}
+			
+			pos = pos.down();
+			y++;
+		}
+		return null;
 	}
 
 	public boolean shouldExecute()
 	{
-		if ( !enabled || inCorrectPosition() )
+		if ( this.centerX == null || this.centerZ == null )
 		{
 			return false;
 		}
-
-//		this.pos = this.getSurfacePosition(this.entity.world, new BlockPos(this.centerX,0,this.centerZ));
-//		this.path = this.entity.getNavigator().getPathToPos(pos);
-//		
-//		if ( path != null && this.pos != null )
-//		{
-//			this.entity.getNavigator().setPath(path, this.movementSpeed);
-//			return true;
-//		}
-//		else
 		
-		if ( this.entity.getNavigator().noPath() || rand.nextInt(32) == 0 )
+		if ( this.inCorrectPosition() )
 		{
-			{
-				BlockPos vec3d = null;
-				vec3d = this.getSurfacePosition(this.entity.world, this.entity.getPosition());
-				
-				if (vec3d == null)
-				{
-					return false;
-				}
-				else
-				{
-					this.movePosX = vec3d.getX();
-					this.movePosY = vec3d.getY();
-					this.movePosZ = vec3d.getZ();
-				}
-		
-				return true;
-			}
+			return false;
 		}
-		return false;
 		
-		/*
-		Vec3d vec3d = null;
-		
-		for ( int i = 0; i < 8; i++)
-		{
-			vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this.entity, 32, 16, new Vec3d((double) centerX, (double) this.entity.posY, (double) centerZ));
-			
-			if (vec3d == null)
-			{
-
-			}
-			else
-			{
-				double xdif = Math.abs(this.entity.posX-vec3d.x);
-				double zdif = Math.abs(this.entity.posZ-vec3d.z);
-				
-				System.out.println(xdif);
-				System.out.println(zdif);
-				
-				if ( xdif + zdif < 8 || Math.abs(xdif-zdif) > 8 )
-				{
-
-				}
-				else
-				{
-					this.movePosX = vec3d.x;
-					this.movePosY = vec3d.y;
-					this.movePosZ = vec3d.z;
-					return true;
-				}
-			}
-		}
-		return false;
-		*/
-		
+		return true;
 	}
-
+	
+	
+	public void updateTask()
+    {
+		if ( ( this.entity.getNavigator().noPath() && this.rand.nextInt(8) == 0 ) || this.rand.nextInt(32) == 0 )
+		{
+			this.move(this.entity.world, this.entity.getPosition());
+		}
+    }
+	
 	public boolean inCorrectPosition()
 	{
-		double x = (double) centerX - entity.posX;
-		double z = (double) centerZ - entity.posZ;
-		double dist = x * x + z * z;
-		return dist < radiusSq;
+		return this.minDistanceFromCenter > this.entity.getDistance(this.entity.posX - centerX, this.entity.posY, this.entity.posX - centerX);
 	}
-
-	/**
-	 * Returns whether an in-progress EntityAIBase should continue executing
-	 */
-	public boolean continueExecuting()
-	{
-		return !this.entity.getNavigator().noPath();
-	}
-
-	/**
-	 * Execute a one shot task or start executing a continuous task
-	 */
+	
 	public void startExecuting()
 	{
-		this.entity.getNavigator().tryMoveToXYZ(this.movePosX, this.movePosY, this.movePosZ, this.movementSpeed);
+		this.move(this.entity.world, this.entity.getPosition());
 	}
 }

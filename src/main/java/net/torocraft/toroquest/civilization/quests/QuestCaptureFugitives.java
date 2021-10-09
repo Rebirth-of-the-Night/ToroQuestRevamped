@@ -6,39 +6,24 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemLead;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemTool;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.village.Village;
 import net.minecraft.world.World;
-import net.minecraft.world.storage.MapData;
-import net.minecraft.world.storage.MapDecoration;
-import net.minecraftforge.client.event.GuiContainerEvent;
-import net.minecraftforge.client.event.GuiOpenEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.eventhandler.Event;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.items.ItemHandlerHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
-import net.torocraft.toroquest.civilization.CivilizationEvent;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
-import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapability;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
-import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity.DataWrapper;
-import net.torocraft.toroquest.civilization.quests.util.ItemMapCentered;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
@@ -130,20 +115,21 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
+		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
+
+		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
+		{
+			return null;
+		}
+		
 		if (!quest.getCompleted())
 		{
 			if ( quest.getChatStack() == "" )
 			{
-				quest.setChatStack( "You haven't captured all the fugitives yet!" );
+				quest.setChatStack( "capture_fugitives.incomplete", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
 				this.setData(quest);
 			}
 			// quest.getPlayer().closeScreen();
-			return null;
-		}
-
-		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
-
-		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId())) {
 			return null;
 		}
 
@@ -156,38 +142,44 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
 
-		// data.setChatStack( "I knew I could count on you, " + data.getPlayer().getName() + "." );
-		this.setData(quest);
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(province.civilization) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
 		
 		List<ItemStack> rewards = getRewardItems(quest);
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
-
+		
+		quest.setChatStack( "capture_fugitives.complete", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+		this.setData(quest);
 		return items;
 	}
 
 	@Override
-	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
+	public List<ItemStack> reject(QuestData quest, List<ItemStack> items)
 	{
-		if ( in == null )
+		if ( quest.getCompleted() )
 		{
-			if ( data.getChatStack() == "" )
-			{
-				data.setChatStack( "Return the tool that was provided, or 5 emeralds to pay for it." );
-				this.setData(data);
-				data.getPlayer().closeScreen();
-			}
 			return null;
 		}
-
-		List<ItemStack> givenItems = copyItems(in);
 
 		boolean toolIncluded = false;
 		int emeraldRemainingCount = 5;
 
-		for (ItemStack item : givenItems)
+		for (ItemStack item : items)
 		{
 			{
 				if (item.getItem() instanceof ItemLead)
@@ -200,7 +192,7 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 
 		if (!toolIncluded)
 		{
-			for (ItemStack item : givenItems)
+			for (ItemStack item : items)
 			{
 				if (!item.isEmpty() && item.getItem() == Items.EMERALD && item.getCount() >= 5)
 				{
@@ -211,18 +203,17 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 			}
 		}
 
-		if (!toolIncluded && emeraldRemainingCount > 0)
+		if ( !toolIncluded && emeraldRemainingCount > 0 )
 		{
-			data.setChatStack( "Return the tool that was provided, or 5 emeralds to pay for it." );
-			this.setData(data);
-			// data.getPlayer().closeScreen();
+			quest.setChatStack( "rejectreturnitem", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+			this.setData(quest);
 			return null;
 		}
-		data.setCompleted(false);
-		data.setChatStack( "Very well. Crime will continue to run rampant in our province, then." );
-		this.setData(data);
-		data.getPlayer().closeScreen();
-		return givenItems;
+		
+		quest.setChatStack( "capture_fugitives.reject", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+		this.setData(quest);
+		quest.getPlayer().closeScreen();
+		return items;
 	}
 	
 	@Override
@@ -230,65 +221,97 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 	{
 		try
 		{
-			BlockPos pos = searchForSuitableLocation(data, 96, 0);
+			BlockPos pos = searchForSuitableLocation(data, 88, 0);
 			setSpawnPosition(data, pos);
 			addToroSpawner(data, data.getPlayer().getEntityWorld(), getSpawnPosition(data), getDefaultEnemies(data));
-
-			//spawnFugitives( data.getPlayer().world, data.getPlayer(), getSpawnPosition(data) );
-			
-			ItemStack itemstack = new ItemStack(Items.LEAD, 1);
-			itemstack.setStackDisplayName( "Lasso" );
-			in.add(itemstack);
-						
-			//if (!data.getPlayer().world.isRemote)
-			{
-				switch (data.getPlayer().world.rand.nextInt(7))
-				{
-					case 0:
-					{
-						data.setChatStack( "Capture the band of fugitives dwelling amongst us, and seize them to my guards." );
-						break;
-					}
-					case 1:
-					{
-						data.setChatStack( "Hunt down the band of fugitives dwelling amongst us, and bring them to justice!" );
-						break;
-					}
-					case 2:
-					{
-						data.setChatStack( "Find and bring the band of fugitives to justice, here in " + getProvinceName(data.getPlayer(), data.getProvinceId() ) + "." );                                                                  
-						break;
-					}
-					case 3:
-					{
-						data.setChatStack( "Investigate the streets of " + getProvinceName(data.getPlayer(), data.getProvinceId()) + " and sieze the band of fugitives." );
-						break;
-					}
-					case 4:
-					{
-						data.setChatStack( "Several fugitives have managed to break free from their dungeon cells. Find and turn them over to my guards." );
-						break;
-					}
-					case 5:
-					{
-						data.setChatStack( "Crime is running rampant on my streets... show the citizens of " + getProvinceName(data.getPlayer(), data.getProvinceId()) + " what happens to those who break the law!" );
-						break;
-					}
-					case 6:
-					{
-						data.setChatStack( "My guards have failed to keep crime under control. Do them a service, " + data.getPlayer().getName() + " and show them how it's done." );
-						break;
-					}
-				}
-			}
 		}
 		catch (Exception e)
 		{
-			System.out.println("ERROR: " + e + " - Capture fugitives accept method" );
-			reject(data,in);
+			
 		}
+		ItemStack itemstack = new ItemStack(Items.LEAD, 1);
+		itemstack.setStackDisplayName( I18n.format("item.fugitive_bindings.name") );
+		in.add(itemstack);
+		data.setChatStack( "capture_fugitives.accept", data.getPlayer(), data.getCiv().getDisplayName(data.getPlayer()));
 		this.setData(data);
 		return in;
+	}
+	
+	public BlockPos searchForSuitableLocation( QuestData data, int range, int occupiedRange )
+	{
+		BlockPos pos = null;
+		for (int i = 0; i < 100; i++)
+		{
+			pos = randomLocation(data, rand, range, false, occupiedRange);
+			if (pos != null)
+			{
+				break;
+			}
+		}
+		if (pos == null)
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				pos = randomLocation(data, rand, range*2, true, occupiedRange);
+				if (pos != null)
+				{
+					break;
+				}
+			}
+		}
+		return pos;
+	}
+
+	public BlockPos randomLocation(QuestData data, Random random, int range, boolean force, int occupiedRange)
+	{
+		Province province = getQuestProvince(data);
+		EntityPlayer player = data.getPlayer();
+
+		if ( province == null || player == null )
+		{
+			return null;
+		}
+		
+		int x = (random.nextInt(range));
+		int z = (random.nextInt(range));
+		
+		while ( x + z < range/2 )
+		{
+			x = (random.nextInt(range));
+			z = (random.nextInt(range));
+		}
+		
+		x *= (random.nextInt(2)*2-1);
+		z *= (random.nextInt(2)*2-1);
+		
+		x += province.getCenterX();
+		z += province.getCenterZ();
+		
+		BlockPos pos = findSurface(player.world, x, z, force);
+
+		if ( force )
+		{
+			return pos;
+		}
+		
+		if (pos == null)
+		{
+			return null;
+		}
+		
+	    province = CivilizationUtil.getProvinceAt(player.world, x/16, z/16);
+	
+		if ( province == null)
+		{
+			return null;
+		}
+		
+		if (data.getPlayer().world.isAnyPlayerWithinRangeAt((double)pos.getX(),(double)pos.getY(),(double)pos.getZ(),16))
+		{
+			return null;
+		}
+
+		return pos;
 	}
 	
 	private void addToroSpawner(QuestData data, World world, BlockPos blockpos, List<String> entities)
@@ -358,16 +381,14 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		q.data.setQuestType(ID);
 		q.data.setCompleted(false);
 		
-		int roll = 2+rand.nextInt(3);
- 
-		setRewardRep(q.data, roll*2);
-		int em = roll;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		int roll = rand.nextInt(3)+2;
+		int em = roll*4+4;
+		q.setRewardRep(em*2);
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
 		q.setCurrentAmount(0);
-		q.setRewardRep(em);
 		q.setTargetAmount(roll);
 
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward

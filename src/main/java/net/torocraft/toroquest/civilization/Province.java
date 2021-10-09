@@ -3,6 +3,7 @@ package net.torocraft.toroquest.civilization;
 import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.torocraft.toroquest.entities.EntityVillageLord;
 
 public class Province
 {
@@ -10,6 +11,7 @@ public class Province
 	public UUID id;
 	public String name;
 	public boolean hasLord;
+//	public EntityVillageLord lord = null;
 	public int chunkX;
 	public int chunkZ;
 
@@ -23,6 +25,21 @@ public class Province
 	public int area;
 
 	public CivilizationType civilization;
+	
+//	public EntityVillageLord getLord()
+//	{
+//		return this.lord;
+//	}
+	
+//	public void setLord(EntityVillageLord v)
+//	{
+//		this.lord = v;
+//	}
+	
+	public CivilizationType getCiv()
+	{
+		return this.civilization;
+	}
 	
 	// =-=-=-=-=-=-= Trophy =-=-=-=-=-=-=-=-=
 	public boolean zombiepigTrophy;
@@ -57,15 +74,15 @@ public class Province
 	}
 	public boolean hasBeholderTrophy()
 	{
-		return this.zombiepigTrophy;
+		return this.beholderTrophy;
 	}
 	public boolean hasTitanTrophy()
 	{
-		return this.zombiepigTrophy;
+		return this.titanTrophy;
 	}
 	public boolean hasLordTrophy()
 	{
-		return this.zombiepigTrophy;
+		return this.lordTrophy;
 	}
 
 
@@ -101,7 +118,7 @@ public class Province
 		this.beholderTrophy = c.getBoolean("beholderTrophy");
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 		
-		computeSize();
+		this.computeSize();
 	}
 
 	private UUID uuid(String s)
@@ -140,8 +157,8 @@ public class Province
 		upperVillageBoundX = Math.max(upperVillageBoundX, newChunkX);
 		lowerVillageBoundZ = Math.min(lowerVillageBoundZ, newChunkZ);
 		upperVillageBoundZ = Math.max(upperVillageBoundZ, newChunkZ);
-		computeSize();
-		recenter();
+		this.computeSize();
+		this.recenter();
 	}
 
 	private void recenter()
@@ -152,8 +169,8 @@ public class Province
 
 	public void computeSize()
 	{
-		xLength = Math.abs(upperVillageBoundX - lowerVillageBoundX) + 1;
-		zLength = Math.abs(upperVillageBoundZ - lowerVillageBoundZ) + 1;
+		xLength = Math.abs(upperVillageBoundX - lowerVillageBoundX);
+		zLength = Math.abs(upperVillageBoundZ - lowerVillageBoundZ);
 		area = xLength * zLength;
 	}
 
@@ -206,7 +223,8 @@ public class Province
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		StringBuilder sb = new StringBuilder();
 		sb.append(name).append(" of ").append(s(civilization).toLowerCase());
 		sb.append(" at [").append(chunkX * 16).append(",").append(chunkZ * 16).append("]");
@@ -218,14 +236,17 @@ public class Province
 		return sb.toString();
 	}
 
-	private String s(CivilizationType civ) {
-		if (civ == null) {
+	private String s(CivilizationType civ)
+	{
+		if (civ == null)
+		{
 			return "";
 		}
 		return civ.toString();
 	}
 
-	public double chunkDistanceSq(int toChunkX, int toChunkZ) {
+	public double chunkDistanceSq(int toChunkX, int toChunkZ)
+	{
 		double dx = (double) chunkX - toChunkX;
 		double dz = (double) chunkZ - toChunkZ;
 		return dx * dx + dz * dz;

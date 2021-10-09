@@ -1,6 +1,7 @@
 package net.torocraft.toroquest.entities;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -8,7 +9,6 @@ import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
 
 import net.minecraft.block.BlockAir;
-import net.minecraft.block.BlockFence;
 import net.minecraft.block.BlockFire;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.state.IBlockState;
@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureAttribute;
 import net.minecraft.entity.IEntityLivingData;
@@ -27,9 +28,9 @@ import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.monster.EntityGolem;
-import net.minecraft.entity.monster.EntityIronGolem;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
+import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -43,7 +44,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemHoe;
+import net.minecraft.item.ItemLead;
 import net.minecraft.item.ItemPickaxe;
+import net.minecraft.item.ItemShield;
 import net.minecraft.item.ItemSpade;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemSword;
@@ -54,6 +57,7 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -68,6 +72,7 @@ import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.CivilizationType;
@@ -76,41 +81,73 @@ import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity;
 import net.torocraft.toroquest.civilization.quests.QuestCaptureFugitives;
+import net.torocraft.toroquest.civilization.quests.QuestRecruit;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
-import net.torocraft.toroquest.entities.ai.EntityAIAvoidTooClose;
 import net.torocraft.toroquest.entities.ai.EntityAINearestAttackableBanditTarget;
 import net.torocraft.toroquest.entities.ai.EntityAINearestAttackableCivTarget;
 import net.torocraft.toroquest.entities.ai.EntityAIPatrolVillage;
+import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 import net.torocraft.toroquest.entities.ai.EntityAISmartTempt;
 import net.torocraft.toroquest.entities.render.RenderGuard;
 
-public class EntityGuard extends EntityToroNpc implements IRangedAttackMob
+public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, ToroNPC
 {
-	protected final AIArcher<EntityGuard> aiArrowAttack = new AIArcher<EntityGuard>(this, 0.5D, 40, 40.0F);
+	public String playerGuard = "";
     protected double randPosX;
     protected double randPosY;
     protected double randPosZ;
-    protected int stance = (rand.nextInt(6)+5);
-	protected float strafeVer = 0;
-	protected float strafeHor = 0;
-	protected int actionTimer = 0;
-	protected boolean blocking = false;
+	public Integer raidX = null;
+	//public Integer raidY = null;
+	public Integer raidZ = null;
+	protected float strafeVer = 0F;
+	// protected float strafeHor = 0F;
+    protected int stance = rand.nextInt(8)+3;
 	protected int blockingTimer = 0;
 	protected int lastTargetY = 0;
+	public boolean isCaravan = false;
+	public boolean canShieldPush = true;
+	protected boolean postReady = true;
+	protected boolean blocking = false;
+	protected boolean hitSafety = true;
+	public boolean returnToPost = false;
+	public boolean spawnedNearBandits = false;
+	public boolean searchNextEnemy = true;
+	public boolean wildernessGuardSpeak = false;
 	
-	protected boolean isAnnoyed = false;
-	protected int isAnnoyedTimer = 0;
+	// EntityPlayer lastHostilePlayer = null;
+	
+	protected CivilizationType c = null;
+	protected final AIArcher<EntityGuard> aiArrowAttack = new AIArcher<EntityGuard>(this, 0.5D, 40, 40.0F);
+	public final EntityAISmartTempt followNoCiv = new EntityAISmartTempt(this, 0.625D, Items.AIR)
+	{
+		@Override
+		public boolean shouldExecute()
+	    {
+	        if ( underAttack instanceof EntityPlayer || murderWitness instanceof EntityPlayer || inCombat || temptedEntity.getAttackTarget() != null )
+	        {
+		        return false;
+	        }
+	        return super.shouldExecute();
+	    }
+		
+		@Override
+		protected boolean isTempting(ItemStack stack)
+	    {
+			if ( underAttack instanceof EntityPlayer || murderWitness instanceof EntityPlayer || inCombat || temptedEntity.getAttackTarget() != null )
+	        {
+		        return false;
+	        }
+	        return true;
+	    }
+	};
 
-	protected EntityLivingBase underAttack = null;
-	protected int underAttackTimer = 0;
-	
-	protected EntityPlayer murderWitness = null;
-	protected int murderTimer = 0;
-	
-	protected boolean inCombat = false;
+	@Override
+	public EnumCreatureAttribute getCreatureAttribute()
+	{
+	    return EnumCreatureAttribute.ILLAGER;
+	}
 	
 	public static String NAME = "guard";
-	
 	static
 	{
 		if (ToroQuestConfiguration.specificEntityNames)
@@ -120,7 +157,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob
 	}
 	public static void init(int entityId)
 	{
-		EntityRegistry.registerModEntity(new ResourceLocation(ToroQuest.MODID, NAME), EntityGuard.class, NAME, entityId, ToroQuest.INSTANCE, 80, 2, true, 0x3f3024, 0xe0d6b9);
+		EntityRegistry.registerModEntity(new ResourceLocation(ToroQuest.MODID, NAME), EntityGuard.class, NAME, entityId, ToroQuest.INSTANCE, 80, 1, true, 0x503526, 0xe0d6b9);
 	}
 
 	public static void registerRenders()
@@ -135,124 +172,80 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob
 		});
 	}
 	
-	public EntityPlayer murderWitness()
-	{
-		return murderWitness;
-	}
-	
-//	@SideOnly(Side.CLIENT)
-//    public AxisAlignedBB getRenderBoundingBox()
-//    {
-//        return this.getEntityBoundingBox().grow(16.0);
-//    }
-	
 	public EntityGuard(World worldIn)
 	{
-		this(worldIn, null);
-	}
-
-	public EntityGuard(World worldIn, CivilizationType civ)
-	{
-		super(worldIn, civ);
-		this.setSize(0.6F, 1.93F);
-		this.experienceValue = 20;
-        this.setCombatTask();
-		Arrays.fill(inventoryArmorDropChances, 0.3F);
-		Arrays.fill(inventoryHandsDropChances, 0.3F);
-		((PathNavigateGround) this.getNavigator()).setBreakDoors(true);
-		this.setCanPickUpLoot(false);
-		this.pledgeAllegianceIfUnaffiliated();
+		this(worldIn, null, false);
 	}
 	
-	protected void entityInit()
-    {
-        super.entityInit();
-    }
-		
 	@Override
-    protected void applyEntityAttributes()
-    {
-    	super.applyEntityAttributes();
-    	this.setLeftHanded(false);
-		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(ToroQuestConfiguration.guardHealth);
-    	this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(3.0D);
-		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.guardArmor);
-		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(ToroQuestConfiguration.guardArmorToughness);
-		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
-    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.5D);
-    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
-    }
-
-	// TTASKS
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	protected void initEntityAI()
+	public void setSprinting( boolean b )
 	{
-		this.tasks.addTask(1, new EntityAISwimming(this));
-		//door
-		// this.tasks.addTask(2, new EntityAIMoveIndoors(this));
-        //this.tasks.addTask(2, new EntityAIAvoidTooClose(this, EntityToroNpc.class, 1.5F, 0.5D, 0.5D));
-        	// this.tasks.addTask(8, new EntityAIMoveIndoors(this));
-        	// this.tasks.addTask(9, new EntityAIRestrictOpenDoor(this));
-        this.tasks.addTask(10, new EntityAIOpenDoor(this, false));
-        	// this.tasks.addTask(11, new EntityAIMoveTowardsRestriction(this, 0.45D));
-        // this.tasks.addTask(5, new EntityAIMoveTowardsRestriction(this, 0.4D));
-        // movement
-        this.tasks.addTask(8, new EntityAISmartTempt(this, 0.45D, Item.getByNameOrId("toroquest:recruitment_papers"))
-        {
-        	@Override
-            public boolean shouldExecute()
-            {
-        		if ( inCombat || isAnnoyed || underAttackTimer > 0 || murderTimer > 0 ) 
-        		{
-        			return false;
-        		}
-            	return super.shouldExecute();
-            }
-        });
-		this.tasks.addTask(9, new EntityAIAvoidTooClose(this, 0.45D, 0.45D));
-        this.tasks.addTask(11, new EntityAIPatrolVillage(this, 0.45D));
-        this.tasks.addTask(12, new EntityAIWatchClosest(this, EntityLivingBase.class, 8.0F));
-        this.tasks.addTask(13, new EntityAILookIdle(this));
-        
-		this.targetTasks.addTask(0, new EntityAINearestAttackableCivTarget(this));
-//		this.targetTasks.addTask(1, new AIDefendVillagers(this)
-//		{
-//			@Override
-//			public boolean shouldExecute()
-//			{
-//				Village village = getVillage();
-//
-//		        if (village == null)
-//		        {
-//		            return false;
-//		        }
-//		        else
-//		        {
-//		            this.villageAgressorTarget = village.findNearestVillageAggressor(this.guard);
-//
-//		            if (this.villageAgressorTarget instanceof EntityCreeper || this.villageAgressorTarget instanceof EntityToroNpc || this.villageAgressorTarget instanceof EntityIronGolem )
-//		            {
-//		                return false;
-//		            }
-//		            else if (this.isSuitableTarget(this.villageAgressorTarget, false))
-//		            {
-//		                return true;
-//		            }
-//		            else
-//		            {
-//		                this.villageAgressorTarget = village.getNearestTargetPlayer(this.guard);
-//		                return this.isSuitableTarget(this.villageAgressorTarget, false);
-//		            }
-//		        }
-//			}
-//		});
-		this.targetTasks.addTask(1, new EntityAINearestAttackableBanditTarget(this));
-		// if ( ToroQuestConfiguration.vampirismCompatability ) this.targetTasks.addTask(1, new EntityAINearestAttackableTarget(this, EntityMob.class, false));
+		if ( this.getAttackTarget() != null ) this.faceEntitySmart(this.getAttackTarget());
+		super.setSprinting(b);
 	}
+	
+	// ========================== CUSTOM CHAT ==========================
+	
+	public String getChatName()
+    {
+		return "Guard";
+    }
+	
+	@Override
+	public boolean hasCustomName()
+    {
+        if ( this.actionTimer <= 3 || this.getCustomNameTag() == null || this.getCustomNameTag().equals("...") || this.getCustomNameTag().equals(this.getChatName()) )
+        {
+        	this.setAlwaysRenderNameTag(false);
+        	return false;
+        }
+        else
+        {
+        	this.setAlwaysRenderNameTag(true);
+        	return true;
+        }
+    }
+	
+	// =================================================================
 
-	//public final EntityAIMoveIntoArea areaAI = new EntityAIMoveIntoArea(this, 0.4D, 20, 20, 10, 32);
-	//public final EntityAIMoveThroughVillage moveAI = new EntityAIMoveThroughVillage(this, 0.4D, false);
-
+	public EntityGuard(World worldIn, CivilizationType civ, boolean isCaravan )
+	{
+		super(worldIn, civ);
+		this.setSize(0.59F, 1.85F);
+		this.experienceValue = 30;
+		this.setCustomNameTag("...");
+		this.setAlwaysRenderNameTag(true);
+		if ( isCaravan )
+		{
+        	this.tasks.addTask(9, followNoCiv);
+        	this.wildernessGuardSpeak = true;
+		}
+        this.setCombatTask();
+		Arrays.fill(inventoryHandsDropChances, ToroQuestConfiguration.guardHandsDropChance);
+		Arrays.fill(inventoryArmorDropChances, ToroQuestConfiguration.guardArmorDropChance);
+		((PathNavigateGround) this.getNavigator()).setBreakDoors(true);
+		this.setCanPickUpLoot(false);
+		//this.pledgeAllegianceIfUnaffiliated();
+	}
+	
+	public void setPlayerGuard(String b)
+	{
+		if ( b == null )
+		{
+			this.playerGuard = "";
+		}
+		else
+		{
+			this.playerGuard = b;
+		}
+		this.writeEntityToNBT(new NBTTagCompound());
+	}
+	
+	@Override
+	public float getEyeHeight()
+	{
+	    return 1.94F;
+	}
 
 	@Override
 	public boolean inCombat()
@@ -261,32 +254,53 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob
 	}
 	
 	@Override
-	public boolean isAnnoyed()
+	public boolean actionReady()
 	{
-		return this.isAnnoyed;
+		return this.actionTimer < 1;
 	}
 	
+	@Override
+	public boolean isAnnoyed()
+	{
+		return this.isAnnoyedTimer > 0;
+	}
+	
+	@Override
 	public int actionTimer()
 	{
 		return this.actionTimer;
 	}
 	
+	@Override
 	public void setActionTimer(int n)
 	{
 		this.actionTimer = n;
 	}
 	
 	@Override
-	public void setAnnoyed()
+	public void setAnnoyed( EntityPlayer player )
 	{
-		this.isAnnoyed = true;
-		this.isAnnoyedTimer = 8;
+		if ( this.isAnnoyed() )
+		{
+			this.isAnnoyedTimer = 8;
+		}
+		else
+		{
+			this.isAnnoyedTimer = 4;
+		}
+		this.annoyedAt = player;
+	}
+	
+	@Override
+	public boolean isAnnoyedAt( EntityPlayer player )
+	{
+		return ( this.isAnnoyed() && this.annoyedAt != null && this.annoyedAt == player );
 	}
 	
 	@Override
 	public void setUnderAttack( EntityPlayer player )
 	{
-		this.setAnnoyed();
+		this.setAnnoyed( player );
 		this.underAttack = player;
 		this.underAttackTimer = 16;
 	}
@@ -299,226 +313,446 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob
 		this.murderTimer = 64;
 	}
 	
-@Override
-public void readEntityFromNBT(NBTTagCompound compound)
-{
-    super.readEntityFromNBT(compound);
-    if ( compound.hasKey("raidX") && compound.hasKey("raidY") && compound.hasKey("raidZ") )
-    {
-    	this.raidX = compound.getInteger("raidX");
-    	this.raidY = compound.getInteger("raidY");
-    	this.raidZ = compound.getInteger("raidZ");
-    }
-}
+	@Override
+	public EntityPlayer murderWitness()
+	{
+		return this.murderWitness;
+	}
+	
+	@Override
+	public EntityPlayer underAttack()
+	{
+		return this.underAttack;
+	}
+	
+	@Override
+	protected boolean canDespawn()
+	{
+		return false;
+	}
 	
 	@Override
 	public boolean hasHome()
 	{
-		return false;// ( this.getCivilization() != null );
+		return ( this.raidX != null && this.raidZ != null );
 	}
 	
-	public Integer raidX = null;
-	public Integer raidY = null;
-	public Integer raidZ = null;
+	public BlockPos getHomePosition()
+    {
+		if ( this.raidX != null && this.raidZ != null )
+		{
+			return new BlockPos(this.raidX,this.posY,this.raidZ);
+		}
+		else
+		{
+			return this.getPosition();
+		}
+    }
+	
+	//==================================================== NBT ===========================================================
+
 	
 	@Override
 	public void writeEntityToNBT(NBTTagCompound compound)
 	{
-		super.writeEntityToNBT(compound);
-		if ( this.raidX != null && this.raidY != null && this.raidZ != null )
+		if ( this.raidX != null && this.raidZ != null )
 		{
 			compound.setInteger("raidX", this.raidX);
-			compound.setInteger("raidY", this.raidY);
+			//compound.setInteger("raidY", this.raidY);
 			compound.setInteger("raidZ", this.raidZ);
 		}
+		if ( this.playerGuard != "" )
+		{
+			compound.setString("playerGuard", this.playerGuard);
+		}
+		super.writeEntityToNBT(compound);
 	}
 	
 	@Override
+	public void readEntityFromNBT(NBTTagCompound compound)
+	{
+	    if ( compound.hasKey("raidX") && compound.hasKey("raidZ") )
+	    {
+	    	this.raidX = compound.getInteger("raidX");
+	    	//this.raidY = compound.getInteger("raidY");
+	    	this.raidZ = compound.getInteger("raidZ");
+	    }
+	    if ( compound.hasKey("playerGuard") )
+	    {
+	    	this.playerGuard = compound.getString("playerGuard");
+	    }
+	    super.readEntityFromNBT(compound);
+	}
+	
+	//==================================================== Attributes ===========================================================
+	
+	@Override
+    protected void applyEntityAttributes()
+    {
+    	super.applyEntityAttributes();
+    	this.setLeftHanded(false);
+		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(ToroQuestConfiguration.guardBaseHealth);
+    	this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(ToroQuestConfiguration.guardAttackDamage);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.guardArmor);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(ToroQuestConfiguration.guardArmorToughness);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
+    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.389D);
+    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+    }
+	
+	//==================================================== AI Tasks ===========================================================
+
+	@Override
+    protected float getWaterSlowDown()
+    {
+        return this.isHandActive()?0.8F:0.9F;
+    }
+	
+	protected void initEntityAI()
+	{
+		this.tasks.addTask(1, new EntityAISwimming(this));
+        this.tasks.addTask(2, new EntityAIOpenDoor(this, true));
+        this.tasks.addTask(3, new EntityAISmartTempt(this, 0.65D, Item.getByNameOrId("toroquest:recruitment_papers"))
+        {
+        	@Override
+            public boolean shouldExecute()
+            {
+        		if ( EntityGuard.this.inCombat || EntityGuard.this.isAnnoyed() || EntityGuard.this.underAttackTimer > 0 || EntityGuard.this.murderTimer > 0 || EntityGuard.this.isBurning() || EntityGuard.this.getAttackTarget() != null ) 
+        		{
+        			return false;
+        		}
+            	return super.shouldExecute();
+            }
+        });
+        this.tasks.addTask(4, new EntityAIPatrolVillage(this, 0.65D));
+        this.tasks.addTask(5, new EntityAIWatchClosest(this, EntityLivingBase.class, 8.0F)
+        {
+	        public boolean shouldExecute()
+	        {
+	            if ( !EntityGuard.this.getNavigator().noPath() || EntityGuard.this.getAttackTarget() == null ) // has a path
+	            {
+	            	return false;
+	            }
+	            else
+	            {
+	            	return super.shouldExecute();
+	            }
+	        }
+        });
+        this.tasks.addTask(6, new EntityAILookIdle(this)
+        {
+	        public boolean shouldExecute()
+	        {
+	            return EntityGuard.this.getAttackTarget() == null && EntityGuard.this.getNavigator().noPath() && EntityGuard.this.world.rand.nextFloat() < 0.02F;
+	        }
+        });
+        
+		this.targetTasks.addTask(0, new EntityAINearestAttackableCivTarget(this));
+		this.targetTasks.addTask(1, new EntityAINearestAttackableBanditTarget(this));
+	}
+	
+	//==================================================== Living Update ===========================================================
+	public int aggroTimer = 0;
+
+	@Override
 	public void onLivingUpdate()
 	{
+		if ( this.getAttackTarget() != null )
+    	{
+			this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
+    	else
+    	{
+        	// this.faceMovingDirection();
+    	}
+				
 		super.onLivingUpdate();
-		
-//		if ( this.world.isRemote )
-//		{
-//			return;
-//		}
-
-		//EntityLivingBase attacker = this.getAttackTarget();
-		
+        
 		if ( this.world.isRemote )
 		{
 			return;
 		}
 		
+		// ======================================
        	if ( this.ticksExisted % 100 == 0 )
     	{
-       		this.pledgeAllegianceIfUnaffiliated();
+       		// this.returnToPost = false;
+    		this.setSprinting(false);
        		
+			if ( !this.actionReady() )
+			{
+				this.actionTimer--;
+				if ( this.actionTimer <= 3 )
+				{
+					this.interactTalkReady = true;
+					this.setCustomNameTag("...");
+					this.setAlwaysRenderNameTag(false);
+				}
+			}
+			else
+			{
+				this.setCustomNameTag("...");
+				this.setAlwaysRenderNameTag(false);
+			}
+       		
+       		this.pledgeAllegianceIfUnaffiliated();
+       		       		
        		if ( this.getHealth() >= this.getMaxHealth() )
 			{
-				if ( !this.inCombat && this.underAttackTimer <= 0 )
-				{
-					this.hitSafety = true;
-					BlockPos pos = this.getPosition();
-					IBlockState block = world.getBlockState(pos);
-					if ( block instanceof BlockLiquid )
+       			if ( this.getAttackTarget() != null )
+       			{
+	       			if ( ++this.aggroTimer > 4 && !this.canEntityBeSeen(this.getAttackTarget()) && Math.abs(this.posY-this.getAttackTarget().posY)*3 >= this.getDistance(this.getAttackTarget()) )
 					{
-				        Vec3d vec3d = RandomPositionGenerator.getLandPos(this, 8, 4);
-				        if ( vec3d != null )
-				        {
-				        	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5);
-				        }
+						this.returnToPost = returnToPost();
+	
+						if ( this.getAttackTarget() instanceof EntityLiving )
+						{
+							((EntityLiving)this.getAttackTarget()).setAttackTarget(null);
+						}
+						this.setAttackTarget(null);
+						this.searchNextEnemy = false;
+						this.aggroTimer = 0;
 					}
-				}
+       			}
+       			else
+       			{
+       				this.aggroTimer = 0;
+       				
+       				if ( this.underAttackTimer < 1 ) 
+					{
+						this.hitSafety = true;
+	       				if ( !(this.getHeldItemMainhand().getItem() instanceof ItemBow) && rand.nextInt(4) == 0 )
+		       			{
+			       			List<EntityVillager> villagers = this.world.getEntitiesWithinAABB(EntityVillager.class, new AxisAlignedBB(this.getPosition()).grow(6, 4, 6));
+			       			Collections.shuffle(villagers);
+			       			for ( EntityVillager p : villagers )
+			       			{
+			       				if ( !p.isTrading() )
+			       				{
+				       				this.getNavigator().clearPath();
+									this.getNavigator().tryMoveToXYZ(((p.posX - this.posX)/3.0+this.posX),p.posY,((p.posZ - this.posZ)/3.0+this.posZ), 0.5D);
+									this.faceEntity(p, 0.20F, 0.20F);
+									this.getLookHelper().setLookPositionWithEntity(p, 0.20F, 0.20F);
+									
+									p.getNavigator().clearPath();
+									p.getNavigator().tryMoveToXYZ(((this.posX - p.posX)/3.0+p.posX),this.posY,((this.posZ - p.posZ)/3.0+p.posZ), 0.5D);
+									p.faceEntity(this, 0.20F, 0.20F);
+									p.getLookHelper().setLookPositionWithEntity(this, 0.20F, 0.20F);
+			       				}
+								break;
+			       			}
+		       			}
+					}
+       			}
 			}
        		else this.heal(1.0f);
     		
-    		if ( this.isAnnoyedTimer > 0 && rand.nextInt(2) == 0 )
+			this.postReady = true;
+
+    		if ( this.isAnnoyed() )
     		{
-    			if ( --this.isAnnoyedTimer < 1 )
-    			{
-    				this.isAnnoyed = false;
-    			}
+    			this.isAnnoyedTimer--;
+    		}
+    		else
+    		{
+    			this.annoyedAt = null;
     		}
     		
-    		if ( this.underAttackTimer > 0 && rand.nextBoolean() )
-    		{
-    			if ( !this.inCombat )
-    			{
-    				this.underAttackTimer -= 5;
-    			}
-    			
+    		if ( this.underAttackTimer > 0 )
+    		{	
     			if ( --this.underAttackTimer < 1 )
     			{
     				this.underAttack = null;
     				
     				// guards will drop aggro on players if not attacked for some time
-    				if ( this.getAttackTarget() != null && this.getAttackTarget() instanceof EntityPlayer )
+    				if ( this.getAttackTarget() instanceof EntityPlayer && this.murderWitness() != this.getAttackTarget() )
     				{
     					this.blocking = false;
-    					this.blockingTimer = -200;
-    					// this.activeItemStackUseCount = 0;
-    			    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
+    					this.blockingTimer = 0;
+    			    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+    		        	this.canShieldPush = true;
     					this.resetActiveHand();
-    					this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.8F + rand.nextFloat()/5 );
-    					//if ( !this.world.isRemote )
+    					this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+    					
+    					if ( this.getCivilization() != null && this.getDistance(this.getAttackTarget()) <= 10 && PlayerCivilizationCapabilityImpl.get((EntityPlayer)this.getAttackTarget()).getReputation(this.getCivilization()) > -50 )
     					{
-    						this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.BOW, 1));
-    						this.setHeldItem(EnumHand.OFF_HAND, ItemStack.EMPTY);
+    						this.chat((EntityPlayer) this.getAttackTarget(), "dropplayeraggro", "House " + this.getCivilization().getDisplayName((EntityPlayer) this.getAttackTarget()));
+    						List<EntityGuard> guards = this.getAttackTarget().world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getAttackTarget().getPosition()).grow(20, 16, 20), new Predicate<EntityGuard>()
+    						{
+    							public boolean apply(@Nullable EntityGuard entity)
+    							{
+    								return true;
+    							}
+    						});
+    						for ( EntityGuard guard : guards )
+    						{
+    							if ( guard.getAttackTarget() == this.getAttackTarget() )
+    							{
+    								guard.setAttackTarget(null);
+    							}
+    						}
     					}
+    					
     					this.strafeVer = 0.0F;
-    					this.strafeHor = 0.0F;
+    					this.stance = 0;
     			    	this.getMoveHelper().strafe( 0.0F, 0.0F );
     			    	this.getNavigator().clearPath();
+    					this.returnToPost = returnToPost();
+    			    	this.isAnnoyedTimer = 0;
     					this.setAttackTarget(null);
     				}
     			}
     		}
     		
-    		if ( this.murderTimer > 0 && rand.nextInt(3) == 0 )
+    		if ( this.murderTimer > 0 && rand.nextBoolean() )
     		{
     			if ( --this.murderTimer < 1 )
     			{
     				this.murderWitness = null;
     			}
     		}
-    		    
-    		
-    		
     		
     		if ( !this.inCombat )
     		{
+    	        this.setSprinting(false);
     			ItemStack iStack = this.getHeldItemMainhand();
     			
-    			if ( this.actionTimer > 0 )
+    			if ( this.getAttackTarget() == null )
     			{
-    				if ( rand.nextBoolean() ) this.actionTimer--;
-    			}
-    			
-    			if ( this.getAttackTarget() == null && this.lastTargetY <= 4 && iStack != null && (iStack.getItem() instanceof ItemBow) ) // SSS
-				{
-					this.resetActiveHand();
-		        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5 );
-		        	if ( !this.world.isRemote )
+	    			if ( this.lastTargetY < 4 && iStack != null && (iStack.getItem() instanceof ItemBow) )
 					{
-		        		setMeleeWeapon();
+						this.resetActiveHand();
+			        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+			        	if ( !this.world.isRemote )
+						{
+			        		this.setMeleeWeapon();
+			        		if ( this.world.canSeeSky(this.getPosition()) && this.world.getWorldTime() >= 12500 && this.world.getWorldTime() <= 23500 )
+			        		{
+			        			this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Blocks.TORCH, 1));
+			        		}
+						}
+						this.blockingTimer = 0;
 					}
-					this.blockingTimer = 0;
-				}
-	    		
-	    		if ( rand.nextBoolean() && this.raidX != null && this.raidY != null && this.raidZ != null && this.murderTimer <= 0 && this.underAttackTimer <= 0 ) 
+	    			else if ( this.world.canSeeSky(this.getPosition()) && !(iStack.getItem() instanceof ItemBow) && this.world.getWorldTime() >= 12500 && this.world.getWorldTime() <= 23500 )
+	        		{
+	    				if ( !(iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH)) )
+	    				{
+							this.resetActiveHand();
+				        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+				        	if ( !this.world.isRemote )
+				        	{
+				        		this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Blocks.TORCH, 1));
+				        	}
+							this.blockingTimer = 0;
+	    				}
+	        		}
+	    			else if ( iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH) )
+	    			{
+						this.resetActiveHand();
+			        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+			        	if ( !this.world.isRemote )
+			        	{
+			        		this.setMeleeWeapon();
+			        	}
+	    			}
+    				this.canShieldPush = true;
+    	    		this.avoidNear(this.world.getNearestAttackablePlayer(this, 4, 2));
+    			}
+	    		if ( this.underAttackTimer < 1 && rand.nextInt(5) == 0 && this.murderTimer <= 0 && !this.isAnnoyed() ) 
 	    		{
-	        		BlockPos pos = new BlockPos( this.raidX, this.raidY, this.raidZ );
-	        		this.getNavigator().tryMoveToXYZ(pos.getX()+0.5, pos.getY()+rand.nextInt(3)-1, pos.getZ()+0.5, 0.45D);
+					this.returnToPost = returnToPost();
 	    		}
+    		}
+    		else if ( this.getAttackTarget() != null )
+    		{
+	    		this.callForHelp( this.getAttackTarget() );
     		}
     		else
     		{
-	    		if ( this.getAttackTarget() != null )
-	    		{
-		    		List<EntityGuard> guards = this.world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getPosition()).grow(12, 12, 12), new Predicate<EntityGuard>()
-		    		{
-		    			public boolean apply(@Nullable EntityGuard entity)
-		    			{
-		    				return true;
-		    			}
-		    		});
-		    		for (EntityGuard guard: guards)
-		    		{
-		    			if ( guard.getAttackTarget() == null && guard.canEntityBeSeen( this.getAttackTarget() ) )
-		    			{
-							guard.setAttackTarget( this.getAttackTarget() );
-		    			}
-		    		}
-	    		}
-	    		
-	    		if ( this.getAttackTarget() == null || !this.getAttackTarget().isEntityAlive() )
-	        	{
-	    			this.setAttackTarget( this.getRevengeTarget() );
-	        	}
+	    		this.inCombat = false;
     		}
     	}
-       	
-    	// if has an attacker
-		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() && !(this.getAttackTarget() instanceof EntityToroNpc) && !(this.getAttackTarget() instanceof EntityVillager) && !(this.getAttackTarget() instanceof EntityGolem) )
+       	// =======================================
+       	//				ATTACK TARGET
+       	// =======================================
+		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() && !(this.getAttackTarget() instanceof EntityToroNpc) && !(this.getAttackTarget() instanceof EntityVillager) && ( !(this.getAttackTarget() instanceof EntityGolem) || this.getAttackTarget() instanceof EntityConstruct ) )
 		{
+			if ( this.isSprinting() )
+			{
+				this.faceEntitySmart(this.getAttackTarget());
+			}
+			else
+			{
+				this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+			}
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+			
+			List<EntityArrow> arrows = this.world.getEntitiesWithinAABB(EntityArrow.class, new AxisAlignedBB(this.getPosition()).grow(8, 8, 8), new Predicate<EntityArrow>()
+			{
+				public boolean apply(@Nullable EntityArrow entity)
+				{
+					if ( entity.lastTickPosX == 0 && entity.shootingEntity == getAttackTarget() )
+					{
+						return true;
+					}
+					return false;
+				}
+			});
+			
 	        double dist = this.getDistanceSq(this.getAttackTarget());
-	        //double d = this.getDistance(attacker);
-	        this.lastTargetY = (int)Math.abs(this.posY - this.getAttackTarget().posY);
+			
+			if ( !arrows.isEmpty() )
+			{
+				this.stance = rand.nextInt(6)+5;
+    			this.faceEntitySmart(this.getAttackTarget());
+				if ( dist <= 12 )
+				{
+					this.blockingTimer = 25;
+				}
+				else
+				{
+					this.blockingTimer = 50;
+				}
+				this.blocking = true;
+				this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
+	        	this.canShieldPush = true;
+				this.resetActiveHand();
+				this.setActiveHand(EnumHand.OFF_HAND);
+				this.updateActiveHand();
+				this.strafeVer = 0.4F;
+			}
+			
+	        this.lastTargetY = (int)(Math.abs(this.posY - this.getAttackTarget().posY)+0.5D);
 	        ItemStack iStack = this.getHeldItemMainhand();
 	        if ( !this.inCombat )
 	        {
-	            if ( rand.nextBoolean() && this.actionTimer <= 0 )
-	            {
-	            	this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5 );
-	            	this.actionTimer = 1;
-	            }
 				this.getMoveHelper().strafe( 0.0F, 0.0F );
 	        	this.getNavigator().clearPath();
+	        	this.canShieldPush = true;
 				this.resetActiveHand();
 				this.inCombat = true;
-				this.strafeVer = 0.8F;
-				this.strafeHor = getStrafe(stance);
-				//this.canSwap = 0;
-	        	//if ( this.getNavigator().getPathToEntityLiving(attacker) == null )
-	        	if ( !this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
+				this.stance = rand.nextInt(6)+5;
+    			this.faceEntitySmart(this.getAttackTarget());
+	        	if ( this.onGround && this.getNavigator().getPathToEntityLiving(this.getAttackTarget()) == null )
 				{
 	        		this.blockingTimer = -200;
 	        	}
 	        	else
-	        	{
-	        		//this.blockingTimer = 0;
-	        	}
+				{
+					this.getMoveHelper().strafe( 0.0F, 0.0F );
+					this.getNavigator().clearPath();
+				}
 	        }
-	        // 199,   0 < -201
 	        // if within range and has not been in melee range for a short amount of time, or very close and has not been in melee range for a long amount of time
-			if ( ( (dist < 200+this.blockingTimer && this.blockingTimer > -200 && this.lastTargetY < 6) || (dist <= 16 && this.lastTargetY < 4 && this.canEntityBeSeen(this.getAttackTarget())) ) )
+			if (  ( ( dist < 200+this.blockingTimer ) || ( this.lastTargetY < 4 && dist <= 20 && this.canEntityBeSeen(this.getAttackTarget())) ) )
 	        {
 				// if this does not have a sword, swap to sword and board
-				if ( iStack != null && (iStack.getItem() instanceof ItemBow) ) // SSS
+				if ( iStack != null && ( iStack.getItem() instanceof ItemBow || iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH) ) ) // SSS
 				{
+		        	this.canShieldPush = true;
 					this.resetActiveHand();
-					this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.9F + rand.nextFloat()/10 );
+					this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.9F + rand.nextFloat()/10.0F );
 					this.getMoveHelper().strafe( 0.0F, 0.0F );
 	            	this.getNavigator().clearPath();
 	            	if ( !this.world.isRemote )
@@ -526,23 +760,23 @@ public void readEntityFromNBT(NBTTagCompound compound)
 	            		setMeleeWeapon();
 					}
 					this.blockingTimer = 0;
-					this.strafeVer = 0.8F;
-					this.strafeHor = getStrafe(stance);
 				}
+				
 				// if this is not blocking, is within range, and block is ready, start blocking
-				if ( !this.blocking && dist <= 12 && this.blockingTimer <= -( (int)(this.stance*8-dist) ) && this.getHealth()/this.getMaxHealth() <= 0.8 )
+				if ( !this.blocking && !this.isSprinting() && dist <= 12 && this.blockingTimer <= -((int)(this.stance*5+dist+20)) && this.getRevengeTarget() != null && this.getRevengeTarget().isEntityAlive() )
 				{
-					this.stance = (rand.nextInt(6)+5);
-					this.blockingTimer = (int)(this.stance*8-dist); // (this.stance*6+dist)
+					this.stance = rand.nextInt(8)+3;
+        			this.faceEntitySmart(this.getAttackTarget());
+					this.blockingTimer = (int)MathHelper.clamp((rand.nextInt(70)+20-dist), 20, 80);
 					this.blocking = true;
 					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
+		        	this.canShieldPush = true;
 					this.resetActiveHand();
 					this.setActiveHand(EnumHand.OFF_HAND);
 					this.updateActiveHand();
-					this.strafeHor = getStrafe(stance);
 					if ( dist <= 6 )
 					{
-						this.strafeVer = 0.0F;
+						this.strafeVer = 0.2F;
 					}
 					else
 					{
@@ -551,160 +785,333 @@ public void readEntityFromNBT(NBTTagCompound compound)
 				}
 				else if ( this.blocking && this.blockingTimer % 16 == 0 )
 				{
-					if ( dist <= 6 )
+		        	this.canShieldPush = true;
+
+					if ( dist <= 3 )
 					{
-						this.strafeVer = 0.0F;
+						this.strafeVer = 0.2F;
 					}
 					else
 					{
 						this.strafeVer = 0.4F;
 					}
 				}
+				
 				// if this is blocking and should no longer block, stop blocking
 				if ( this.blocking && this.blockingTimer <= 0 )
 				{
 					this.blocking = false;
-					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
-					this.stance = rand.nextInt(6)+5;
-					this.strafeHor = getStrafe(stance);
-					this.strafeVer = 1.0F;
+					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+					this.stance = rand.nextInt(8)+3;
+        			this.faceEntitySmart(this.getAttackTarget());
+		        	this.canShieldPush = true;
 					this.resetActiveHand();
 				}
 				// otherwise, if this is in melee range, strafe
-				else if ( !this.blocking && this.blockingTimer < 0 && dist <= 48 )
+				else if ( !this.blocking && dist <= 64 )
 				{
-					if ( this.blockingTimer == -12 || this.blockingTimer == -32 )
+					if ( this.blockingTimer == -12 || this.blockingTimer == -32 || ( this.blockingTimer < -32 && this.blockingTimer % 14 == 0 ) )
 					{
 						if ( rand.nextInt(3) == 0 )
 						{
-							this.stance = rand.nextInt(6)+5;
+							this.stance = rand.nextInt(8)+3;
+		        			this.faceEntitySmart(this.getAttackTarget());
 						}
-						this.strafeHor = getStrafe(stance);
 					}
 				}
 				
-				// not blocking
-				if (!this.blocking)
+				if ( !this.blocking )
 				{
-					if ( dist <= 6 && this.blockingTimer <= -dist*2 )
-					{
-						this.strafeVer = (float)((2+dist)/10);
-					}
-					else if ( dist >= 48 )
-					{
-						this.strafeVer = 1.0F;
-					}
-					else if ( this.blockingTimer < -16 )
-					{
-						this.strafeVer = 0.8F;
-					}
+					float strafeMod = 1.0F;
 					
-					// if the attacker y is bigger than the xz distance
-//					if ( dist >= 4 && Math.pow(this.posY - attacker.posY,2) > Math.abs((this.posX - attacker.posX)*(this.posZ - attacker.posZ)) )
-//					{
-//						if ( vector3d == null )
-//						{
-//							vector3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 16, 16, attacker.getPositionVector());
-//					        this.blockingTimer = -200;
-//						}
-//						
-//					    if ( vector3d != null )
-//					    {
-//				            double rPosX = vector3d.x;
-//				            double rPosY = vector3d.y;
-//						    double rPosZ = vector3d.z;
-//					        this.getNavigator().tryMoveToXYZ(rPosX, rPosY, rPosZ, this.strafeVer);
-//					    }
-//					}
-//					else
-					
-					if ( this.getAttackTarget() != null )
+					if ( this.stance < 5 )
 					{
-						if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) ) // move this up to ^
+						this.setSprinting(false);
+						if ( dist <= 30 )
 						{
-
-						}
-						if ( dist <= 6 )
-						{
-							this.getMoveHelper().strafe( this.strafeVer, this.strafeHor-0.1F );
+							if ( this.onGround )
+							{
+								this.faceEntitySmart(this.getAttackTarget());
+								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+								double push = (1.0D+4.0D*dist);
+								this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
+			                	this.velocityChanged = true;
+							}
+							this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), 0.4F); // bau
+							this.getMoveHelper().strafe( -1.0F, this.getStrafe(this.stance) );
 						}
 						else
 						{
-							this.getMoveHelper().strafe( this.strafeVer, this.strafeHor );
+							this.stance = rand.nextInt(6)+5;
+							this.getNavigator().clearPath();
+					    	this.getMoveHelper().strafe( 0.0F, 0.0F );
 						}
+						if ( this.rand.nextBoolean() ) this.blockingTimer--;
+//						if ( dist <= 30 )
+//						{
+//							if ( this.onGround )
+//							{
+//								this.faceEntitySmart(this.getAttackTarget());
+//								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+//								double push = (1.0D+dist*dist);
+//								this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
+//			                	this.velocityChanged = true;
+//							}
+//							this.getMoveHelper().strafe( this.strafeVer, this.getStrafe(this.stance)*1.25F );
+//						}
+//						else
+//						{
+//							this.stance = rand.nextInt(6)+5;
+//							this.getNavigator().clearPath();
+//		        			this.faceEntitySmart(this.getAttackTarget());
+//					    	this.getMoveHelper().strafe( 0.0F, 0.0F );
+//						}
+//						this.blockingTimer--;
+						return;
 					}
-				}
-				// blocking
-				else
-				{
-					if ( this.strafeVer <= 0.0F )
+					else if ( dist <= 2 )
 					{
-						float push = (float)((2+dist)*10);
-						if ( !world.isRemote )
-						{
-							Vec3d velocityVector = new Vec3d(this.getAttackTarget().posX - this.posX, 0, this.getAttackTarget().posZ - this.posZ);
-							this.addVelocity(-(velocityVector.x)/push,0,-(velocityVector.z)/push);
-						}
-				        this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), 0.2F);
-						this.getMoveHelper().strafe( 0.4F, this.strafeHor+0.1F );
+						this.strafeVer = 0.4F;
+					}
+					else if ( dist <= 4 )
+					{
+						this.strafeVer = 0.7F;
+						strafeMod = 0.9F;
+					}
+					else if ( dist <= 9 )
+					{
+						this.strafeVer = 0.8F;
+						strafeMod = 0.8F;
 					}
 					else
 					{
-						this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer);
-						this.getMoveHelper().strafe( this.strafeVer, this.strafeHor+0.1F );
+						this.strafeVer = 0.9F;
+						strafeMod = 0.7F;
+					}
+								
+					if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) ) // ttt
+					{					
+						if ( dist >= 12 ) // if this is too far away and blocking, stop blocking faster
+						{
+							this.blockingTimer--;
+						}
+						else if ( dist <= 3 )
+						{
+							if ( this.onGround && !this.isSprinting() )
+							{
+								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+								double push = (1.0D+dist*dist);
+								this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+			                	this.velocityChanged = true;
+							}
+						}
+						
+						if ( this.posY + 1.5D < this.getAttackTarget().posY )
+						{
+							this.getMoveHelper().strafe( this.strafeVer, 0.0F );
+							if ( this.onGround && this.rand.nextInt(10) == 0 )
+							{
+								this.addVelocity(0.0D, 0.38D, 0.0D);
+			                	this.velocityChanged = true;
+							}
+						}
+						else
+						{
+							this.getMoveHelper().strafe( this.strafeVer, this.getStrafe(this.stance)*strafeMod );
+						}
+					}
+					else
+					{
+						this.getMoveHelper().strafe( 0.0F, 0.0F );
+
+//						Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
+//			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
+//			            {
+//			            	this.blocking = false;
+//							this.blockingTimer = -200;
+//							return;
+//			            }
+//						if ( this.posY + 1.5D < this.getAttackTarget().posY )
+//						{
+//							this.getMoveHelper().strafe( this.strafeVer*0.5F, 0.0F );
+//						}
+//						else
+//						{
+//							this.getMoveHelper().strafe( this.strafeVer*0.5F, this.getStrafe(this.stance)*0.5F*strafeMod );
+//						}
 					}
 				}
+				else // is blocking
+				{
+					if ( this.strafeVer < 0.4F )
+					{
+						if ( !this.world.isRemote && this.onGround )
+						{
+							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+							double push = (1.0D+dist*dist);
+							this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+		                	this.velocityChanged = true;
+						}
+					}
+					else if ( this.strafeVer > 0.4F )
+					{
+						this.strafeVer = 0.4F;
+					}
+					
+					if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
+					{
+						this.getMoveHelper().strafe( this.strafeVer, this.getStrafe(this.stance)*1.5F);
+					}
+					else
+					{
+						this.getMoveHelper().strafe( this.strafeVer*0.5F, this.getStrafe(this.stance)*0.5F );
+					}
+				}
+				
 	        }
 			else if ( iStack != null && !(iStack.getItem() instanceof ItemBow) )
 			{
-//		    	System.out.println ( attacker + " " + this.getRevengeTarget() + " " + this.world.isRemote );
-//				if ( this.getAttackTarget() == null ) this.setAttackTarget(this.getRevengeTarget());
-//		    	System.out.println ( this.getRevengeTarget() + " " + this.world.isRemote );
+				if ( !this.onGround )
+				{
+					this.motionX/=2.0D;
+					this.motionZ/=2.0D;
+				}
+				
+				if ( this.getAttackTarget() instanceof EntityPlayer )
+				{
+					this.setAnnoyed((EntityPlayer)this.getAttackTarget());
+				}
+				else if ( ToroQuestConfiguration.mobsAttackGuards && this.getAttackTarget() instanceof EntityLiving )
+				{
+					EntityLiving v = (EntityLiving)this.getAttackTarget();
+					if ( v.getAttackTarget() == null )
+					{
+						v.setAttackTarget(this);
+					}
+				}
 				this.blocking = false;
 				this.blockingTimer = -200;
-				// this.activeItemStackUseCount = 0;
-		    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
+		    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+	        	this.canShieldPush = true;
 				this.resetActiveHand();
-				this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.9F + rand.nextFloat()/10 );
-				//if ( !this.world.isRemote )
+				this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.9F + rand.nextFloat()/5.0F );
+				
+				if ( !this.world.isRemote )
 				{
 					this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.BOW, 1));
 					this.setHeldItem(EnumHand.OFF_HAND, ItemStack.EMPTY);
 				}
+				this.setRevengeTarget(this.getAttackTarget());
 				this.strafeVer = 0.0F;
-				this.strafeHor = 0.0F;
+				this.stance = 0;
 		    	this.getMoveHelper().strafe( 0.0F, 0.0F );
 		    	this.getNavigator().clearPath();
-		    	// this.setAttackTarget(attacker);
 			}
 			this.blockingTimer--;
+			//if ( this.getAttackTarget() != null )
+	    	//{
+	    		//this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+	    		//this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+	    		//this.prevRotationPitch = 0;
+	    		//this.prevRotationYaw = 0;
+	    		//this.newPosRotationIncrements = 0;
+	    	//}
 		}
 		else if ( this.blocking || this.inCombat ) // end of combat
 		{
 			this.inCombat = false;
 			this.blocking = false;
+			this.returnToPost = returnToPost();
 			this.setAttackTarget(null);
+			this.searchNextEnemy = true;
+        	this.canShieldPush = true;
 			this.resetActiveHand();
 			this.activeItemStackUseCount = 0;
-	    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
-	    	this.strafeVer = 0;
-	    	this.strafeHor = 0;
+	    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+	    	this.stance = 0;
 	    	this.getMoveHelper().strafe( 0.0F, 0.0F );
 	    	this.getNavigator().clearPath();
 		}
+		
+		//if ( this.getAttackTarget() != null && Math.abs(this.motionX*this.motionZ) > 0.01 )
+//		else if ( this.getAttackTarget() == null && this.hasPath() )
+//		{
+//			this.faceMovingDirection();
+//		}
 	}
 	
+    public boolean isOnLadder()
+    {
+    	if ( !this.getHeldItemMainhand().isEmpty() && this.getHeldItemMainhand().getItem() instanceof ItemBow )
+    	{
+    		return false;
+    	}
+    	return super.isOnLadder();
+    }
+	
+	public void faceEntitySmart(EntityLivingBase p)
+    {
+//    	if ( !this.getNavigator().noPath() )
+//        {
+	    	try
+	    	{
+		    	//PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
+
+		        double d0 = (p.getPositionVector().x - this.getPositionVector().x) * 2;
+		        double d2 = (p.getPositionVector().z - this.getPositionVector().z) * 2;
+		       // double d1 = p.getPositionVector().y - this.getPositionVector().y;
+		
+		       // double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
+		        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
+		        //float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
+		        //this.rotationPitch = f1;
+		        //this.prevRotationPitch = f1;
+		        this.rotationYaw = f;
+		        this.prevRotationYaw = f;
+	    	}
+	    	catch ( Exception e ) {}
+    }
+	
+//	public void faceMovingDirection()
+//    {
+//    	try
+//    	{
+//	    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
+//
+//	        double d0 = (p.x - this.posX) * 2;
+//	        double d2 = (p.z - this.posZ) * 2;
+//	        double d1 = p.y - this.posY;
+//	
+//	        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
+//	        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
+//	        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
+//	        this.rotationPitch = f1;
+//	        this.rotationYaw = f;
+//    	}
+//    	catch ( Exception e ) {}
+//    }
+	
+	//==================================================== Strafe ===========================================================
+
 	public float getStrafe(int stance)
 	{
 		switch ( stance )
 		{
+			case 3:
+			{
+				return -0.3F;
+			}
+			case 4:
+			{
+				return 0.3F;
+			}
 			case 5:
 			{
-				return -0.22F;
+				return -0.29F;
 			}
 			case 6:
 			{
-				return 0.22F;
+				return 0.29F;
 			}
 			case 7:
 			{
@@ -716,35 +1123,99 @@ public void readEntityFromNBT(NBTTagCompound compound)
 			}
 			case 9:
 			{
-				return -0.32F;
+				return -0.27F;
 			}
 			case 10:
 			{
-				return 0.32F;
+				return 0.27F;
 			}
 		}
-		return 0;
+		return 0.0F;
 	}
 	
-	boolean hitSafety = true;
+	//==================================================== Return To Post ===========================================================
+
+	public boolean returnToPost()
+	{
+		if ( this.raidX == null || this.raidZ == null )
+		{
+			return false;
+		}
+		
+		if ( this.hasPath() )
+		{
+			return false;
+		}
+		
+		double x = this.raidX - this.posX;
+		double z = this.raidZ - this.posZ;
+		
+		double xz = Math.abs(x) + Math.abs(z);
+		
+		if ( xz < 3 )
+		{
+			return false;
+		}
+		
+		x = x/xz * 12 + this.posX + (this.rand.nextInt(3)-1);
+		z = z/xz * 12 + this.posZ + (this.rand.nextInt(3)-1);
+		
+		BlockPos moveTo = EntityAIRaid.findValidSurface(this.world, new BlockPos(x, this.posY, z), 8);
+		
+		if ( moveTo != null )
+		{
+			if ( this.getNavigator().tryMoveToXYZ(moveTo.getX(), moveTo.getY(), moveTo.getZ(), 0.65D) )
+			{
+				return true;
+			}
+		}
+				
+		Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this, 16, 8, new Vec3d(x,this.posY,z));
+		
+		if ( vec3d == null || !this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D) )
+        {
+			vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this, 12, 8, new Vec3d(x,this.posY,z));
+			
+			if ( vec3d == null || !this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D ) )
+			{
+				vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this, 8, 8, new Vec3d(x,this.posY,z));
+				
+				if ( vec3d == null || !this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D ) )
+				{
+					return false;
+				}
+			}
+        }
+		
+		return true;
+	}
+
+	//==================================================== Take Damage ===========================================================
 	
-	//========================== when this guard is damaged ===========================
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount)
 	{
-		//if ( this.world.isRemote ) return false;
-
+		if ( this.world.isRemote )
+        {
+            return false;
+        }
+		
 		Entity e = source.getTrueSource();
 		
-		if ( source == DamageSource.IN_WALL || source == DamageSource.CRAMMING ) 
+		if (source.getTrueSource() == this)
+        {
+            amount = 0.0F;
+        }
+		
+		if ( source == DamageSource.IN_WALL || source == DamageSource.CRAMMING || source == DamageSource.CACTUS )
 		{
 			return false;
 		}
 		
 		if ( source == DamageSource.FALL )
 		{
-			amount = amount/4;
-			if ( amount <= 1 )
+			amount = amount/2.0F;
+			if ( amount <= 2 )
 			{
 				return false;
 			}
@@ -757,21 +1228,26 @@ public void readEntityFromNBT(NBTTagCompound compound)
 			{
 				BlockPos pos = this.getPosition();
 				IBlockState block = world.getBlockState(pos);
-				if ( block == Blocks.LAVA.getDefaultState() || block.getBlock() == Blocks.LAVA )
+				if ( block == Blocks.LAVA.getDefaultState() || block == Blocks.FLOWING_LAVA.getDefaultState() )
 				{
 					if ( this.dimension == 0 )
 					{
 						this.swingArm(EnumHand.MAIN_HAND);
-						if ( this.world.isRemote )
+						//if ( this.world.isRemote )
 						{
-							this.addVelocity(0, 0.25, 0);
+							if ( this.motionY <= 0.1D )
+							{
+								this.addVelocity(0.0D, 0.3D, 0.0D);
+								this.velocityChanged = true;
+							}
+							this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.WATER_BUCKET, 1));
 						}
-						this.world.setBlockState(pos, Blocks.WATER.getDefaultState());
+						this.world.setBlockState(pos.up(), Blocks.WATER.getDefaultState());
 					}
 			        Vec3d vec3d = RandomPositionGenerator.getLandPos(this, 8, 4);
 		            if ( vec3d != null )
 		            {
-				        this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D);
+				        this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D);
 		            }
 				}
 				else if ( block.getBlock() instanceof BlockFire )
@@ -789,7 +1265,7 @@ public void readEntityFromNBT(NBTTagCompound compound)
 					Vec3d vec3d = RandomPositionGenerator.getLandPos(this, 8, 4);
 		            if ( vec3d != null )
 		            {
-				        this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D);
+				        this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D);
 		            }
 				}
 			}
@@ -805,56 +1281,18 @@ public void readEntityFromNBT(NBTTagCompound compound)
 			return false;
 		}
 		
-		if ( this.blocking && canBlockDamageSource(source) )
-		{
-			double dist = e.getDistanceSq(this);
-			if ( dist <= 9 && !source.isProjectile() && !source.isMagicDamage() && !source.isFireDamage() )
-			{
-				this.playSound(SoundEvents.ITEM_SHIELD_BLOCK, 1.0F, 0.8F + rand.nextFloat()/5);
-				if ( e instanceof EntityLivingBase )
-				{
-					if ( ((EntityLivingBase)e).getHeldItemMainhand().getItem() instanceof ItemAxe )
-					{
-						this.resetActiveHand();
-						this.playSound(SoundEvents.ITEM_SHIELD_BREAK, 1.0F, 0.8F + rand.nextFloat()/5);
-						if ( !this.world.isRemote )
-						{
-							Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
-							this.addVelocity(-(velocityVector.x)/( dist+1 )*1.16D, 0.16D, -(velocityVector.z)/( dist+1 )*1.16D);
-							this.velocityChanged = true;
-						}
-						return false;
-					}
-				}
-				if ( !this.world.isRemote )
-				{
-					Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
-					e.addVelocity((velocityVector.x)/( dist+1 )*1.16D, 0.16D, (velocityVector.z)/( dist+1 )*1.16D);
-	                e.velocityChanged = true;
-				}
-			}
-			return false;
-		}
-		
+		this.aggroTimer = 0;
+
 		if ( e instanceof EntityPlayer )
 		{
-			if ( this.hitSafety && this.getAttackTarget() != e )
+			if ( (this.hitSafety && this.getAttackTarget() != e) || e.getName().equals(this.playerGuard) ) // !this.playerGuard.equals("")
 			{
 				this.hitSafety = false;
+				this.playSound(SoundEvents.BLOCK_CLOTH_BREAK, 1.0F, 1.0F);
 				return false;
 			}
 			
-			if ( e instanceof EntityLivingBase ) 
-			{
-				if ( rand.nextBoolean() )
-				{
-					this.setAttackTarget((EntityLivingBase)e);
-				}
-				this.setRevengeTarget((EntityLivingBase)e);
-				this.callForHelp((EntityLivingBase)e);
-			}
-			
-			int entities = this.world.getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.getPosition()).grow(2, 2, 2), new Predicate<EntityLivingBase>()
+			boolean noNearbyEnemies = e.getEntityWorld().getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.getPosition()).grow(3, 3, 3), new Predicate<EntityLivingBase>()
 			{
 				public boolean apply(@Nullable EntityLivingBase entity)
 				{
@@ -867,26 +1305,96 @@ public void readEntityFromNBT(NBTTagCompound compound)
 						return false;
 					}
 				}
-			}).size();
+			}).isEmpty();
 			
-			if ( entities > 0 )
+			if ( !noNearbyEnemies && this.getAttackTarget() != e )
 			{
 				return false;
 			}
+		}
+		
+		if ( this.blocking && canBlockDamageSource(source) )
+		{
 			
-			if (super.attackEntityFrom(source, amount))
+			if ( this.blockingTimer > 10 && rand.nextBoolean() )
 			{
-				adjustRep(e,-(int)MathHelper.clamp(amount*4,5,this.getHealth()*4));
-				this.setUnderAttack((EntityPlayer)e);
-				return true;
+				this.blockingTimer = 10;
 			}
-
+			
+			double dist = e.getDistanceSq(this);
+			
+			if ( !source.isProjectile() && !source.isMagicDamage() && !source.isFireDamage() )
+			{
+				if ( e instanceof EntityLivingBase )
+				{
+					if ( amount >= 5.0F && ( ((EntityLivingBase)e).getHeldItemMainhand().getItem() instanceof ItemAxe || ((EntityLivingBase)e).getHeldItemMainhand().getItem().getRegistryName().toString().contains("halberd") || ((EntityLivingBase)e).getHeldItemMainhand().getItem().getRegistryName().toString().contains("battleaxe") ) )
+					{
+						this.resetActiveHand();
+						this.world.setEntityState(this, (byte)29);
+						this.world.setEntityState(this, (byte)30);
+						if ( dist < 16 )
+						{
+							this.canShieldPush = true;
+							Vec3d velocityVector = new Vec3d(this.posX - e.posX, 0, this.posZ - e.posZ);
+							//if ( !this.world.isRemote )
+							{	
+								this.addVelocity((velocityVector.x)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D), (0.22D-MathHelper.clamp(dist/100.0, 0.0D, 0.16D))*MathHelper.clamp(amount, 0.0D, 1.0D), (velocityVector.z)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D));
+			                	this.velocityChanged = true;
+							}
+						}
+						this.playSound(SoundEvents.ITEM_SHIELD_BLOCK, 1.0F, 0.8F + rand.nextFloat()/5.0F);
+						this.playSound(SoundEvents.ITEM_SHIELD_BREAK, 1.0F, 0.8F + rand.nextFloat()/5.0F);
+						this.blockingTimer = 50;
+						return (super.attackEntityFrom(source, amount/2.0F));
+					}
+					else
+					{
+						this.playSound(SoundEvents.ITEM_SHIELD_BLOCK, 1.0F, 0.8F + rand.nextFloat()/5.0F);
+						if ( dist < 16 )
+						{
+							if ( this.canShieldPush )
+							{
+								this.canShieldPush = false;
+								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
+								//if ( !this.world.isRemote )
+								{	
+									e.addVelocity((velocityVector.x)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D), (0.22D-MathHelper.clamp(dist/100.0, 0.0D, 0.16D))*MathHelper.clamp(amount, 0.0D, 1.0D), (velocityVector.z)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D));
+				                	e.velocityChanged = true;
+								}
+							}
+							else
+							{								
+								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
+								//if ( !this.world.isRemote )
+								{	
+									e.addVelocity((velocityVector.x)/( dist+8 )*MathHelper.clamp(amount, 0.0D, 1.0D), 0, (velocityVector.z)/( dist+8 )*MathHelper.clamp(amount, 0.0D, 1.0D));
+				                	e.velocityChanged = true;
+								}
+							}
+						}
+						this.world.setEntityState(this, (byte)29);
+					}
+					return false;
+				}
+			}
+			else if ( source.isProjectile() )
+			{
+				this.blockingTimer = 8;
+				this.world.setEntityState(this, (byte)29);
+				this.playSound(SoundEvents.ITEM_SHIELD_BLOCK, 1.0F, 0.8F + rand.nextFloat()/5.0F);
+				return false;
+			}
+			if ( this.world.isRemote ) 
+			{
+				this.world.setEntityState(this, (byte)29);
+			}
+			this.playSound(SoundEvents.ITEM_SHIELD_BLOCK, 1.0F, 0.8F + rand.nextFloat()/5.0F);
 			return false;
 		}
 		
 		if ( e instanceof EntityLivingBase ) 
 		{
-			if ( rand.nextBoolean() )
+			if ( rand.nextInt(3) == 0 || this.getAttackTarget() == null )
 			{
 				this.setAttackTarget((EntityLivingBase)e);
 			}
@@ -894,83 +1402,17 @@ public void readEntityFromNBT(NBTTagCompound compound)
 			this.callForHelp((EntityLivingBase)e);
 		}
 		
+		if ( e instanceof EntityPlayer && super.attackEntityFrom(source, amount) )
+		{
+			adjustRep(e,-(int)MathHelper.clamp(amount*4,5,this.getHealth()*4));
+			this.setUnderAttack((EntityPlayer)e);
+			return true;
+		}
+		
 		return super.attackEntityFrom(source, amount);
 	}
 	
-	private void adjustRep(Entity entity, int amount)
-	{
-		if (entity == null)
-		{
-			return;
-		}
-		if (!(entity instanceof EntityPlayer))
-		{
-			return;
-		}
-		EntityPlayer player = (EntityPlayer) entity;
-		CivilizationType civ = getCivilization();
-		if (civ == null)
-		{
-			return;
-		}
-		CivilizationHandlers.adjustPlayerRep(player, civ, amount);
-	}
-	
-	// public static final DataParameter<String> RENDER = EntityDataManager.<String>createKey(EntityGuard.class, DataSerializers.STRING);
-	
-
-	
-	// ========================= CIV ==========================
-	
-	@Override
-	public void setCivilization(CivilizationType civ)
-	{
-		if (civ == null)
-		{
-			dataManager.set(CIV, "");
-		}
-		else
-		{
-			dataManager.set(CIV, civ.toString());
-			c = civ;
-			this.tasks.removeTask(followNoCiv);
-		}
-		dataManager.setDirty(CIV);
-	}
-	
-	@Override
-	protected void pledgeAllegianceIfUnaffiliated()
-	{
-		if ( this.getCivilization() != null )
-		{
-			return;
-		}
-
-		Province civ = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
-
-		if (civ == null || civ.civilization == null)
-		{
-			return;
-		}
-		
-		this.setCivilization(civ.civilization);
-	}
-	
-	@Override
-	public CivilizationType getCivilization()
-	{
-		if (c != null)
-		{
-			return c;
-		}
-		return enumCiv(dataManager.get(CIV));
-	}
-	
-	CivilizationType c = null;
-	
-	// ========================================================
-	
-    private boolean canBlockDamageSource(DamageSource damageSourceIn)
+	private boolean canBlockDamageSource(DamageSource damageSourceIn)
 	{
         if (!damageSourceIn.isUnblockable() && this.isActiveItemStackBlocking())
         {
@@ -992,56 +1434,267 @@ public void readEntityFromNBT(NBTTagCompound compound)
         return false;
     }
 	
+	//==================================================== Attack Target ===========================================================
+	
+	@Override
+	public void setAttackTarget( EntityLivingBase e )
+	{
+		if ( e == null )
+		{
+			this.setSprinting(false);
+			super.setAttackTarget(null);
+		}
+		else if ( e instanceof EntityPlayer )
+		{
+			if ( this.isAnnoyedTimer < 4 )
+			{
+				return;
+			}
+			
+			if ( !this.isAnnoyedAt((EntityPlayer)e) )
+			{
+				return;
+			}
+			
+			if ( e.getName().equals(this.playerGuard) )
+			{
+				super.setAttackTarget(null);
+				return;
+			}
+			
+			this.setAnnoyed((EntityPlayer) e);
+			this.underAttack = (EntityPlayer)e;
+			
+			if ( this.underAttackTimer <= 2 )
+			{
+				this.underAttackTimer = 2 + rand.nextInt(3);
+			}
+		}
+		super.setAttackTarget(e);
+	}
+	
+	//==================================================== Adjust Reputation ===========================================================
+	
+	private void adjustRep(Entity entity, int amount)
+	{
+		if (!(entity instanceof EntityPlayer))
+		{
+			return;
+		}
+		
+		EntityPlayer player = (EntityPlayer) entity;
+		
+		CivilizationType civ = getCivilization();
+		
+		if (civ == null)
+		{
+			return;
+		}
+		CivilizationHandlers.adjustPlayerRep(player, civ, amount);
+	}
 
-	/**
-	 * Called only once on an entity when first time spawned, via egg, mob
-	 * spawner, natural spawning etc, but not called when entity is reloaded
-	 * from nbt. Mainly used for initializing attributes and inventory
-	 */
+	//==================================================== Civilization ===========================================================
+
+	@Override
+	public void setCivilization(CivilizationType civ)
+	{
+		if (civ == null)
+		{
+			dataManager.set(CIV, "");
+		}
+		else
+		{
+			this.spawnedNearBandits = false;
+			dataManager.set(CIV, civ.toString());
+			c = civ;
+			this.tasks.removeTask(followNoCiv);
+		}
+		dataManager.setDirty(CIV);
+	}
+	
+	public void setCivilizationCaravan(CivilizationType civ)
+	{
+		if (civ == null)
+		{
+			dataManager.set(CIV, "");
+		}
+		else
+		{
+			dataManager.set(CIV, civ.toString());
+			c = civ;
+		}
+		dataManager.setDirty(CIV);
+	}
+	
+	@Override
+	protected void pledgeAllegianceIfUnaffiliated()
+	{
+//		if ( this.world == null || this.world.isRemote )
+//      {
+//          return;
+//      }
+		
+		if ( this.getCivilization() != null )
+		{
+			return;
+		}
+
+		Province civ = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
+
+		if ( civ == null || civ.civilization == null )
+		{
+			return;
+		}
+		
+		if ( !this.playerGuard.equals("") )
+		{
+			for ( EntityPlayer player : this.world.playerEntities )
+			{
+				try
+				{
+					if ( player.getName().equals(this.playerGuard) )
+					{
+						this.recruitGuardReputation(player, civ);
+					}
+				}
+				catch ( Exception e )
+				{
+					
+				}
+			}
+		}
+		else if ( this.ticksExisted > 202 )
+		{
+			List<EntityPlayer> players = this.world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(20, 12, 20), new Predicate<EntityPlayer>()
+			{
+				public boolean apply(@Nullable EntityPlayer entity)
+				{
+					return true;
+				}
+			});
+			
+			for ( EntityPlayer player : players )
+			{
+				try
+				{
+					this.recruitGuardReputation(player, civ);
+				}
+				catch ( Exception e )
+				{
+					
+				}
+			}
+			
+			if ( ticksExisted > 202 )
+			{
+				this.raidX = civ.getCenterX() + rand.nextInt(41)-20;
+				this.raidZ = civ.getCenterZ() + rand.nextInt(41)-20;
+				this.writeEntityToNBT(new NBTTagCompound());
+			}
+		}
+		
+		this.setPlayerGuard(null);
+		this.setCivilization(civ.getCiv());
+		
+		//if ( !this.world.isRemote )
+		//{
+		this.setMeleeWeapon();
+		//}
+		
+		if ( this.posY != 0 && this.posX != 0 && this.posZ != 0 )
+		{
+	        this.raidX = (int)this.posX;
+			this.raidZ = (int)this.posZ;
+		}
+		
+		this.writeEntityToNBT(new NBTTagCompound());
+	}
+	
+	private void recruitGuardReputation( EntityPlayer player, Province civ )
+	{
+		CivilizationHandlers.adjustPlayerRep(player, civ.getCiv(), ToroQuestConfiguration.recruitGuardRepGain);
+		QuestRecruit.INSTANCE.onRecruit(player, civ);
+		this.chat(player, "civvillagerrecruit", civ.getCiv().getDisplayName(player));
+		player.sendStatusMessage( new TextComponentString("Guard Recruited!"), true);
+    	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+	}
+	
+	@Override
+	public CivilizationType getCivilization()
+	{
+		if ( c != null )
+		{
+			return c;
+		}
+		return enumCiv(dataManager.get(CIV));
+	}
+		
+	//==================================================== Initial Spawn ===========================================================
+
 	@Nullable
 	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata)
 	{
 		livingdata = super.onInitialSpawn(difficulty, livingdata);
 		((PathNavigateGround) this.getNavigator()).setBreakDoors(true);
+		
 		this.setCanPickUpLoot(false);
 		this.setLeftHanded(false);
-		this.pledgeAllegianceIfUnaffiliated();
+		
 		if ( !this.world.isRemote )
 		{
-			setMeleeWeapon();
+			this.setCustomNameTag("...");
+			this.setAlwaysRenderNameTag(true);
+			//this.pledgeAllegianceIfUnaffiliated();
+			this.setMeleeWeapon();
+			if ( ToroQuestConfiguration.guardsHaveArmorForSpartanWeaponry )
+			{
+				setItemStackToSlot(EntityEquipmentSlot.HEAD, new ItemStack(Items.CHAINMAIL_HELMET, 1));
+				setItemStackToSlot(EntityEquipmentSlot.CHEST, new ItemStack(Items.CHAINMAIL_CHESTPLATE, 1));
+				setItemStackToSlot(EntityEquipmentSlot.LEGS, new ItemStack(Items.CHAINMAIL_LEGGINGS, 1));
+				setItemStackToSlot(EntityEquipmentSlot.FEET, new ItemStack(Items.CHAINMAIL_BOOTS, 1));
+			}
 		}
-		this.inCombat = false;
-		this.blocking = false;
-		this.blockingTimer = 0;
-		this.setAttackTarget(null);
-		this.setRevengeTarget(null);
-		this.resetActiveHand();
-		this.setActiveHand(EnumHand.MAIN_HAND);
-		this.activeItemStackUseCount = 0;
-    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
-    	this.strafeVer = 0;
-    	this.strafeHor = 0;
-    	this.getMoveHelper().strafe( 0.0F, 0.0F );
-    	this.getNavigator().clearPath();
-        this.setCombatTask();
-        this.raidX = (int)this.posX;
-		this.raidY = (int)this.posY;
-		this.raidZ = (int)this.posZ;
-		CivilizationType civ = this.getCivilization();
-        if ( civ == null || ( civ != null && civ.toString() == "" ) ) this.tasks.addTask(9, followNoCiv);
-		this.writeEntityToNBT(new NBTTagCompound());
+//		this.inCombat = false;
+//		this.blocking = false;
+//		this.blockingTimer = 0;
+//		this.setAttackTarget(null);
+//    	this.canShieldPush = true;
+//		this.resetActiveHand();
+//		this.setActiveHand(EnumHand.MAIN_HAND);
+//		this.activeItemStackUseCount = 0;
+//    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+//    	this.stance = 0;
+//    	this.stance = 0;
+//    	this.getMoveHelper().strafe( 0.0F, 0.0F );
+//    	this.getNavigator().clearPath();
+
+//		CivilizationType civ = this.getCivilization();
+//        if ( civ == null || ( civ != null && civ.toString() == "" ) )
+//        {
+//        	this.tasks.addTask(9, followNoCiv);
+//        }
 		return livingdata;
 	}
 	
+	//==================================================== Set Weapon ===========================================================
 
-	
-	protected void setMeleeWeapon()
+	public void setMeleeWeapon()
 	{
+    	this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(ToroQuestConfiguration.guardAttackDamage);
+
 		CivilizationType civ = this.getCivilization();
 		if ( civ == null )
 		{
 			this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD, 1));
-    		this.setHeldItem(EnumHand.OFF_HAND, new ItemStack(Items.SHIELD, 1));
+			ItemStack istack = new ItemStack(Item.getByNameOrId("spartanshields:shield_tower_wood"));
+			if ( istack != null && !istack.isEmpty() )
+			{
+	    		this.setHeldItem(EnumHand.OFF_HAND, istack);
+			}
+			else
+			{
+				this.setHeldItem(EnumHand.OFF_HAND, new ItemStack(Items.SHIELD, 1));
+			}
     		return;
 		}
 		switch ( civ )
@@ -1091,358 +1744,619 @@ public void readEntityFromNBT(NBTTagCompound compound)
 		}
 	}
 	
+	//==================================================== Find Surface ===========================================================
 
-	public static BlockPos findSpawnSurface( World world, BlockPos pos )
+	public static BlockPos findSpawnSurface( World world, BlockPos pos, int yOffset )
 	{
-		pos = pos.up(20);
 		IBlockState blockState;
-		int yOffset = 20;
-		boolean[] airSpace = { false, false };
-
+		boolean airspace = false;
+		boolean floor =  false;
 		while ( yOffset > 0 )
 		{
 			blockState = world.getBlockState(pos);
-
-			if ( blockState.getBlock() == Blocks.AIR )
-			{
-				if (airSpace[0])
-				{
-					airSpace[1] = true;
-				}
-				else
-				{
-					airSpace[0] = true;
-				}
-			}
-			else if ( blockState.getBlock() instanceof BlockLiquid )
-			{
-				break;
-			}
-			else if ( blockState.getBlock() instanceof BlockFence )
+			if ( blockState instanceof BlockLiquid )
 			{
 				return null;
 			}
-			else if ( !(blockState.getBlock() instanceof BlockAir) )
+			if ( blockState.getBlock() instanceof BlockAir )
 			{
-				if (airSpace[0] && airSpace[1])
+				if ( floor )
 				{
-					return pos.up();
-				}
-				else
-				{
-					airSpace[0] = false;
-					airSpace[1] = false;
+					if ( airspace )
+					{
+						return pos.up();
+					}
+					else
+					{
+						airspace = true;
+					}
 				}
 			}
 			else
 			{
-				airSpace[0] = false;
-				airSpace[1] = false;
+				floor = true;
+				airspace = false;
 			}
-			pos = pos.down();
+			pos = pos.up();
 			yOffset--;
 		}
 		return null;
 	}
 	
-@Override
-protected boolean processInteract(EntityPlayer player, EnumHand hand)
-{
-	
-	if ( !this.isEntityAlive() )
-	{
-		return false;
-	}
-	
-	List<EntityFugitive> fugitives = player.world.getEntitiesWithinAABB(EntityFugitive.class, new AxisAlignedBB(player.getPosition()).grow(8, 4, 8), new Predicate<EntityFugitive>()
-	{
-		public boolean apply(@Nullable EntityFugitive entity)
-		{
-			return true;
-		}
-	});
-	for (EntityFugitive v : fugitives)
-	{
-		if ( !this.inCombat && v != null && v.isEntityAlive() && v.getLeashHolder() != null && ( this.murderWitness == null || this.murderWitness != player ) && ( this.underAttack == null || this.underAttack != player ) )
-		{
-			
-			if ( !this.world.isRemote ) 
-			{
-	            try
-	            {
-	            	QuestCaptureFugitives.INSTANCE.onReturn(player);
-	            	switch ( rand.nextInt(6) )
-	            	{
-		            	case 0:chat(player, "Thank you for turning in this fugitive.");break;
-		            	case 1:chat(player, "I'll take it from here. Thank you, " + player.getName() + "." );break;
-		            	case 2:chat(player, "I appreciate the help. Thank you for capturing this fugitive." );break;
-		            	case 3:chat(player, "Crime must not go unpunished. I'll escort this criminal to the stockades at once, sir." );break;
-		            	case 4:chat(player, "We've been looking all over for this one! The guard recognizes your service, " + player.getName() + "." );break;
-		            	case 5:chat(player, "Sir! Thank you for capturing this criminal.");break;
-	            	}
+	//==================================================== Tame Effect ===========================================================
 
-	    	        this.playSound( SoundEvents.BLOCK_ANVIL_LAND, 0.8F, 0.8F );
-	    	        this.playSound( SoundEvents.ENTITY_VILLAGER_NO, 0.8F, 0.8F );
-	    	        v.setDead();
-	    			v.setHealth(0);
-		            CivilizationHandlers.adjustPlayerRep(player, (int)(player.posX / 16), (int)(player.posZ / 16), ToroQuestConfiguration.returnFugitiveRepGain);
-		            this.actionTimer = 3;
-	    	        return true;
-	            }
-	            catch(Exception e)
-	            {
-	            	
-	            }
-			}
-		}
-	}
+	public void playTameEffect(boolean play)
+    {
+        EnumParticleTypes enumparticletypes = EnumParticleTypes.HEART;
+
+        if (!play)
+        {
+            enumparticletypes = EnumParticleTypes.CLOUD;
+        }
+
+        for (int i = 0; i < 7; ++i)
+        {
+            double d0 = this.rand.nextGaussian() * 0.02D;
+            double d1 = this.rand.nextGaussian() * 0.02D;
+            double d2 = this.rand.nextGaussian() * 0.02D;
+            this.world.spawnParticle(enumparticletypes, this.posX + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, this.posY + 0.5D + (double)(this.rand.nextFloat() * this.height), this.posZ + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, d0, d1, d2);
+        }
+    }
 	
-	List<EntityToroQuest> toros = player.world.getEntitiesWithinAABB(EntityToroQuest.class, new AxisAlignedBB(player.getPosition()).grow(8, 4, 8), new Predicate<EntityToroQuest>()
+	//==================================================== Interact ===========================================================
+
+	@Override
+	protected boolean processInteract(EntityPlayer player, EnumHand hand)
 	{
-		public boolean apply(@Nullable EntityToroQuest entity)
+		if ( player == null || player.world.isRemote || !this.isEntityAlive() )
 		{
-			return true;
+			return false;
 		}
-	});
-	for (EntityToroQuest v : toros)
-	{
-		if ( !this.inCombat && v != null && v.isEntityAlive() && v.getLeashHolder() != null && ( this.murderWitness == null || this.murderWitness != player ) && ( this.underAttack == null || this.underAttack != player ) )
+		
+		CivilizationType civ = this.getCivilization();
+		
+		int rep = 0;
+		
+		if ( civ != null )
 		{
-			if ( !this.world.isRemote ) 
+			rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(this.getCivilization());
+		
+			if ( rep <= -100 || this.murderWitness() == player || this.underAttack() == player )
 			{
-	            try
-	            {
-	            	if ( QuestCaptureEntity.INSTANCE.onReturn(player) )
-	            	{
-						chat(player, "Thank you for returning our lord's toro, " + player.getName() + ".");
-						v.setDead();
-						v.setHealth(0);
-						this.playSound( SoundEvents.BLOCK_ANVIL_LAND, 0.8F, 0.8F );
-				        this.playSound( SoundEvents.ENTITY_COW_HURT, 0.8F, 0.8F );
-			            CivilizationHandlers.adjustPlayerRep(player, (int)(player.posX / 16), (int)(player.posZ / 16), ToroQuestConfiguration.returnFugitiveRepGain);
-			            this.actionTimer = 3;
-				        return true;
-	            	}
-	            }
-	            catch(Exception e)
-	            {
-	            	
-	            }
+				if ( this.actionReady() )
+				{
+					this.insult(player);
+					//this.actionTimer = 5;
+				}
+				return false;
+			}
+			
+			if ( player.getHeldItem(EnumHand.MAIN_HAND).getItem() instanceof ItemLead )
+			{
+				List<EntityFugitive> fugitives = player.world.getEntitiesWithinAABB(EntityFugitive.class, new AxisAlignedBB(player.getPosition()).grow(8, 4, 8), new Predicate<EntityFugitive>()
+				{
+					public boolean apply(@Nullable EntityFugitive entity)
+					{
+						return true;
+					}
+				});
+				
+				// FUGITIVE
+				for (EntityFugitive v : fugitives)
+				{
+					if ( !this.inCombat && this.getAttackTarget() == null && v != null && v.isEntityAlive() && v.getLeashHolder() != null && ( this.murderWitness == null || this.murderWitness != player ) && ( this.underAttack == null || this.underAttack != player ) )
+					{
+						
+						//if ( !this.world.isRemote ) 
+						{
+				            try
+				            {
+				            	QuestCaptureFugitives.INSTANCE.onReturn(player);
+				            	this.chat(player, "fugitive", null);
+				    	        this.playSound( SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F );
+				    	        this.playSound( SoundEvents.BLOCK_ANVIL_LAND, 0.8F, 0.8F );
+				    	        this.playSound( SoundEvents.ENTITY_VILLAGER_NO, 0.8F, 0.8F );
+				    	        v.setDead();
+				    			v.setHealth(0);
+					            CivilizationHandlers.adjustPlayerRep(player, (int)(player.posX / 16), (int)(player.posZ / 16), ToroQuestConfiguration.returnFugitiveRepGain);
+					            this.actionTimer = 5;
+					            ItemStack itemstack = new ItemStack(Items.LEAD, 1);
+								itemstack.setStackDisplayName( TextComponentHelper.createComponentTranslation(player, "item.fugitive_bindings.name", new Object[0]).getFormattedText());
+								player.setHeldItem(EnumHand.MAIN_HAND, itemstack);
+					            return true;
+				            }
+				            catch(Exception e)
+				            {
+				            	
+				            }
+						}
+					}
+				}
+				
+				List<EntitySheep> toros = player.world.getEntitiesWithinAABB(EntitySheep.class, new AxisAlignedBB(player.getPosition()).grow(8, 4, 8), new Predicate<EntitySheep>()
+				{
+					public boolean apply(@Nullable EntitySheep entity)
+					{
+						return true;
+					}
+				});
+				
+				// SHEEP
+				for (EntitySheep v : toros)
+				{
+					if ( !this.inCombat && this.getAttackTarget() == null && v != null && v.isEntityAlive() && v.getLeashHolder() != null && ( this.murderWitness == null || this.murderWitness != player ) && ( this.underAttack == null || this.underAttack != player ) )
+					{
+						boolean flag = false;
+						for ( String t : v.getTags() )
+						{
+							if ( t.equals("capture_quest") )
+							{
+								flag = true;
+							}
+						}
+						if ( flag ) // && !this.world.isRemote )
+						{
+				            try
+				            {
+				            	if ( QuestCaptureEntity.INSTANCE.onReturn(player) )
+				            	{
+				            		this.chat(player, "returnsheep", null);
+									v.setDead();
+									v.setHealth(0);
+									this.playSound( SoundEvents.BLOCK_ANVIL_LAND, 0.8F, 0.8F );
+							        this.playSound( SoundEvents.ENTITY_SHEEP_AMBIENT, 0.8F, 0.8F );
+						            CivilizationHandlers.adjustPlayerRep(player, (int)(player.posX / 16), (int)(player.posZ / 16), ToroQuestConfiguration.returnFugitiveRepGain);
+						            this.actionTimer = 5;
+						            ItemStack itemstack = new ItemStack(Items.LEAD, 1);
+									itemstack.setStackDisplayName( TextComponentHelper.createComponentTranslation(player, "item.sheep_bindings.name", new Object[0]).getFormattedText());
+									player.setHeldItem(EnumHand.MAIN_HAND, itemstack);
+							        return true;
+				            	}
+				            }
+				            catch(Exception e)
+				            {
+				            	
+				            }
+						}
+					}
+				}
 			}
 		}
-	}
-	
-	
-	
-	//if ( !this.world.isRemote ) 
-	{
-		try
+		
+		// RECRUITMENT_PAPERS
+		//if ( !this.world.isRemote )
 		{
-			ItemStack itemstack = player.getHeldItem(hand);
-			Item item = itemstack.getItem();
-			CivilizationType civ = this.getCivilization();
-			
-			int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(civ);
-			
-			if ( item.equals(Item.getByNameOrId("toroquest:recruitment_papers") ) && this.actionTimer <= 0 )
-	        {
-    			this.actionTimer = 1;
-	        	if ( rep >= 0 && ( this.murderWitness == null || this.murderWitness != player ) && ( this.underAttack == null || this.underAttack != player ) )
-	    		{
-	        		if ( player.isSneaking() )
-	        		{
-						BlockPos pos = findSpawnSurface( world, this.getPosition() );
-						if ( pos != null )
-						{
-							this.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-							this.raidX = pos.getX();
-							this.raidY = pos.getY();
-							this.raidZ = pos.getZ();
+			try
+			{
+				ItemStack itemstack = player.getHeldItem(hand);
+				Item item = itemstack.getItem();
+							
+				if ( item.equals(Item.getByNameOrId("toroquest:recruitment_papers") ) && this.postReady )
+		        {
+	    			this.postReady = false;
+		        	if ( !this.inCombat && this.getAttackTarget() == null && this.isFriendly(player, rep) )
+		    		{
+		        		if ( player.isSneaking() )
+		        		{
+							BlockPos pos = findSpawnSurface(world, this.getPosition().up(), 32);
+							if ( pos != null )
+							{
+								this.setPositionAndUpdate(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
+								this.raidX = pos.getX();
+								//this.raidY = pos.getY();
+								this.raidZ = pos.getZ();
+								this.writeEntityToNBT(new NBTTagCompound());
+					        	this.playSound(SoundEvents.BLOCK_DISPENSER_LAUNCH, 1.0F, 1.0F);
+			        			this.playTameEffect(false);
+			                    this.world.setEntityState(this, (byte)6);
+								player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
+					        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+							}
+							else
+							{
+								player.sendStatusMessage(new TextComponentString( "§oInvalid post location!§r" ), true);
+								player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+							}
+						}
+		        		else
+		        		{
+		        			this.raidX = (int)this.posX;
+		        			//this.raidY = (int)this.posY;
+		        			this.raidZ = (int)this.posZ;
 							this.writeEntityToNBT(new NBTTagCompound());
-				        	playSound(SoundEvents.BLOCK_DISPENSER_LAUNCH, 1.0F, 1.0F);
-							player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidY + ", " + this.raidZ + "]§r" ), true);
-				        	playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+							player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
+				        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+		        		}
+		    		}
+		        	else
+		        	{
+						player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+		        	}
+		        	return true;
+		        }
+				else if ( item == Items.EMERALD && rep < 0 )
+				{
+					if ( this.murderWitness == player )
+					{
+						if ( this.actionReady() )
+						{
+		            		this.chat(player, "murderer", null);
+						}
+						this.setAnnoyed( player );
+						this.setAttackTarget(player);
+					}
+					else
+					{
+						int maxRepGain = -rep;
+						int emeraldRep = itemstack.getCount()*ToroQuestConfiguration.donateEmeraldRepGain;
+						if ( emeraldRep > maxRepGain )
+						{
+		            		this.chat(player, "bountyclear", null);
+							int remainder = emeraldRep-maxRepGain;
+							this.adjustRep( player, maxRepGain );
+				        	player.setHeldItem( hand, new ItemStack( item, (int)(remainder/ToroQuestConfiguration.donateEmeraldRepGain) ) );
+				        	this.underAttack = null;
+				        	this.isAnnoyedTimer = 0;
+				        	this.setAttackTarget(null);
 						}
 						else
 						{
-							player.sendStatusMessage(new TextComponentString( "§oInvalid post location.§r" ), true);
-				        	playSound(SoundEvents.BLOCK_NOTE_PLING, 0.8F, 1.0F);
+		            		this.chat(player, "bounty", null);
+		            		this.underAttack = null;
+				        	this.isAnnoyedTimer = 0;
+				        	this.setAttackTarget(null);
+							this.adjustRep( player, emeraldRep );
+				        	player.setHeldItem( hand, new ItemStack( Items.AIR, 0 ) );
 						}
+						player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND, SoundCategory.AMBIENT, 1.0F, 1.2F);
+						this.setAttackTarget(null);
 					}
-	        		else
-	        		{
-	        			this.raidX = (int)this.posX;
-	        			this.raidY = (int)this.posY;
-	        			this.raidZ = (int)this.posZ;
-						this.writeEntityToNBT(new NBTTagCompound());
-						player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidY + ", " + this.raidZ + "]§r" ), true);
-			        	playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-	        		}
-	    		}
-	        	else
-	        	{
-	        	    this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F );
-	        	}
-	        	return true;
-	        }
-			else if ( item == Items.EMERALD && rep < 0 )
+					return true;
+				}
+			}
+			catch ( Exception e )
 			{
-				// rep -7
-				// emeralds = 2   8   12
-				// 26
-				int maxRepGain = -rep;
-				int emeraldRep = itemstack.getCount()*ToroQuestConfiguration.donateEmeraldRepGain;
-				if ( emeraldRep > maxRepGain )
-				{
-					chat(player,"You've cleared your bounty.");
-	    			this.actionTimer = 1;
-					int remainder = emeraldRep-maxRepGain;
-					adjustRep( player, maxRepGain );
-		        	player.setHeldItem( hand, new ItemStack( item, (int)(remainder/ToroQuestConfiguration.donateEmeraldRepGain) ) );
-		        	this.underAttack = null;
-		        	this.murderWitness = null;
-				}
-				else
-				{
-					chat(player,"There's still a bounty on your head.");
-	    			this.actionTimer = 1;
-					adjustRep( player, emeraldRep );
-		        	player.setHeldItem( hand, new ItemStack( Items.AIR, 0 ) );
-				}
-				this.setAttackTarget(null);
+				
+			}
+			
+			if ( this.getAttackTarget() == null && ( this.actionReady() || this.interactTalkReady ) ) // && this.postReady )
+			{
+				EntityGuard.guardSpeak(this, player);
 				return true;
 			}
 		}
-		catch ( Exception e )
+		return false;
+	}
+	
+	public boolean interactTalkReady = true;
+
+	//==================================================== Friendly ===========================================================
+	
+	public boolean isFriendly( EntityPlayer player, int rep )
+	{
+		return ( rep >= 0 && ( this.murderWitness == null || this.murderWitness != player ) && ( this.underAttack == null || this.underAttack != player ) && !this.isAnnoyed() );
+	}
+	
+	//==================================================== Chat ===========================================================
+	
+	public void chat( EntityPlayer player, String message, @Nullable String extra )
+	{
+		if ( ToroQuestConfiguration.guardsHaveDialogue )
 		{
-			if ( this.actionTimer <= 0 )
+			
+			this.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+			this.faceEntity(player, 20.0F, 20.0F);
+			
+			if ( player.world.isRemote )
 			{
-			    this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F );
-    			this.actionTimer = 1;
+				return;
+			}
+			
+			if ( this.getDistance(player) > 12 )
+			{
+				return;
+			}
+			
+			if ( player.isInvisible() )
+			{
+				try
+				{
+					int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible", new Object[0]).getUnformattedText() ));
+					String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible"+i, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+					//String s = (I18n.format("entity.toroquest.guard.invisible"+rand.nextInt(Integer.parseInt(I18n.format("entity.toroquest.guard.invisible")))).replace("@p", player.getDisplayNameString()));
+					
+					if ( extra != null )
+					{
+						s = s.replace("@e", extra);
+					}
+					player.sendMessage(new TextComponentString("§l" + this.getChatName() + "§r: " + s));
+					this.setCustomNameTag(s);
+					this.setAlwaysRenderNameTag(true);
+					this.actionTimer = 5;
+				}
+				catch ( Exception e )
+				{
+					//int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible", new Object[0]).getUnformattedText() ));
+					String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible", new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+					//String s = (I18n.format("entity.toroquest.guard.invisible").replace("@p", player.getDisplayNameString()));
+					
+					if ( extra != null )
+					{
+						s = s.replace("@e", extra);
+					}
+					player.sendMessage(new TextComponentString("§l" + this.getChatName() + "§r: " + s));
+					this.setCustomNameTag(s);
+					this.setAlwaysRenderNameTag(true);
+					this.actionTimer = 5;
+				}
+				
+				this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5.0F );
+				return;
+			}
+			
+			this.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+			this.faceEntity(player, 20.0F, 20.0F);
+			
+			if ( this.getAttackTarget() == null )
+			{
+				this.getNavigator().clearPath();
+				this.getNavigator().tryMoveToXYZ(((player.posX - this.posX)/2.0+this.posX),player.posY,((player.posZ - this.posZ)/2.0+this.posZ), 0.5D);
+			}
+			
+//			if ( player.world.isRemote )
+//			{
+//				return;
+//			}
+			
+			try
+			{
+				int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard."+message, new Object[0]).getUnformattedText() ));
+				String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard."+message+i, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+				//String s = (I18n.format("entity.toroquest.guard."+message+rand.nextInt(Integer.parseInt(I18n.format("entity.toroquest.guard."+message)))).replace("@p", player.getDisplayNameString()));
+				
+				if ( extra != null )
+				{
+					s = s.replace("@e", extra);
+				}
+				player.sendMessage(new TextComponentString("§l" + this.getChatName() + "§r: " + s));
+				this.setCustomNameTag(s);
+				this.setAlwaysRenderNameTag(true);
+				this.actionTimer = 5;
+			}
+			catch ( Exception e )
+			{
+				//int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, message, new Object[0]).getUnformattedText() ));
+				String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard."+message, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+				//String s = (I18n.format("entity.toroquest.guard."+message).replace("@p", player.getDisplayNameString()));
+				
+				if ( extra != null )
+				{
+					s = s.replace("@e", extra);
+				}
+				player.sendMessage(new TextComponentString("§l" + this.getChatName() + "§r: " + s));
+				this.setCustomNameTag(s);
+				this.setAlwaysRenderNameTag(true);
+				this.actionTimer = 5;
+			}
+			this.interactTalkReady = false;
+			this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5.0F );
+		}
+	}
+	
+	public void chat( EntityToroNpc guard, EntityPlayer player, String message, @Nullable String extra )
+	{
+		if ( ToroQuestConfiguration.guardsHaveDialogue ) // player.world.isRemote
+		{
+			
+			guard.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+			guard.faceEntity(player, 20.0F, 20.0F);
+			
+			if ( player.world.isRemote )
+			{
+				return;
+			}
+			
+			if ( guard.getDistance(player) > 12 )
+			{
+				return;
+			}
+			
+			if ( player.isInvisible() )
+			{
+//				if ( player.world.isRemote )
+//				{
+//					return;
+//				}
+				try
+				{
+					int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible", new Object[0]).getUnformattedText() ));
+					String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible"+i, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+					
+					//String s = (I18n.format("entity.toroquest.guard.invisible"+guard.world.rand.nextInt(Integer.parseInt(I18n.format("entity.toroquest.guard.invisible")))).replace("@p", player.getDisplayNameString()));
+					
+					if ( extra != null )
+					{
+						s = s.replace("@e", extra);
+					}
+					player.sendMessage(new TextComponentString("§lGuard§r: " + s));
+					guard.setCustomNameTag(s);
+					guard.setAlwaysRenderNameTag(true);
+					guard.actionTimer = 5;
+				}
+				catch ( Exception e )
+				{
+					//int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible", new Object[0]).getUnformattedText() ));
+					String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard.invisible", new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+					//String s = (I18n.format("entity.toroquest.guard.invisible").replace("@p", player.getDisplayNameString()));
+					
+					if ( extra != null )
+					{
+						s = s.replace("@e", extra);
+					}
+					player.sendMessage(new TextComponentString("§lGuard§r: " + s));
+					guard.setCustomNameTag(s);
+					guard.setAlwaysRenderNameTag(true);
+					guard.actionTimer = 5;
+				}
+				
+				guard.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + guard.world.rand.nextFloat()/5.0F );
+				return;
+			}
+			
+			guard.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+			guard.faceEntity(player, 20.0F, 20.0F);
+			
+			if ( guard.getAttackTarget() == null )
+			{
+				guard.getNavigator().clearPath();
+				guard.getNavigator().tryMoveToXYZ(((player.posX - guard.posX)/2.0+guard.posX),player.posY,((player.posZ - guard.posZ)/2.0+guard.posZ), 0.5D);
+			}
+			
+//			if ( player.world.isRemote )
+//			{
+//				return;
+//			}
+			
+			try
+			{
+				int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard."+message, new Object[0]).getUnformattedText() ));
+				String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard."+message+i, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+				//String s = (I18n.format("entity.toroquest.guard."+message+guard.world.rand.nextInt(Integer.parseInt(I18n.format("entity.toroquest.guard."+message)))).replace("@p", player.getDisplayNameString()));
+				
+				if ( extra != null )
+				{
+					s = s.replace("@e", extra);
+				}
+				player.sendMessage(new TextComponentString("§lGuard§r: " + s));
+				guard.setCustomNameTag(s);
+				guard.setAlwaysRenderNameTag(true);
+				guard.actionTimer = 5;
+			}
+			catch ( Exception e )
+			{
+				String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.guard."+message, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
+				//String s = (I18n.format("entity.toroquest.guard."+message).replace("@p", player.getDisplayNameString()));
+				
+				if ( extra != null )
+				{
+					s = s.replace("@e", extra);
+				}
+				player.sendMessage(new TextComponentString("§lGuard§r: " + s));
+				guard.setCustomNameTag(s);
+				guard.setAlwaysRenderNameTag(true);
+				guard.actionTimer = 5;
+			}
+			guard.interactTalkReady = false;
+			guard.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + guard.world.rand.nextFloat()/5.0F );
+		}
+	}
+
+	//==================================================== Combat Task ===========================================================
+
+	public void setCombatTask()
+	{
+	    this.aiArrowAttack.setAttackCooldown(40);
+		this.tasks.addTask(6, new AIAttackWithSword(this, 0.65D));
+		this.tasks.addTask(7, this.aiArrowAttack);
+	    this.inCombat = false;
+		this.blocking = false;
+		this.blockingTimer = 0;
+		this.setAttackTarget(null);
+		this.canShieldPush = true;
+		this.resetActiveHand();
+		this.setActiveHand(EnumHand.MAIN_HAND);
+		this.activeItemStackUseCount = 0;
+		this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+		this.stance = 0;
+		this.getMoveHelper().strafe( 0.0F, 0.0F );
+		this.getNavigator().clearPath();
+	}
+	
+	//==================================================== Call For Help ===========================================================
+
+	public void callForHelp( EntityLivingBase attacker )
+	{
+		List<EntityGuard> guards = attacker.getEntityWorld().getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getPosition()).grow(16, 12, 16), new Predicate<EntityGuard>()
+		{
+			public boolean apply(@Nullable EntityGuard entity)
+			{
+				return true;
+			}
+		});
+		
+		for (EntityGuard guard: guards)
+		{
+			if ( guard.getAttackTarget() == null && guard.canEntityBeSeen( attacker ) )
+			{
+				if ( attacker instanceof EntityPlayer )
+				{
+					guard.setAnnoyed( (EntityPlayer)attacker );
+				}
+				guard.setAttackTarget( attacker );
 			}
 		}
-		if ( !this.inCombat && this.actionTimer <= 0 )
+		
+		if ( this.getAttackTarget() == null || !this.getAttackTarget().isEntityAlive() )
 		{
-			this.actionTimer = 3;
-			this.getNavigator().clearPath();
-            this.getLookHelper().setLookPosition(player.posX, player.posY + (double)player.getEyeHeight(), player.posZ, (float)this.getHorizontalFaceSpeed(), (float)this.getVerticalFaceSpeed());
-			return this.guardSpeak(player);
+			if ( this.getRevengeTarget() instanceof EntityPlayer )
+			{
+				this.setAnnoyed( (EntityPlayer)attacker );
+			}
+			this.setAttackTarget( this.getRevengeTarget() );
+		}
+		
+		if ( this.getAttackTarget() != null && !this.getAttackTarget().isEntityAlive() )
+		{
+			this.setAttackTarget(null);
+		}
+		
+		List<EntityToroVillager> villagers = attacker.getEntityWorld().getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(getPosition()).grow(12, 8, 12), new Predicate<EntityToroVillager>()
+		{
+			public boolean apply(@Nullable EntityToroVillager entity)
+			{
+				return true;
+			}
+		});
+	
+		for ( EntityToroVillager villager : villagers )
+		{
+			villager.setUnderAttack(attacker);
 		}
 	}
-	return false;
-}
 	
-	
+	//==================================================== Ranged Attack ===========================================================
 
-void chat(EntityPlayer player, String message)
-{
-	if ( ToroQuestConfiguration.guardsHaveDialogue )
+	@Override
+	public void attackEntityWithRangedAttack(EntityLivingBase target, float distanceFactor)
 	{
-		if ( player.world.isRemote )
-		{
-			return;
-		}
-		player.sendMessage(new TextComponentString( "§l" + this.getName() + "§r: " + message));
-	    this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5 );
+		if ( target == null ) return;
+		this.setAttackTarget(target);
+	    EntityArrow entityarrow = this.getArrow(distanceFactor);
+	    entityarrow.setIsCritical(true);
+	    entityarrow.setDamage(entityarrow.getDamage()*(rand.nextFloat()/2+1));
+	    double d0 = target.posX - this.posX;
+	    double d1 = target.getEntityBoundingBox().minY + target.height/4.0 - entityarrow.posY - 1 - rand.nextDouble();
+	    double d2 = target.posZ - this.posZ;
+	    double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
+	    entityarrow.shoot( d0, d1 + d3 * 0.2D, d2, 2.35F, 1.0F );
+	    this.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRNG().nextFloat() * 0.5F + 0.8F));
+	    this.world.spawnEntity(entityarrow);
 	}
-}
-
-protected final EntityAISmartTempt followNoCiv = new EntityAISmartTempt(this, 0.625D, Items.AIR)
-{
-	@Override
-	public boolean shouldExecute()
-    {
-        if ( underAttack instanceof EntityPlayer || murderWitness instanceof EntityPlayer || inCombat )
-        {
-	        return false;
-        }
-        return super.shouldExecute();
-    }
 	
+	protected EntityArrow getArrow(float p_190726_1_)
+	{
+	    return new EntitySmartArrow(this.world, this);
+	}
+	
+	//==================================================== Update Hand ===========================================================
+
 	@Override
-	protected boolean isTempting(ItemStack stack)
-    {
-		if ( underAttack instanceof EntityPlayer || murderWitness instanceof EntityPlayer || inCombat )
-        {
-	        return false;
-        }
-        return true;
-    }
-};
-
-public void setCombatTask()
-{
-    //if (this.world != null && !this.world.isRemote)
-    {
-	    this.aiArrowAttack.setAttackCooldown(40);
-		this.tasks.addTask(6, new AIAttackWithSword(this, 0.6D, true));
-		this.tasks.addTask(7, this.aiArrowAttack);
-		// CivilizationType civ = this.getCivilization();
-        // if ( civ == null || ( civ != null && civ.toString() == "" ) ) this.tasks.addTask(9, followNoCiv);
-    }
-    // [RESET]
-    this.inCombat = false;
-	this.blocking = false;
-	this.blockingTimer = 0;
-	this.setAttackTarget(null);
-	this.setRevengeTarget(null);
-	this.resetActiveHand();
-	this.setActiveHand(EnumHand.MAIN_HAND);
-	this.activeItemStackUseCount = 0;
-	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.0D);
-	this.strafeVer = 0;
-	this.strafeHor = 0;
-	this.getMoveHelper().strafe( 0.0F, 0.0F );
-	this.getNavigator().clearPath();
-}
-
-@Override
-public float getEyeHeight()
-{
-    return 1.935F;
-}
-
-@Override
-public void attackEntityWithRangedAttack(EntityLivingBase target, float distanceFactor)
-{
-	if ( target == null ) return;
-    EntityArrow entityarrow = this.getArrow(distanceFactor);
-    // if ( ToroQuestConfiguration.fireArrowsOnGuards ) entityarrow.setFire(12);
-    entityarrow.setIsCritical(true);
-    entityarrow.setDamage(entityarrow.getDamage()*(rand.nextFloat()/2+1));
-    double d0 = target.posX - this.posX;
-    //double d1 = target.getEntityBoundingBox().minY - entityarrow.posY;
-    double d1 = target.getEntityBoundingBox().minY + target.height/4.0 - entityarrow.posY - 1 - rand.nextDouble();
-    double d2 = target.posZ - this.posZ;
-    double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-    entityarrow.shoot( d0, d1 + d3 * 0.2D, d2, 2.35F, 1.0F );
-    this.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRNG().nextFloat() * 0.5F + 0.8F));
-    this.world.spawnEntity(entityarrow);
-}
-
-protected EntityArrow getArrow(float p_190726_1_)
-{
-    return new EntitySmartArrow(this.world, this);
-}
-
-@Override
-public void setItemStackToSlot(EntityEquipmentSlot slotIn, ItemStack stack)
-{
-    super.setItemStackToSlot(slotIn, stack);
-
-    if ( slotIn == EntityEquipmentSlot.MAINHAND ) // remote!
-    {
-        this.setCombatTask();
-    }
-}
-
-@Override
-protected void updateActiveHand()
+	protected void updateActiveHand()
 	{
 	    if (this.isHandActive())
 	    {
 	        ItemStack itemstack = this.getHeldItem(this.getActiveHand());
-	        if ( itemstack.getItem() == Items.SHIELD ) // this.blocking
+	        if ( itemstack.getItem() instanceof ItemShield ) // this.blocking
 	        {
 	        	activeItemStackUseCount = 30;
 	        	if (activeItemStackUseCount > 0)
@@ -1452,6 +2366,7 @@ protected void updateActiveHand()
 		        
 		        if (this.getItemInUseCount() <= 25 && this.getItemInUseCount() % 4 == 0)
 		        {
+		        	this.canShieldPush = true;
 		            this.updateItemUse(this.activeItemStack, 5);
 		        }
 		
@@ -1475,6 +2390,7 @@ protected void updateActiveHand()
 		
 		            if (this.getItemInUseCount() <= 25 && this.getItemInUseCount() % 4 == 0)
 		            {
+			        	this.canShieldPush = true;
 		                this.updateItemUse(this.activeItemStack, 5);
 		            }
 		
@@ -1485,46 +2401,15 @@ protected void updateActiveHand()
 		        }
 		        else
 		        {
+		        	this.canShieldPush = true;
 		            this.resetActiveHand();
 		        }
 	        }
 	    }
 	}
 	
-@Override
-protected void updateLeashedState()
-    {
-	   this.clearLeashed(true, false);
-       return;
-    }
-	
-@Override
-public boolean canBeLeashedTo(EntityPlayer player)
-{
-	return false;
-}
-	
-//	protected boolean isFoe(EntityPlayer target)
-//	{
-//		EntityToroNpc npc = (EntityToroNpc) this;
-//		CivilizationType civ = npc.getCivilization();
-//		if (civ == null)
-//		{
-//			return false;
-//		}
-////		int rep = PlayerCivilizationCapabilityImpl.get(target).getReputation(civ);
-////		if ( (rep > -100 && rep < 1000 && rand.nextInt(10 - (int)(rep/100)) < 5 ) || rep >= 1000 )
-////		{
-////			if ( this.getRevengeTarget() != target ) return false;
-////		}
-//		return true;
-//	}
-	
-	// ======================================== old combat tweaks =========================================
-	
-	/**
-     * Handler for {@link World#setEntityState}
-     */
+	//==================================================== Status ===========================================================
+
 	@Override
     @SideOnly(Side.CLIENT)
     public void handleStatusUpdate(byte id)
@@ -1532,6 +2417,15 @@ public boolean canBeLeashedTo(EntityPlayer player)
         boolean flag = id == 33;
         boolean flag1 = id == 36;
         boolean flag2 = id == 37;
+        
+        if (id == 7)
+        {
+            this.playTameEffect(true);
+        }
+        else if (id == 6)
+        {
+            this.playTameEffect(false);
+        }
 
         if (id != 2 && !flag && !flag1 && !flag2)
         {
@@ -1597,6 +2491,7 @@ public boolean canBeLeashedTo(EntityPlayer player)
 
             this.attackEntityFrom(DamageSource.GENERIC, -1.0F);
         }
+        super.handleStatusUpdate(id);
     }
 	
     public void setSwingingArms(boolean swingingArms)
@@ -1604,179 +2499,94 @@ public boolean canBeLeashedTo(EntityPlayer player)
         return;
     }
 
+	//==================================================== Insult ===========================================================
+
+	public void insult(EntityPlayer player)
+	{
+		if ( this.murderWitness() == player )
+		{
+			this.chat(player, "murderer", null);
+		}
+		else
+		{
+			if ( this.getCivilization() != null )
+			{
+				this.chat(player, "insult", "House "+this.getCivilization().getDisplayName(player));
+			}
+			else if ( !this.playerGuard.equals("") && !player.getName().equals(this.playerGuard) )
+			{
+				this.chat(player, "insult", this.playerGuard);
+			}
+			else
+			{
+				this.chat(player, "insult", TextComponentHelper.createComponentTranslation(player, "civilization.null.name", new Object[0]).getFormattedText());
+			}
+		}
+		this.setAnnoyed( player );
+		this.setAttackTarget(player);
+	}
+	
+	//==================================================== Melee Attack ===========================================================
+
 	@Override
-	public boolean attackEntityAsMob(Entity victim)
+	public boolean attackEntityAsMob(Entity victim) // atttack
 	{
 		if ( victim == null || !victim.isEntityAlive() )
 		{
-			setAttackTarget(null);
-			return false;
-		}
-		if ( victim instanceof EntityToroNpc || victim instanceof EntityIronGolem || victim instanceof EntityVillager )
-		{
-			setAttackTarget(null);
+			this.setAttackTarget(null);
 			return false;
 		}
 		
-		if ( victim instanceof EntityLivingBase && ((EntityLivingBase)victim).getHealth() <= 0 )
+		this.aggroTimer = 0;
+
+		if ( victim instanceof EntityToroNpc || victim instanceof EntityVillager || (victim instanceof EntityGolem && !(victim instanceof EntityConstruct)) )
 		{
-			setAttackTarget(null);
-		}
-			//super.attackEntityAsMob(victim);
-			attackTargetEntityWithCurrentItem(victim); // if there are errors, remove this
-			
-			if ( victim instanceof EntityPlayer )
+			if ( victim instanceof EntityLiving )
 			{
-				EntityPlayer player = (EntityPlayer)victim;
-				if ( !player.world.isRemote )
+				EntityLiving v = ((EntityLiving)victim);
+				v.setAttackTarget(null);
+			}
+			this.setAttackTarget(null);
+			return false;
+		}
+		
+		if ( victim instanceof EntityLiving )
+		{
+			EntityLiving v = ((EntityLiving)victim);
+			if ( v.getHealth() <= 0 )
+			{
+				this.setAttackTarget(null);
+				if ( rand.nextInt(8) == 0 )
 				{
-					if ( rand.nextInt(16) == 0 )
-					{
-						insult(player);
-					}
+					v.setDead();
 				}
 			}
-			return true;
-	}
-	
-	public void insult(EntityPlayer player)
-	{
-		switch ( rand.nextInt(21) )
+		}
+		
+		this.attackTargetEntityWithCurrentItem(victim);
+		
+		if ( victim instanceof EntityPlayer )
 		{
-			case 0:
+			EntityPlayer player = (EntityPlayer)victim;
+			if ( !player.world.isRemote )
 			{
-				chat(player,"Taste my steel!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 1:
-			{
-				chat(player,"How dare you show your face here, criminal!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 2:
-			{
-				chat(player,"I will paint the earth red with your blood, filthy outlaw!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 3:
-			{
-				chat(player,"You will pay for your crimes!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 4:
-			{
-				chat(player,"How dare you show your face here, criminal!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 5:
-			{
-				chat(player,"Die you coward!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 6:
-			{
-				chat(player,"I'll break you like you broke the law!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 7:
-			{
-				chat(player,"Pay with your blood!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 8:
-			{
-				chat(player,"I'll gut you!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 9:
-			{
-				chat(player,"Die, filth!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 10:
-			{
-				chat(player,"Weakling!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 11:
-			{
-				chat(player,"I will be your End.");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 12:
-			{
-				chat(player,"Griefer!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 13:
-			{
-				chat(player,"I hope you rot in the Nether, coward!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 14:
-			{
-				chat(player,"Criminal!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 15:
-			{
-				chat(player,"Your kind disgusts me!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 16:
-			{
-				chat(player,"Your death will be swift!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 17:
-			{
-				chat(player,"There will be justice!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 18:
-			{
-				chat(player,"For the king!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 19:
-			{
-				chat(player,"Filthy outlaw!");
-				this.setAttackTarget(player);
-				break;
-			}
-			case 20:
-			{
-				chat(player,"Go ahead. Try me.");
-				this.setAttackTarget(player);
-				break;
+				if ( this.rand.nextInt(25) == 0 )
+				{
+					this.insult(player);
+				}
 			}
 		}
+		
+		this.setSprinting(false);
+		
+		return true;
 	}
 	
 	public void attackTargetEntityWithCurrentItem(Entity targetEntity)
 	{
 		if ( rand.nextInt(5) == 0 )
         {
-        	this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5 );
+        	this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5.0F );
         }
 		
 		if (targetEntity.canBeAttackedWithItem())
@@ -1813,7 +2623,8 @@ public boolean canBeLeashedTo(EntityPlayer player)
 					if (!criticalHit && this.onGround && d0 < (double) this.getAIMoveSpeed()) {
 						ItemStack itemstack = this.getHeldItem(EnumHand.MAIN_HAND);
 
-						if (itemstack != null && itemstack.getItem() instanceof ItemSword) {
+						if (itemstack != null && (itemstack.getItem() instanceof ItemSword || itemstack.getItem() instanceof ItemAxe ) )
+						{
 							swordSweep = true;
 						}
 					}
@@ -1897,8 +2708,8 @@ public boolean canBeLeashedTo(EntityPlayer player)
 							ItemStack itemstack2 = this.getHeldItemMainhand();
 							ItemStack itemstack3 = entityplayer.isHandActive() ? entityplayer.getActiveItemStack() : null;
 
-							if (itemstack2 != null && itemstack3 != null && itemstack2.getItem() instanceof ItemAxe
-									&& itemstack3.getItem() == Items.SHIELD) {
+							if (itemstack2 != null && itemstack3 != null && itemstack3.getItem() instanceof ItemShield && ( itemstack2.getItem() instanceof ItemAxe || itemstack2.getItem().getRegistryName().toString().contains("halberd") || itemstack2.getItem().getRegistryName().toString().contains("battleaxe") ) )
+							{
 								float f3 = 0.25F + (float) EnchantmentHelper.getEfficiencyModifier(this) * 0.05F;
 								if (this.rand.nextFloat() < f3) {
 									entityplayer.getCooldownTracker().setCooldown(Items.SHIELD, 100);
@@ -1952,7 +2763,6 @@ public boolean canBeLeashedTo(EntityPlayer player)
 			}
 		}
 	}
-
 	
 	public void onCriticalHit(Entity entityHit)
 	{
@@ -1964,7 +2774,8 @@ public boolean canBeLeashedTo(EntityPlayer player)
 		
 	}
 
-	public void spawnSweepParticles() {
+	public void spawnSweepParticles()
+	{
 		double d0 = (double) (-MathHelper.sin(this.rotationYaw * 0.017453292F));
 		double d1 = (double) MathHelper.cos(this.rotationYaw * 0.017453292F);
 
@@ -1974,12 +2785,14 @@ public boolean canBeLeashedTo(EntityPlayer player)
 		}
 	}
 	
+	//==================================================== Sounds ===========================================================
+
 	@Override
     protected SoundEvent getHurtSound(DamageSource damageSourceIn)
     {
 		if ( rand.nextInt(4) == 0 )
 		{
-			this.playSound(SoundEvents.VINDICATION_ILLAGER_DEATH, 1.0F, 0.9F + rand.nextFloat()/5 );
+			this.playSound(SoundEvents.VINDICATION_ILLAGER_DEATH, 1.0F, 0.9F + rand.nextFloat()/5.0F );
 		}
 		return super.getHurtSound(damageSourceIn);
     }
@@ -1989,11 +2802,11 @@ public boolean canBeLeashedTo(EntityPlayer player)
     {
 		if ( rand.nextBoolean() )
 		{
-			this.playSound(SoundEvents.EVOCATION_ILLAGER_DEATH, 1.0F, 0.9F + rand.nextFloat()/5 );
+			this.playSound(SoundEvents.EVOCATION_ILLAGER_DEATH, 1.0F, 0.9F + rand.nextFloat()/5.0F );
 		}
 		else
 		{
-			this.playSound(SoundEvents.ENTITY_ILLAGER_DEATH, 1.0F, 0.9F + rand.nextFloat()/5 );
+			this.playSound(SoundEvents.ENTITY_ILLAGER_DEATH, 1.0F, 0.9F + rand.nextFloat()/5.0F );
 		}
         return null;
     }
@@ -2004,10 +2817,104 @@ public boolean canBeLeashedTo(EntityPlayer player)
         return null;
     }
 	
-	public boolean guardSpeak(EntityPlayer player)
+	public void avoidNear( EntityPlayer player )
 	{
-		CivilizationType civ = this.getCivilization();
+		if ( player == null )
+		{
+//			List<EntityToroNpc> guards = this.world.<EntityToroNpc>getEntitiesWithinAABB(EntityToroNpc.class, this.getEntityBoundingBox().grow(2.0D, 2.0D, 2.0D));
+//	        
+//	        for ( EntityToroNpc guard : guards )
+//	        {
+//	        	Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 6, 4, new Vec3d(guard.posX, guard.posY, guard.posZ));
+//	        	
+//	        	if ( vec3d != null )
+//	            {
+//	            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D);
+//	            	return;
+//	            }
+//	        }
+			return;
+		}
+		
+		List<EntityToroNpc> guards = this.world.<EntityToroNpc>getEntitiesWithinAABB(EntityToroNpc.class, this.getEntityBoundingBox().grow(3.0D, 2.0D, 3.0D));
+        
+        for ( EntityToroNpc guard : guards )
+        {
+        	Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 6, 4, new Vec3d(guard.posX, guard.posY, guard.posZ));
+        	
+        	if ( vec3d != null )
+            {
+            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D);
+            	return;
+            }
+        }
+		
+		if ( player.getDistance(this) <= 4.0D )
+    	{
+			if ( this.actionReady() )
+	    	{
+	    		if ( this.world.rand.nextFloat() < ToroQuestConfiguration.guardSpeakChance )
+	    		{
+	    			EntityGuard.guardSpeak(this, player);
+	    			return;
+	    		}
+	    		else
+	    		{
+	    			this.actionTimer = 3;
+	    		}
+			}
+//			else if ( player.getDistance(this) <= 1.5D )
+//			{
+//				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 6, 4, new Vec3d(player.posX, player.posY, player.posZ));
+//	        	
+//	            if ( vec3d != null )
+//	            {
+//	            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D);
+//	            	return;
+//	            }
+//			}
+    	}
+		
+		// GUARDS avoid GUARDS
+
+	}
+	
+	//==================================================== Guard Speak ===========================================================
+	
+	public static void guardSpeak(EntityGuard entity, EntityPlayer player)
+	{
+		if ( entity.world.isRemote )
+		{
+			return;
+		}
+		
+		if ( entity == null || player == null )
+		{
+			return;
+		}
+		
+		if ( entity.getAttackTarget() == player )
+		{
+			entity.insult(player);
+			return;
+		}
+		
+		if ( entity.getAttackTarget() != null )
+		{
+			return;
+		}
+		
+		//if ( entity.actionReady() )
+		{
+			entity.getNavigator().clearPath();
+			entity.faceEntity(player, 20.0F, 20.0F);
+			entity.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+		}
+		
+		CivilizationType civ = entity.getCivilization();
+		
 		boolean bandit = false;
+		
 		for ( ItemStack itemStack : player.getArmorInventoryList() )
 		{
 			if ( itemStack.getItem().equals(Item.getByNameOrId("toroquest:bandit_helmet") ) || itemStack.getItem().equals(Item.getByNameOrId("toroquest:legendary_bandit_helmet") ) )
@@ -2018,897 +2925,181 @@ public boolean canBeLeashedTo(EntityPlayer player)
 		
 		if ( civ == null )
 		{
-			if ( bandit || ( this.murderWitness != null && this.murderWitness == player ) || ( this.underAttack != null && this.underAttack == player ) )
+			// HAS PLAYER GUARD
+			if ( !entity.playerGuard.equals("") )
 			{
-				this.actionTimer = 30;
-				if ( !this.world.isRemote )
+				if ( player.getName().equals(entity.playerGuard) )
 				{
-					insult(player);
+					// PLAYERS GUARD					
+					if ( entity.getHealth() <= entity.getMaxHealth()*0.75 )
+					{
+						if ( entity.actionReady() ) entity.chat(player, "wounded", null); return;
+					}
+					else
+					{
+						if ( entity.actionReady() ) entity.chat(player, "playersguard", null); return;
+					}
+				}
+				// NOT PLAYERS GUARD
+				else
+				{
+					if ( entity.actionReady() ) entity.chat(player, "otherplayersguard", entity.playerGuard); return;
+				}
+			}
+			else if ( bandit || entity.murderWitness == player || entity.underAttack == player )
+			{
+				if ( entity.actionReady() ) entity.insult(player); return;
+			}
+			else
+			{
+				if ( entity.wildernessGuardSpeak )
+				{
+					entity.wildernessGuardSpeak = false;
+					if ( !entity.world.getEntitiesWithinAABB(EntityCaravan.class, new AxisAlignedBB(entity.getPosition()).grow(25, 15, 25), new Predicate<EntityCaravan>(){public boolean apply(@Nullable EntityCaravan entity){return true;}}).isEmpty() )
+					{
+						entity.getNavigator().clearPath();
+						entity.faceEntity(player, 20.0F, 20.0F);
+						entity.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+						entity.chat(player, "caravan", null);
+						//entity.actionTimer = 5;
+					}
+					else
+					{
+						entity.getNavigator().clearPath();
+						entity.faceEntity(player, 20.0F, 20.0F);
+						entity.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+						entity.chat(player, "nociv", null);
+						//entity.actionTimer = 5;
+					}
+				}
+				return;
+			}
+		}
+		else if ( bandit )
+		{
+			if ( entity.actionReady() ) entity.chat(player, "playerbandit", null); return;
+		}
+		
+		if ( !entity.actionReady() ) return;
+		
+		Province prov = CivilizationUtil.getProvinceAt(entity.world, entity.chunkCoordX, entity.chunkCoordZ);
+		
+		String name;
+		
+		if ( prov == null )
+		{
+			name = TextComponentHelper.createComponentTranslation(player, "civilization.null.name", new Object[0]).getFormattedText();
+		}
+		else
+		{
+			name = prov.name;
+			
+			if ( prov.hasLord )
+			{
+				for ( ItemStack itemStack : player.getArmorInventoryList() )
+				{
+					if ( itemStack.getItem().equals(Item.getByNameOrId("toroquest:royal_helmet") ) )
+					{
+						entity.chat(player, "falselord", name);
+						entity.setAnnoyed(player);
+						entity.setAttackTarget(player);
+						return;
+					}
 				}
 			}
 			else
 			{
-				if ( !this.world.isRemote )
+				for ( ItemStack itemStack : player.getArmorInventoryList() )
 				{
-					int caravans = world.getEntitiesWithinAABB(EntityCaravan.class, new AxisAlignedBB(getPosition()).grow(32, 16, 32), new Predicate<EntityCaravan>()
-					{	
-		    			public boolean apply(@Nullable EntityCaravan entity)
-		    			{
-		    				return true;
-		    			}
-			    	}).size();
-					
-					if ( caravans > 0 )
+					if ( itemStack.getItem().equals(Item.getByNameOrId("toroquest:royal_helmet") ) )
 					{
-						switch ( rand.nextInt(7) )
-						{
-							case 0:
-							{
-								chat(player,"There is a village nearby. Do you mind escorting us there, adventurer?");
-								break;
-							}
-							case 1:
-							{
-								chat(player,"We are headed to town, but these lands are dangerous. Will you guide us?");
-								break;
-							}
-							case 2:
-							{
-								chat(player,"Greetings, adventurer, we are on our way to town. Which province do you hail from?");
-								break;
-							}
-							case 3:
-							{
-								chat(player,"Thank the Aether you are not a bandit, you had us worried.");
-								break;
-							}
-							case 4:
-							{
-								chat(player,"Careful out here, wouldn't want you getting hurt.");
-								break;
-							}
-							case 5:
-							{
-								chat(player,"We are quite lost, adventurer. Do you know the way to the nearest province?");
-								break;
-							}
-							case 6:
-							{
-								chat(player,"Will you show us to the nearest village, adventurer?");
-								break;
-							}
-						}
-					}
-					else
-					{
-						switch ( rand.nextInt(5) )
-						{
-							case 0:
-							{
-								chat(player,"Thank the Aether you are not a bandit, you had me worried.");
-								break;
-							}
-							case 1:
-							{
-								chat(player,"My caravan was slaughtered by filthy bandits! We must head to the nearest town before we encounter any more.");
-								break;
-							}
-							case 2:
-							{
-								chat(player,"I lost the rest of my scouting party from a bandit raid... we must head back to town quickly and report the attack!");
-								break;
-							}
-							case 3:
-							{
-								chat(player,"My caravan was butchered by monsters! We must get to town quickly, it is not safe here.");
-								break;
-							}
-							case 4:
-							{
-								chat(player,"My scouting party was torn apart by a hoard of zombies... please, we need to get back to town.");
-								break;
-							}
-							case 5:
-							{
-								chat(player,"Careful out here, wouldn't want you getting hurt.");
-								break;
-							}
-						}
+						entity.chat(player, "lord", name);
+						return;
 					}
 				}
 			}
-			return true;
-		}
-		else if ( bandit )
-		{
-			switch ( rand.nextInt(5) )
-			{
-				case 0:
-				{
-					chat(player,"Filthy bandit!");
-					break;
-				}
-				case 1:
-				{
-					chat(player,"Die, bandit scum!");
-					break;
-				}
-				case 2:
-				{
-					chat(player,"You will pay with your blood!");
-					break;
-				}
-				case 3:
-				{
-					chat(player,"Bandit scum!");
-					break;
-				}
-				case 4:
-				{
-					chat(player,"I will paint the earth red with your blood, filthy bandit!");
-					break;
-				}
-				case 5:
-				{
-					chat(player,"Die, bandit!");
-					break;
-				}
-			}
-			return true;
 		}
 		
 		int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(civ);
-		rep = (int)(rep * 1+((double)(rand.nextInt(5))/10));
+		rep = (int)(rep * (1+(entity.rand.nextGaussian()/3.0D)));
+		ItemStack itemStack = player.getHeldItemMainhand();
+		Item item = itemStack.getItem();
 		
-		if ( rep <= -50 || ( this.murderWitness != null && this.murderWitness == player ) || ( this.underAttack != null && this.underAttack == player ) )
+		if ( rep <= -50 || entity.murderWitness == player || entity.underAttack == player )
 		{
-			if ( !this.world.isRemote )
-			{
-				insult(player);
-			}
+			entity.insult(player); return;
 		}
-		else if ( this.isAnnoyed )
+		else if ( entity.isAnnoyedAt(player) || rep < 0 )
 		{
-			switch ( rand.nextInt(10) )
-			{
-				case 0:
-				{
-					chat(player,"Stay out of trouble.");
-					break;
-				}
-				case 1:
-				{
-					chat(player,"Causing trouble now, are we?");
-					break;
-				}
-				case 2:
-				{
-					chat(player,"I'd be careful if I were you.");
-					break;
-				}
-				case 3:
-				{
-					chat(player,"Stay out of trouble, traveler.");
-					break;
-				}
-				case 4:
-				{
-					chat(player,"Disrespect the law, and you disrespect me.");
-					break;
-				}
-				case 5:
-				{
-					chat(player,"Stop. You are causing a disturbance.");
-					break;
-				}
-				case 6:
-				{
-					chat(player,"I'm keeping an eye on you.");
-					break;
-				}
-				case 7:
-				{
-					chat(player,"This is your last warning.");
-					break;
-				}
-				case 8:
-				{
-					chat(player,"Go ahead. Try me.");
-					break;
-				}
-			}
+			entity.chat(player, "annoyed", name); return;
 		}
-		else if ( this.getHealth() < this.getMaxHealth()/2 )
+		else if ( entity.getHealth() <= entity.getMaxHealth()*0.75 )
 		{
-			switch ( rand.nextInt(6) )
-			{
-				case 0:
-				{
-					chat(player,"I am quite wounded.");
-					break;
-				}
-				case 1:
-				{
-					chat(player,"I got pretty scraped up, I may need a healer.");
-					break;
-				}
-				case 2:
-				{
-					chat(player,"That one got me right in the knee. How bad does it look?");
-					break;
-				}
-				case 3:
-				{
-					chat(player,"Ah bloody Nether! I need a healing potion to fix this wound.");
-					break;
-				}
-				case 4:
-				{
-					chat(player,"It hurts... I think I'm bleeding.");
-					break;
-				}
-				case 5:
-				{
-					chat(player,"I took some damage, I need healing.");
-					break;
-				}
-			}
+			entity.chat(player, "wounded", name); return;
 		}
-		else if ( rep < 250 )
+		else if ( entity.rand.nextInt(4) == 0 && item instanceof ItemSword )
 		{
-			switch ( rand.nextInt(30) )
-			{
-				case 0:
-				{
-					chat(player,"Watch yourself, traveler.");
-					break;
-				}
-				case 1:
-				{
-					chat(player,"I'd be careful if I were you.");
-					break;
-				}
-				case 2:
-				{
-					chat(player,"You're a bit far from home, traveler.");
-					break;
-				}
-				case 3:
-				{
-					chat(player,"Let me guess... someone stole your diamonds.");
-					break;
-				}
-				case 4:
-				{
-					chat(player,"Causing trouble now, are we?");
-					break;
-				}
-				case 5:
-				{
-					chat(player,"Everything alright?");
-					break;
-				}
-				case 6:
-				{
-					chat(player,"For the king!");
-					break;
-				}
-				case 7:
-				{
-					chat(player,"I live to serve.");
-					break;
-				}
-				case 8:
-				{
-					chat(player,"Another day another diamond.");
-					break;
-				}
-				case 9:
-				{
-					chat(player,"Yes?");
-					break;
-				}
-				case 10:
-				{
-					chat(player,"What is it?");
-					break;
-				}
-				case 11:
-				{
-					chat(player,"Stay out of trouble, traveler.");
-					break;
-				}
-				case 12:
-				{
-					chat(player,"Disrespect the law, and you disrespect me.");
-					break;
-				}
-				case 13:
-				{
-					chat(player,"This better be a pressing matter...");
-					break;
-				}
-				case 14:
-				{
-					chat(player,"Make it quick, traveler.");
-					break;
-				}
-				case 15:
-				{
-					chat(player,"Great. What do you want?");
-					break;
-				}
-				case 16:
-				{
-					chat(player,"Well met.");
-					break;
-				}
-				case 17:
-				{
-					chat(player,"What are you looking at?");
-					break;
-				}
-				case 18:
-				{
-					chat(player,"Greetings, traveler.");
-					break;
-				}
-				case 19:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Careful where you swing that weapon!");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"That axe is for chopping trees, I hope.");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"Ha! Leave the farming to the villagers.");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"Mining for some diamonds now, are we?");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"You off to play in the dirt?");
-					}
-					else
-					{
-						chat(player,"Can I... help you?");
-					}
-					break;
-				}
-				case 20:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Careful where you swing that weapon!");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"That axe is for chopping trees, I hope.");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"Ha! Leave the farming to the villagers.");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"Mining for some diamonds now, are we?");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"You off to play in the dirt?");
-					}
-					else
-					{
-						chat(player,"Do you need something?");
-					}
-					break;
-				}
-				case 21:
-				{
-					chat(player,"Come to trade with our village?");
-					break;
-				}
-				case 22:
-				{
-					chat(player,"Great. More outsiders...");
-					break;
-				}
-				case 23:
-				{
-					chat(player,"These bandit raids have been getting worse...");
-					break;
-				}
-				case 24:
-				{
-					chat(player,"Move along.");
-					break;
-				}
-				case 25:
-				{
-					chat(player,"Speak with our village lord, he has work for you.");
-					break;
-				}
-				case 26:
-				{
-					chat(player,"Welcome. Our village has much to offer.");
-					break;
-				}
-				case 27:
-				{
-					chat(player,"Which province do you hail from?");
-					break;
-				}
-				case 28:
-				{
-					chat(player,"Keep the peace or keep out.");
-					break;
-				}
-				case 29:
-				{
-					int time = (int)this.world.getWorldTime();
-					if ( time > 9000 && time < 13000 ) chat(player,"Good evening.");
-					else if ( time >= 4000 && time < 9000 ) chat(player,"Good morning.");
-					else if ( time <= 9000 ) chat(player,"Good afternoon.");
-					else chat(player,"Stay safe. Monsters roam the night.");
-					break;
-				}
-			}
+			entity.chat(player, "sword", item.getItemStackDisplayName(itemStack)); return;
 		}
-		else if ( rep < 1000 )
+		else if ( entity.rand.nextBoolean() && item instanceof ItemAxe )
 		{
-			switch ( rand.nextInt(30) )
-			{
-				case 0:
-				{
-					chat(player,"Welcome, my friend.");
-					break;
-				}
-				case 1:
-				{
-					chat(player,"Hail, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 2:
-				{
-					chat(player,"Greetings, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 3:
-				{
-					chat(player,"Good to see you, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 4:
-				{
-					chat(player,"Well met.");
-					break;
-				}
-				case 5:
-				{
-					chat(player,"You're " + player.getDisplayNameString() + ", aren't you?");
-					break;
-				}
-				case 6:
-				{
-					chat(player,"For the king!");
-				}
-				case 7:
-				{
-					chat(player,"I live to serve.");
-					break;
-				}
-				case 8:
-				{
-					int time = (int)this.ticksExisted;
-					if ( time > 9000 && time < 13000 ) chat(player,"Good evening, " + player.getDisplayNameString() + ".");
-					else if ( time >= 4000 && time < 9000 ) chat(player,"Good morning, " + player.getDisplayNameString() + ".");
-					else if ( time <= 9000 ) chat(player,"Good afternoon, " + player.getDisplayNameString() + ".");
-					else chat(player,"Stay safe, " + player.getDisplayNameString() + ". Monsters roam the night.");
-					break;
-				}
-				case 9:
-				{
-					int time = (int)this.world.getWorldTime();
-					if ( time > 9000 && time < 13000 ) chat(player,"Good evening, " + player.getDisplayNameString() + ".");
-					else if ( time >= 4000 && time < 9000 ) chat(player,"Good morning, " + player.getDisplayNameString() + ".");
-					else if ( time <= 9000 ) chat(player,"Good afternoon, " + player.getDisplayNameString() + ".");
-					else chat(player,"Stay safe, " + player.getDisplayNameString() + ". Monsters roam the night.");
-					break;
-				}
-				case 10:
-				{
-					chat(player,"You're making quite the name for yourself around here.");
-					break;
-				}
-				case 11:
-				{
-					chat(player,"Yes, citizen? How may I help you?");
-					break;
-				}
-				case 12:
-				{
-					chat(player,"May the Aether watch over you.");
-					break;
-				}
-				case 13:
-				{
-					chat(player,"It is nice to see you again.");
-					break;
-				}
-				case 14:
-				{
-					chat(player,"Everything alright?");
-					break;
-				}
-				case 15:
-				{
-					chat(player,"If you ever need anything, let me know.");
-					break;
-				}
-				case 16:
-				{
-					chat(player,"We stand by your side.");
-					break;
-				}
-				case 17:
-				{
-					chat(player,"Stay safe.");
-					break;
-				}
-				case 18:
-				{
-					chat(player,"Everything's in order.");
-					break;
-				}
-				case 19:
-				{
-					chat(player,"Greetings.");
-					break;
-				}
-				case 20:
-				{
-					chat(player,"Yes?");
-					break;
-				}
-				case 21:
-				{
-					chat(player,"What is your command?");
-					break;
-				}
-				case 22:
-				{
-					chat(player,"We appreciate your service to the king, " + player.getDisplayNameString() + "." );
-					break;
-				}
-				case 23:
-				{
-					chat(player,"Gut anymore of those filthy bandits?");
-					break;
-				}
-				case 24:
-				{
-					chat(player,"These bandit raids have been getting worse...");
-					break;
-				}
-				case 25:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Impressive weapon you got there...");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"That's a hefty axe. You off to go chop down some bandits?");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"I took you for a fighter not a farmer.");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"Mining for some diamonds now, are we?");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"You're digging bandit graves, I hope.");
-					}
-					else
-					{
-						chat(player,"I wish I was an adventurer like you.");
-					}
-					break;
-				}
-				case 26:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Impressive weapon you got there...");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"Can I AXE what you plan to do with that? Haha... ha... sorry won't happen again sir.");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"Planting more crops I see. We can use all the help we can get.");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"Mining again, are we? How many diamonds have you found?");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"Dig up any treasure?");
-					}
-					else
-					{
-						chat(player,"Good to see you.");
-					}
-					break;
-				}
-				case 27:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Impressive weapon you got there...");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"Can I AXE what you plan to do with that? Haha... ha... sorry won't happen again sir.");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"Planting more crops I see. We can use all the help we can get.");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"Mining again, are we? How many diamonds have you found?");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"Dig up any treasure?");
-					}
-					else
-					{
-						chat(player,"Your orders?");
-					}
-					break;
-				}
-				case 28:
-				{
-					chat(player,"These bandit raids have been getting worse...");
-					break;
-				}
-				case 29:
-				{
-					chat(player,"Our scouts have not reported back. I'm worried...");
-					break;
-				}
-			}
+			entity.chat(player, "axe", item.getItemStackDisplayName(itemStack)); return;
+		}
+		else if ( item instanceof ItemHoe )
+		{
+			entity.chat(player, "hoe", item.getItemStackDisplayName(itemStack)); return;
+		}
+		else if ( entity.rand.nextBoolean() && item instanceof ItemPickaxe )
+		{
+			entity.chat(player, "pickaxe", item.getItemStackDisplayName(itemStack)); return;
+		}
+		else if ( item instanceof ItemSpade )
+		{
+			entity.chat(player, "spade", item.getItemStackDisplayName(itemStack)); return;
+		}
+		else if ( entity.rand.nextInt(4) == 0 && item instanceof ItemBow )
+		{
+			entity.chat(player, "bow", item.getItemStackDisplayName(itemStack)); return;
+		}
+		else if ( entity.rand.nextInt(8) == 0 && entity.world.isRainingAt(entity.getPosition()) )
+		{
+			entity.chat(player, "rain", name); return;
+		}
+		else if ( entity.rand.nextInt(8) == 0 && entity.world.isRaining() && entity.world.canSnowAtBody(entity.getPosition(), false) )
+		{
+			entity.chat(player, "snow", name); return;
+		}
+		else if ( entity.rand.nextInt(32) == 0 )
+		{
+			int time = (int)entity.world.getWorldTime();
+			if ( time > 9000 && time < 13000 ) entity.chat(player, "evening", name);
+			else if ( time >= 4000 && time < 9000 ) entity.chat(player, "morning", name);
+			else if ( time <= 9000 ) entity.chat(player, "afternoon", name);
+			else entity.chat(player, "night", name);
+			return;
 		}
 		else
 		{
-			switch ( rand.nextInt(30) )
+			if ( !prov.hasLord && entity.ticksExisted > 500 )
 			{
-				case 0:
-				{
-					chat(player,"I am at your command, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 1:
-				{
-					chat(player,"Hail, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 2:
-				{
-					chat(player,"Greetings, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 3:
-				{
-					chat(player,"It is an honor, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 4:
-				{
-					chat(player,"The honor is mine.");
-					break;
-				}
-				case 5:
-				{
-					chat(player,"I am honored to be in your presence.");
-					break;
-				}
-				case 6:
-				{
-					chat(player,"For the king!");
-					break;
-				}
-				case 7:
-				{
-					int time = (int)this.world.getWorldTime();
-					if ( time > 9000 && time < 13000 ) chat(player,"I hope you're enjoying this fine evening, " + player.getDisplayNameString() + ".");
-					else if ( time >= 4000 && time < 9000 ) chat(player,"I hope you're enjoying this fine morning, " + player.getDisplayNameString() + ".");
-					else if ( time <= 9000 ) chat(player,"I hope you're enjoying this fine afternoon, " + player.getDisplayNameString() + ".");
-					else chat(player,"Stay safe, " + player.getDisplayNameString() + ". Monsters roam the night.");
-					break;
-				}
-				case 8:
-				{
-					int time = (int)this.world.getWorldTime();
-					if ( time > 9000 && time < 13000 ) chat(player,"Good evening, " + player.getDisplayNameString() + ".");
-					else if ( time >= 4000 && time < 9000 ) chat(player,"Good morning, " + player.getDisplayNameString() + ".");
-					else if ( time <= 9000 ) chat(player,"Good afternoon, " + player.getDisplayNameString() + ".");
-					else chat(player,"Stay safe, " + player.getDisplayNameString() + ". Monsters roam the night.");
-					break;
-				}
-				case 9:
-				{
-					chat(player,"The world needs more heroes like you.");
-					break;
-				}
-				case 10:
-				{
-					chat(player,player.getDisplayNameString() + "! My hero...");
-					break;
-				}
-				case 11:
-				{
-					chat(player,"You have my deepest respect, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 12:
-				{
-					chat(player,"How are your journies, " + player.getDisplayNameString() + "?");
-					break;
-				}
-				case 13:
-				{
-					chat(player,"I envy your heroism, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 14:
-				{
-					chat(player,"May the Aether bless you, " + player.getDisplayNameString() + ".");
-					break;
-				}
-				case 15:
-				{
-					chat(player,"Dragons may be scary, but have you ever fought a sandwich horror?");
-					break;
-				}
-				case 16:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Impressive weapon!");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"That's a hefty axe. You off to go chop up some bandits?");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"I took you for a fighter not a farmer!");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"May you find many diamonds!");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"You're digging bandit graves, I hope.");
-					}
-					else
-					{
-						chat(player,"I wish I was a hero like you.");
-					}
-					break;
-				}
-				case 17:
-				{
-					Item item = player.getHeldItemMainhand().getItem();
-					if ( item instanceof ItemSword )
-					{
-						chat(player,"Impressive weapon!");
-					}
-					else if ( item instanceof ItemAxe )
-					{
-						chat(player,"That's a hefty axe. You off to go chop up some bandits?");
-					}
-					else if ( item instanceof ItemHoe )
-					{
-						chat(player,"I took you for a fighter not a farmer!");
-					}
-					else if ( item instanceof ItemPickaxe )
-					{
-						chat(player,"May you find many diamonds!");
-					}
-					else if ( item instanceof ItemSpade )
-					{
-						chat(player,"You're digging bandit graves, I hope.");
-					}
-					else
-					{
-						chat(player,"Gut anymore of those filthy bandits?");
-					}
-					break;
-				}
-				case 18:
-				{
-					chat(player,"It is an honor.");
-					break;
-				}
-				case 19:
-				{
-					chat(player,"Your orders?");
-					break;
-				}
-				case 20:
-				{
-					chat(player,"Stay safe.");
-					break;
-				}
-				case 21:
-				{
-					chat(player,"Sir!");
-					break;
-				}
-				case 22:
-				{
-					chat(player,"Reporting for duty!");
-					break;
-				}
-				case 23:
-				{
-					chat(player,"I've heard tales of your heroic deeds!");
-					break;
-				}
-				case 24:
-				{
-					chat(player,"We stand at the ready.");
-					break;
-				}
-				case 25:
-				{
-					chat(player,"We've sent a party of scouts to investigate the recent attacks, Sir.");
-					break;
-				}
-				case 26:
-				{
-					chat(player,"What is your command?");
-					break;
-				}
-				case 27:
-				{
-					chat(player,"We appreciate your service to the king, " + player.getDisplayNameString() + "." );
-					break;
-				}
-				case 28:
-				{
-					chat(player,"These bandit raids have been getting worse...");
-					break;
-				}
-				case 29:
-				{
-					chat(player,"Our scouts have not reported back. I'm worried...");
-					break;
-				}
+				entity.chat(player, "nolord", name); return;
+			}
+			else if ( entity.rand.nextInt(10) == 0 )
+			{
+				entity.chat(player, "anyrep", name); return;
+			}
+			else if ( rep < 300 )
+			{
+				entity.chat(player, "lowrep", name); return;
+			}
+			else if ( rep < 1500 )
+			{
+				entity.chat(player, "mediumrep", name); return;
+			}
+			else
+			{
+				entity.chat(player, "highrep", name); return;
 			}
 		}
-		return true;
 	}
 }

@@ -5,7 +5,6 @@ import java.util.Random;
 
 import com.google.common.collect.Lists;
 
-import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.pathfinding.Path;
@@ -15,11 +14,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.Village;
 import net.minecraft.village.VillageDoorInfo;
-import net.torocraft.toroquest.entities.EntityToroNpc;
+import net.torocraft.toroquest.entities.EntityGuard;
 
 public class EntityAIPatrolVillage extends EntityAIBase
 {
-    private final EntityToroNpc entity;
+    private final EntityGuard entity;
     private final double movementSpeed;
     /** The PathNavigate of our entity. */
     private Path path;
@@ -27,16 +26,18 @@ public class EntityAIPatrolVillage extends EntityAIBase
     private final List<VillageDoorInfo> doorList = Lists.<VillageDoorInfo>newArrayList();
     private Random rand = new Random();
 
-    public EntityAIPatrolVillage(EntityToroNpc entityIn, double movementSpeedIn)
+    private Village village = null;
+
+    public EntityAIPatrolVillage(EntityGuard entityIn, double movementSpeedIn)
     {
         this.entity = entityIn;
         this.movementSpeed = movementSpeedIn;
         this.setMutexBits(1);
 
-        if (!(entityIn.getNavigator() instanceof PathNavigateGround))
-        {
-            throw new IllegalArgumentException("Unsupported mob for MoveThroughVillageGoal");
-        }
+//        if (!(entityIn.getNavigator() instanceof PathNavigateGround))
+//        {
+//            throw new IllegalArgumentException("Unsupported mob for MoveThroughVillageGoal");
+//        }
     }
 
     /**
@@ -44,9 +45,39 @@ public class EntityAIPatrolVillage extends EntityAIBase
      */
     public boolean shouldExecute()
     {
-    	if ( rand.nextInt(256) != 0 )
+    	if ( this.entity.isInWater() && !this.entity.hasPath() )
+    	{
+    		Vec3d vec3d = RandomPositionGenerator.getLandPos(this.entity, 12, 5);
+            if ( vec3d != null )
+            {
+		        if ( this.entity.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D) )
+		        {
+		        	return false;
+		        }
+            }
+    	}
+    	
+    	if ( this.entity.getAttackTarget() != null || this.rand.nextInt((this.entity.hasPath()?32:96)) != 0 ) // increase chance to path again if have a path
     	{
     		return false;
+    	}
+
+    	if ( this.entity.actionTimer > 3 )
+    	{
+    		return false;
+    	}
+
+    	if ( this.entity.returnToPost )
+    	{
+    		return this.entity.returnToPost = false;
+    	}
+
+    	if ( this.entity.raidX != null && this.entity.raidZ != null && this.entity.getDistance(this.entity.raidX, this.entity.posY, this.entity.raidZ) > 32 )
+    	{
+    		if ( this.entity.returnToPost() )
+    		{
+    			return !(this.entity.returnToPost = true);
+    		}
     	}
     	
     	if ( this.entity.isAnnoyed() )
@@ -54,53 +85,68 @@ public class EntityAIPatrolVillage extends EntityAIBase
     		return false;
     	}
 
-        this.resizeDoorList();
-        {
-            Village village = this.entity.world.getVillageCollection().getNearestVillage(new BlockPos(this.entity), 88);
-
-            if (village == null)
+    	//if ( rand.nextInt(3) == 0 )
+    	{
+    		Vec3d vec3d = RandomPositionGenerator.getLandPos(this.entity, 12, 8);
+            if ( vec3d != null )
             {
-                return false;
+		        if ( this.entity.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D) )
+		        {
+		        	return false;
+		        }
             }
-            else
-            {
-                this.doorInfo = this.findNearestDoor(village);
-
-                if (this.doorInfo == null)
-                {
-                    return false;
-                }
-                else
-                {
-                    PathNavigateGround pathnavigateground = (PathNavigateGround)this.entity.getNavigator();
-                    boolean flag = pathnavigateground.getEnterDoors();
-                    pathnavigateground.setBreakDoors(false);
-                    this.path = pathnavigateground.getPathToPos(this.doorInfo.getDoorBlockPos());
-                    pathnavigateground.setBreakDoors(flag);
-
-                    if (this.path != null)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this.entity, 32, 16, new Vec3d((double)this.doorInfo.getDoorBlockPos().getX(), (double)this.doorInfo.getDoorBlockPos().getY(), (double)this.doorInfo.getDoorBlockPos().getZ()));
-
-                        if (vec3d == null)
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            pathnavigateground.setBreakDoors(false);
-                            this.path = this.entity.getNavigator().getPathToXYZ(vec3d.x, vec3d.y, vec3d.z);
-                            pathnavigateground.setBreakDoors(flag);
-                            return this.path != null;
-                        }
-                    }
-                }
-            }
-        }
+    	}
+    	// else
+    	{
+	        this.resizeDoorList();
+	        {
+	            if ( this.village == null )
+	            {
+	                this.village = this.entity.world.getVillageCollection().getNearestVillage(new BlockPos(this.entity), 88);
+	                return false;
+	            }
+	            else
+	            {
+	                // this.village = this.entity.world.getVillageCollection().getNearestVillage(new BlockPos(this.entity), 88);
+	                
+	                this.doorInfo = this.findNearestDoor(village);
+	
+	                if (this.doorInfo == null)
+	                {
+	                    return false;
+	                }
+	                else
+	                {
+	                    PathNavigateGround pathnavigateground = (PathNavigateGround)this.entity.getNavigator();
+	                    boolean flag = pathnavigateground.getEnterDoors();
+	                    pathnavigateground.setBreakDoors(false);
+	                    this.path = pathnavigateground.getPathToPos(this.doorInfo.getDoorBlockPos());
+	                    pathnavigateground.setBreakDoors(flag);
+	
+	                    if (this.path != null)
+	                    {
+	                        return true;
+	                    }
+	                    else
+	                    {
+	                        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockTowards(this.entity, 16, 12, new Vec3d((double)this.doorInfo.getDoorBlockPos().getX(), (double)this.doorInfo.getDoorBlockPos().getY(), (double)this.doorInfo.getDoorBlockPos().getZ()));
+	
+	                        if (vec3d == null)
+	                        {
+	                            return false;
+	                        }
+	                        else
+	                        {
+	                            pathnavigateground.setBreakDoors(false);
+	                            this.path = this.entity.getNavigator().getPathToXYZ(vec3d.x, vec3d.y, vec3d.z);
+	                            pathnavigateground.setBreakDoors(flag);
+	                            return this.path != null;
+	                        }
+	                    }
+	                }
+	            }
+	        }
+    	}
     }
 
     /**
@@ -114,7 +160,7 @@ public class EntityAIPatrolVillage extends EntityAIBase
         }
         else
         {
-            float f = this.entity.width + 4.0F;
+			float f = this.entity.width + 4.0F;
             return this.entity.getDistanceSq(this.doorInfo.getDoorBlockPos()) > (double)(f * f);
         }
     }

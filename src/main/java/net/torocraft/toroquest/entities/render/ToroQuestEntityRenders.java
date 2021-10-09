@@ -4,8 +4,11 @@ import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
+import net.torocraft.toroquest.entities.EntityAdventurer;
 import net.torocraft.toroquest.entities.EntityBanditLord;
 import net.torocraft.toroquest.entities.EntityBas;
+import net.torocraft.toroquest.entities.EntityConstruct;
+import net.torocraft.toroquest.entities.EntityConstructQuest;
 import net.torocraft.toroquest.entities.EntityFugitive;
 import net.torocraft.toroquest.entities.EntityGraveTitan;
 import net.torocraft.toroquest.entities.EntityGuard;
@@ -14,10 +17,7 @@ import net.torocraft.toroquest.entities.EntityMonolithEye;
 import net.torocraft.toroquest.entities.EntityOrc;
 import net.torocraft.toroquest.entities.EntityPigLord;
 import net.torocraft.toroquest.entities.EntitySentry;
-import net.torocraft.toroquest.entities.EntityShopkeeper;
 import net.torocraft.toroquest.entities.EntitySpiderLord;
-import net.torocraft.toroquest.entities.EntityToro;
-import net.torocraft.toroquest.entities.EntityToroQuest;
 import net.torocraft.toroquest.entities.EntityVampireBat;
 import net.torocraft.toroquest.entities.EntityVillageLord;
 
@@ -28,8 +28,6 @@ public class ToroQuestEntityRenders
 	{
 		registerMageRenderer();
 		registerMonolithEyeRenderer();
-		EntityToro.registerRenders();
-		EntityToroQuest.registerRenders();
 		EntityGuard.registerRenders();
 		EntityBas.registerRenders();
 		EntityVampireBat.registerRenders();
@@ -41,6 +39,9 @@ public class ToroQuestEntityRenders
 		EntityGraveTitan.registerRenders();
 		EntityBanditLord.registerRenders();
 		EntityOrc.registerRenders();
+		EntityConstruct.registerRenders();
+		EntityConstructQuest.registerRenders();
+		EntityAdventurer.registerRenders();
 	}
 	
 	public static void registerMageRenderer()

@@ -2,7 +2,6 @@ package net.torocraft.toroquest.civilization.quests;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -10,33 +9,29 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.village.Village;
 import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.MapDecoration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
-import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.ItemMapCentered;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
-import net.torocraft.toroquest.entities.EntityBanditLord;
 import net.torocraft.toroquest.entities.EntityGraveTitan;
 import net.torocraft.toroquest.generation.WorldGenPlacer;
 
@@ -46,9 +41,8 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 	public static int ID;
 	public static QuestKillBossGraveTitan INSTANCE;
 	
-	protected final String entityName = "toroquest:grave_titan";
+	protected final String entityName = "toroquesttoroquest_:grave_titan";
 	protected final String tag = "grave_titan";
-	protected final String location = "The Grave Titan";
 	protected final int emeraldAmount = 3;
 	
 
@@ -63,29 +57,55 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
+
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		{
+			return null;
+		}
+		
 		if ( !data.getCompleted() )
 		{
 			if ( data.getChatStack().equals("") )
 			{
-				data.setChatStack( "My scouts report the Grave Titan still lives!" );
+				data.setChatStack( "grave_titan.incomplete", data.getPlayer(), null );
 				this.setData(data);
 			}
 			// data.getPlayer().closeScreen();
 			return null;
 		}
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
-		data.setChatStack( "You are a hero, " + data.getPlayer() + "! You have slain the titan! Our people are forever in your debt." );
-		this.setData(data);
+		
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		data.setChatStack( "grave_titan.complete", data.getPlayer(), null );
 		in.addAll(getRewardItems(data));
+		this.setData(data);
 		return in;
 	}
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "But " + data.getPlayer().getName() + ", the titan will only grow stronger and stronger with each day that passes..." );
-		this.setData(data);
-		data.getPlayer().closeScreen();
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack( "grave_titan.reject", data.getPlayer(), null );
+		data.getPlayer().closeScreen();this.setData(data);
 		return in;
 	}
 
@@ -94,7 +114,7 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 	{
 		try
 		{
-			BlockPos pos = searchForSuitableLocation(data, 900, 20);
+			BlockPos pos = searchForSuitableLocation(data, 900, 30);
 			if ( pos == null )
 			{
 				reject(data,in);
@@ -107,10 +127,10 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)4, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to " + location + "§r");
-			itemstack.setStackDisplayName("§lMap to " + location + "§r");
+			itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.grave_titan.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.grave_titan.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
-			data.setChatStack( "An unusually large number of zombie hoards have been making their way to our village... I am afraid a grave titan has amassed and is responsible for the severity these zombie seiges. Take this map, " + data.getPlayer().getName() + ", my scouts have reported the hoards are coming from this direction. Slay this grave titan, and put an end to it's unholy existence!" );
+			data.setChatStack( "grave_titan.accept", data.getPlayer(), null );
 			this.setData(data);
 		}
 		catch (Exception e)
@@ -165,7 +185,7 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 		data.setCompleted(false);
 		setRewardRep(data, emeraldAmount*18);
 		int em = emeraldAmount;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
@@ -184,7 +204,7 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 
 		Entity victim = event.getEntity();
 		
-		if ( victim == null || !(victim instanceof EntityGraveTitan) )
+		if (!(victim instanceof EntityGraveTitan) )
 		{
 			return;
 		}
@@ -212,7 +232,7 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 			}
 		}
 		
-		CivilizationType civ = null;
+		//CivilizationType civ = null;
 		for ( EntityPlayer player : playerList )
 		{
 			Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
@@ -222,11 +242,11 @@ public class QuestKillBossGraveTitan extends QuestBase implements Quest
 				{
 					data.setCompleted(true);
 					chatCompletedQuest(data);
-					civ = data.getCiv();
+					//civ = data.getCiv();
 					//this.setData(data);
 				}
 			}
-			if ( !player.world.isRemote ) player.sendMessage(new TextComponentString( "§lThe Grave Titan has been slain!§r"));
+			player.sendMessage(new TextComponentString(TextComponentHelper.createComponentTranslation(player, "quests.grave_titan.slain", new Object[0]).getFormattedText()));
 		}
 	}
 }

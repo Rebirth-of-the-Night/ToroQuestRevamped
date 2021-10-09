@@ -5,8 +5,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import javax.annotation.Nullable;
+
 import com.google.common.base.Predicate;
 
+import net.minecraft.block.BlockFence;
+import net.minecraft.block.BlockTrapDoor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
@@ -16,17 +20,20 @@ import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.monster.EntityIronGolem;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.EntityZombie;
+import net.minecraft.entity.monster.EntityZombieVillager;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.EntityAnimal;
-import net.minecraft.entity.passive.EntityCow;
 import net.minecraft.entity.passive.EntityMule;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.projectile.EntityArrow;
 import net.minecraft.entity.projectile.EntityFireball;
+import net.minecraft.entity.projectile.EntityPotion;
+import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.SoundCategory;
@@ -44,6 +51,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.torocraft.toroquest.civilization.CivilizationDataAccessor;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
+import net.torocraft.toroquest.civilization.CivilizationType;
 import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
 import net.torocraft.toroquest.civilization.Province;
@@ -54,13 +62,15 @@ import net.torocraft.toroquest.entities.EntityCaravan;
 import net.torocraft.toroquest.entities.EntityFugitive;
 import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntityMonolithEye;
+import net.torocraft.toroquest.entities.EntityOrc;
 import net.torocraft.toroquest.entities.EntitySentry;
-import net.torocraft.toroquest.entities.EntityToro;
-import net.torocraft.toroquest.entities.EntityToroCow;
+import net.torocraft.toroquest.entities.EntityShopkeeper;
+import net.torocraft.toroquest.entities.EntitySmartArrow;
 import net.torocraft.toroquest.entities.EntityToroMob;
 import net.torocraft.toroquest.entities.EntityToroNpc;
 import net.torocraft.toroquest.entities.EntityToroVillager;
 import net.torocraft.toroquest.entities.EntityWolfRaider;
+import net.torocraft.toroquest.entities.EntityZombieRaider;
 import net.torocraft.toroquest.entities.EntityZombieVillagerRaider;
 import net.torocraft.toroquest.network.ToroQuestPacketHandler;
 import net.torocraft.toroquest.network.message.MessageRequestPlayerCivilizationSync;
@@ -76,12 +86,12 @@ public class EventHandlers
 	{
 		Entity entity = event.getEntity();
 		World world = event.getWorld();
-		
 		if ( world == null || entity == null )
 		{
-			 return;
+			event.setCanceled(true);
+			return;
 		}
-		 
+		
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= MOB =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 		if ( entity instanceof EntityMob )
 		{
@@ -104,11 +114,11 @@ public class EventHandlers
 				int villageCenterX = province.getCenterX();
 				int villageCenterZ = province.getCenterZ();
 				/*
-			 * Village length is equal to 176.
+			 * Village length is equal to 208.
 			 */
 				int allowedDistance = ToroQuestConfiguration.disableMobSpawningNearVillage;
 				
-				if ( ( allowedDistance < 176 ) && ( mob.getPosition().getY() >= 40 && Math.abs(villageCenterX-entityPosX) < allowedDistance && Math.abs(villageCenterZ-entityPosZ) < allowedDistance ) )
+				if ( ( mob.getPosition().getY() >= 32 && Math.abs(villageCenterX-entityPosX) <= allowedDistance && Math.abs(villageCenterZ-entityPosZ) <= allowedDistance ) )
 				{
 					mob.setDead();
 					event.setCanceled(true);
@@ -117,45 +127,49 @@ public class EventHandlers
 			}
 			// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 			
-			if ( !(mob instanceof EntityCreeper) && !(mob instanceof EntityEnderman) )
+//			if ( !(mob instanceof EntityCreeper) && !(mob instanceof EntityEnderman) )
+//			{
+//				if ( ToroQuestConfiguration.entityMobAttackGuardsTask )
+//				{
+//					mob.targetTasks.addTask(4, new EntityAIAttackVillagersAndGuards<EntityToroNpc>(mob, EntityToroNpc.class, 50, true, false, new Predicate<EntityToroNpc>()
+//					{
+//						@Override
+//						public boolean apply(EntityToroNpc target)
+//						{
+//							return true;
+//						}
+//					}));
+//				}
+//				
+//				if ( ToroQuestConfiguration.entityMobAttackVillagersTask && !(mob instanceof EntityZombie) )
+//				{
+//					mob.targetTasks.addTask(5, new EntityAIAttackVillagersAndGuards<EntityVillager>(mob, EntityVillager.class, 50, true, false, new Predicate<EntityVillager>()
+//					{
+//						@Override
+//						public boolean apply(EntityVillager target)
+//						{
+//							return true;
+//						}
+//					}));
+//				}
+//			}
+			if ( mob.getClass() == EntityZombie.class && !(mob instanceof EntityZombieRaider || mob instanceof EntityZombieVillagerRaider) )
 			{
-				if ( ToroQuestConfiguration.entityMobAttackGuardsTask )
-				{
-					mob.targetTasks.addTask(4, new EntityAINearestAttackableTarget<EntityToroNpc>(mob, EntityToroNpc.class, 30, true, true, new Predicate<EntityToroNpc>()
-					{
-						@Override
-						public boolean apply(EntityToroNpc target)
-						{
-							return true;
-						}
-					}));
-				}
-				
-				if ( ToroQuestConfiguration.entityMobAttackVillagersTask && !(mob instanceof EntityZombie) )
-				{
-					mob.targetTasks.addTask(5, new EntityAINearestAttackableTarget<EntityVillager>(mob, EntityVillager.class, 30, true, true, new Predicate<EntityVillager>()
-					{
-						@Override
-						public boolean apply(EntityVillager target)
-						{
-							return true;
-						}
-					}));
-				}
-			}
-			if ( mob.getClass().equals(EntityZombie.class) )
-			{
-				if ( rand.nextInt( 4 ) == 0 )
+				if ( ToroQuestConfiguration.zombieAttackVillageChance > 0 && ToroQuestConfiguration.zombieAttackVillageChance > rand.nextInt( 100 ) )
 				{
 					if ( province == null )
 					{
 						province = CivilizationUtil.getProvinceAt(world, entityPosX/16+2, entityPosZ/16+2);
+						
 						if ( province == null )
 						{
 							province = CivilizationUtil.getProvinceAt(world, entityPosX/16+2, entityPosZ/16-2);
+							
+							
 							if ( province == null )
 							{
 								province = CivilizationUtil.getProvinceAt(world, entityPosX/16-2, entityPosZ/16+2);
+								
 								if ( province == null )
 								{
 									province = CivilizationUtil.getProvinceAt(world, entityPosX/16-2, entityPosZ/16-2);
@@ -165,65 +179,46 @@ public class EventHandlers
 					}
 					if ( province != null )
 					{
-						 entity.setDead();
-						 event.setCanceled(true);
-						 if ( !world.isRemote )
-						 {
-							 EntityZombieVillagerRaider newEntity = new EntityZombieVillagerRaider( world );
-							 BlockPos pos = entity.getPosition();
-							 newEntity.setPosition( pos.getX()+0.5, pos.getY(), pos.getZ()+0.5 );
-							 world.spawnEntity(newEntity);
-							 newEntity.setRaidLocation( province.getCenterX(), province.getCenterZ() );
-						 }
+						if ( mob instanceof EntityZombieVillager || ( ToroQuestConfiguration.zombieRaiderVillagerChance > 0 && ToroQuestConfiguration.zombieRaiderVillagerChance > rand.nextInt( 100 ) ) )
+						{
+							if ( !world.isRemote )
+							{
+								EntityZombieVillagerRaider zombie = new EntityZombieVillagerRaider(world, province.getCenterX(), province.getCenterZ());
+								BlockPos pos = mob.getPosition();
+								zombie.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
+								world.spawnEntity(zombie);
+							}
+							mob.setHealth(0);
+							mob.setDead();
+							event.setCanceled(true);
+						}
+						else
+						{
+							if ( !world.isRemote )
+							{
+								EntityZombieRaider zombie = new EntityZombieRaider(world, province.getCenterX(), province.getCenterZ());
+								BlockPos pos = mob.getPosition();
+								zombie.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
+								world.spawnEntity(zombie);
+							}
+							mob.setHealth(0);
+							mob.setDead();
+							event.setCanceled(true);
+						}
 					}
 				}
 				return;
 			}
 		}
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-		else if ( (ToroQuestConfiguration.toroSpawnChance > 0) && !(ToroQuestConfiguration.defaultCowBreeding) && entity.getClass().equals(EntityCow.class) )
+		else if ( (entity instanceof EntityVillager) && !(entity instanceof EntityToroVillager || entity instanceof EntityFugitive) )
 		{
-			BlockPos pos = entity.getPosition();
-			EntityCow cow = (EntityCow)entity;
-			 
-			if ( ToroQuestConfiguration.toroSpawnChance > rand.nextInt(100) )
+			if ( ToroQuestConfiguration.useDefaultVillagers )
 			{
-				
-				if (entity.getEntityData().getBoolean("AddedToWorld"))
-				{
-					return;
-				}
-	
-				entity.getEntityData().setBoolean("AddedToWorld", true);
-					
-				if (pos == null)
-				{
-					return;
-				}
-				if ( !world.isRemote )
-				{
-					EntityToro toro = new EntityToro(world);
-					toro.setPosition(pos.getX()+0.5, pos.getY() + 0.5, pos.getZ()+0.5);
-					toro.setGrowingAge(cow.getGrowingAge());
-					world.spawnEntity(toro);
-				}
-			 }
-			 entity.setDead();
-			 cow.setDead();
-			 event.setCanceled(true);
-			 if ( !world.isRemote )
-			 {
-				EntityToroCow newEntity = new EntityToroCow(world);
-				newEntity.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-				newEntity.setGrowingAge(cow.getGrowingAge());
-				world.spawnEntity(newEntity);
-			 }
-			 return;
-		}
-		else if ( (entity instanceof EntityVillager) && !(entity instanceof EntityToroVillager) && ToroQuestConfiguration.useToroVillagers )
-		{
+				return;
+			}
 			// entity.getClass().equals(EntityVillager.class)
-			if ( ToroQuestConfiguration.useDefaultVillagersOutsideOfProvince)
+			if ( ToroQuestConfiguration.useDefaultVillagersOutsideOfProvince )
 			{
 				Province province = CivilizationUtil.getProvinceAt(entity.getEntityWorld(), entity.getPosition().getX()/16, entity.getPosition().getZ()/16);
 				
@@ -235,10 +230,10 @@ public class EventHandlers
 			
 			EntityVillager villager = (EntityVillager)entity;
 			
-			if ( villager.world.isRemote )
-			{
-				return;
-			}
+//			if ( villager.world.isRemote ) ***
+//			{
+//				return;
+//			}
 
 			String jobName = villager.getProfessionForge().getCareer(0).getName();
 			
@@ -262,16 +257,36 @@ public class EventHandlers
 			
 			if ( flag )
 			{
-				villager.setDead();
-				event.setCanceled(true);
 				if ( !world.isRemote )
 				{
-					EntityToroVillager newEntity = new EntityToroVillager( world, villager.getProfession() );
-					BlockPos pos = entity.getPosition();
-					newEntity.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-					newEntity.setGrowingAge(villager.getGrowingAge());
-					world.spawnEntity(newEntity);
+					if ( world.rand.nextInt(32) == 0 )
+					{
+						EntityShopkeeper newEntity = new EntityShopkeeper( world );
+						BlockPos pos = entity.getPosition();
+						newEntity.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
+						newEntity.setGrowingAge(villager.getGrowingAge());
+						world.spawnEntity(newEntity);
+					}
+					else
+					{
+						@SuppressWarnings("deprecation")
+						EntityToroVillager newEntity = new EntityToroVillager( world, villager.getProfession() );
+						BlockPos pos = entity.getPosition();
+						newEntity.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
+						if ( world.rand.nextInt(3) == 0 )
+						{
+							newEntity.setGrowingAge(-10000*(world.rand.nextInt(6)+1));
+						}
+						else
+						{
+							newEntity.setGrowingAge(villager.getGrowingAge());
+						}
+						world.spawnEntity(newEntity);
+					}
 				}
+				villager.setHealth(0);
+				villager.setDead();
+				event.setCanceled(true);
 			}
 			return;
 		}
@@ -281,7 +296,7 @@ public class EventHandlers
 			
 			if ( !golem.isPlayerCreated() )
 			{
-				entity.setDead();
+				golem.setHealth(0);
 				golem.setDead();
 				event.setCanceled(true);
 				return;
@@ -337,6 +352,39 @@ public class EventHandlers
 		}
 	}
 
+//	@SubscribeEvent
+//    public void potionAdded(PotionEvent event) // TODO
+//    {
+////    	if ( event.getEntityLiving() instanceof EntitySentry )
+////    	{
+////			if ( event.getEntity() instanceof EntityPotion )
+////			{
+////				EntityPotion potion = (EntityPotion)event.getEntity();
+////				if ( potion.getThrower() instanceof EntitySentry )
+////				{
+////					event.setCanceled(true);
+////					return;
+////				}
+////			}
+////    	}
+//		
+//		event.
+//		System.out.println(event.getPotionEffect().getPotion());
+//		
+//		if ( event.getEntityLiving() instanceof EntitySentry )
+//		{
+//			event.
+//			System.out.println(potion);
+//
+//			if ( potion.getThrower() instanceof EntitySentry )
+//			{
+//				System.out.println(potion.getThrower());
+//				event.setCanceled(true);
+//				return;
+//			}
+//		}
+//    }
+	
 	@SubscribeEvent
 	public void crystalProjectileImpact(ProjectileImpactEvent event)
 	{
@@ -344,11 +392,110 @@ public class EventHandlers
 		{
 			return;
 		}
+		
+		// === POTION ===
+		if ( event.getEntity() instanceof EntityPotion && !event.getEntity().world.isRemote )
+		{
+			
+//			Entity entity = event.getRayTraceResult().entityHit;
+//			
+//			if ( entity == null )
+//			{
+//				
+//			}
+			
+			BlockPos pos = event.getRayTraceResult().getBlockPos();
+			
+			if ( pos == null )
+			{
+				pos = event.getRayTraceResult().entityHit.getPosition();
+			}
+			
+			if ( pos != null )
+			{
+				if ( event.getEntity() instanceof EntitySmartArrow )
+				{
+					if ( event.getEntity().getEntityWorld().getBlockState(pos).getBlock() instanceof BlockFence || event.getEntity().getEntityWorld().getBlockState(pos).getBlock() instanceof BlockTrapDoor  )
+					{
+						event.setCanceled(true);
+					}
+				}
+				else if ( ((EntityPotion)event.getEntity()).getThrower() instanceof EntitySentry )
+				{
+					AxisAlignedBB axisalignedbb = new AxisAlignedBB(pos).grow(4.0D, 2.0D, 4.0D);
+			        List<EntitySentry> list = event.getEntity().world.<EntitySentry>getEntitiesWithinAABB(EntitySentry.class, axisalignedbb);
+			 
+		            for (EntitySentry entitylivingbase : list)
+		            {
+		            	if ( entitylivingbase instanceof EntitySentry && !(entitylivingbase instanceof EntityOrc) ) entitylivingbase.potionImmunity = 2;
+		            }
+					return;
+				}
+				else if ( ((EntityPotion)event.getEntity()).getThrower() instanceof EntityPlayer )
+				{
+					AxisAlignedBB axisalignedbb = new AxisAlignedBB(pos).grow(4.0D, 2.0D, 4.0D);
+			        List<EntityGuard> guards = event.getEntity().world.<EntityGuard>getEntitiesWithinAABB(EntityGuard.class, axisalignedbb);
+		            
+			        Province province = CivilizationUtil.getProvinceAt(event.getEntity().world, pos.getX()/16, pos.getZ()/16);
+
+			        if ( province == null )
+					{
+						return;
+					}
+					
+		            CivilizationType civ = province.getCiv();
+		            
+		    		if ( civ == null )
+		    		{
+		    			return;
+		    		}
+		    		
+			        if (!guards.isEmpty())
+			        {
+			            for (EntityLivingBase guard : guards)
+			            {
+			            	if ( guard instanceof EntityToroVillager )
+			    			{
+			    				((EntityToroVillager)guard).setUnderAttack(((EntityPotion)event.getEntity()).getThrower());
+			    			}
+			            }
+			    		
+			    		CivilizationHandlers.adjustPlayerRep((EntityPlayer)((EntityPotion)event.getEntity()).getThrower(), civ, -guards.size()*10);
+			        }
+			        
+			        List<EntityVillager> villagers = event.getEntity().world.<EntityVillager>getEntitiesWithinAABB(EntityVillager.class, axisalignedbb);
+
+			        if (!villagers.isEmpty())
+			        {
+			            for (EntityLivingBase villager : villagers)
+			            {
+			            	if ( villager instanceof EntityToroVillager )
+			    			{
+			    				((EntityToroVillager)villager).setUnderAttack(((EntityPotion)event.getEntity()).getThrower());
+			    			}
+			            }
+			            
+			    		CivilizationHandlers.adjustPlayerRep((EntityPlayer)((EntityPotion)event.getEntity()).getThrower(), civ, -villagers.size()*10);
+			        }
+					return;
+				}
+				
+					
+			}
+		}
+		// ==============
+		
 		Entity entity = event.getRayTraceResult().entityHit;
+		
+		
+		
 		if ( entity == null )
 		{
 			return;
 		}
+		
+//		System.out.println("hit: " + entity);
+
 		if ( entity instanceof EntityEnderCrystal )
 		{
 			if ( !(event.getEntity() instanceof EntityFireball) )
@@ -359,34 +506,46 @@ public class EventHandlers
 					if ( event.getEntity() != null )
 					{
 						event.setCanceled(true);
+						return;
 					}
 				}
 			}
-			return;
 		}
 		else if ( entity instanceof EntityGuard )
 		{
 			if ( event.getEntity() instanceof EntityArrow )
 			{
 				EntityArrow arrow = (EntityArrow)event.getEntity();
-				if ( arrow.shootingEntity != null && arrow.shootingEntity instanceof EntityGuard )
+				if ( arrow.shootingEntity instanceof EntityGuard )
 				{
 					event.setCanceled(true);
+					return;
 				}
 			}
-			return;
+		}
+		else if ( entity instanceof EntityToroMob )
+		{
+			if ( event.getEntity() instanceof EntityArrow )
+			{
+				EntityArrow arrow = (EntityArrow)event.getEntity();
+				if ( arrow.shootingEntity instanceof EntityToroMob && arrow.shootingEntity.getClass() == entity.getClass() )
+				{
+					event.setCanceled(true);
+					return;
+				}
+			}
 		}
 		else if ( entity instanceof EntityIronGolem )
 		{
 			if ( event.getEntity() instanceof EntityArrow )
 			{
 				EntityArrow arrow = (EntityArrow)event.getEntity();
-				if ( arrow.shootingEntity != null && arrow.shootingEntity instanceof EntityGuard )
+				if ( arrow.shootingEntity instanceof EntityGuard )
 				{
 					event.setCanceled(true);
+					return;
 				}
 			}
-			return;
 		}
 	}
 
@@ -402,26 +561,23 @@ public class EventHandlers
 			return;
 		}
 		
+		// === VICTIM ===
 		if ( victim instanceof EntityVillager && !(victim instanceof EntityFugitive) )
 		{
 			EntityVillager villager = (EntityVillager)victim;
 			
-			if ( attacker instanceof EntityToroNpc )
+			if ( attacker instanceof EntityToroNpc || attacker instanceof EntityVillager )
 			{
+				event.setAmount(0);
 				event.setCanceled(true);
 				return;
 			}
-			
-			if ( villager instanceof EntityToroVillager && attacker instanceof EntityLivingBase )
-			{
-				EntityLivingBase e = (EntityLivingBase)villager;
-				((EntityToroVillager)villager).callForHelp(e);
-			}
 
-			if ( attacker instanceof EntityPlayer )
+			if ( attacker instanceof EntityPlayer ) // PLAYER
 			{
             	EntityPlayer player = (EntityPlayer)attacker;
 				Province province = CivilizationUtil.getProvinceAt(player.world, player.chunkCoordX, player.chunkCoordZ);
+				
 				if ( province == null )
 				{
 					province = CivilizationUtil.getProvinceAt(villager.world, villager.chunkCoordX, villager.chunkCoordZ);
@@ -432,8 +588,60 @@ public class EventHandlers
 					CivilizationHandlers.adjustPlayerRep(player, province.civilization, -(int)MathHelper.clamp(event.getAmount()*4,5,villager.getHealth()*4));
 				}
 			}
+			
+			if ( villager instanceof EntityToroVillager )
+			{
+				if ( attacker instanceof EntityLivingBase )
+				{
+					((EntityToroVillager)villager).callForHelp(attacker, true);
+				}
+			}
+			else // VANILLA VILLAGER
+			{
+				boolean flag = false;
+				
+				List<EntityGuard> guards = villager.world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(villager.getPosition()).grow(16, 12, 16), new Predicate<EntityGuard>()
+				{
+					public boolean apply(@Nullable EntityGuard entity)
+					{
+						return true;
+					}
+				});
+				
+				for (EntityGuard guard : guards)
+				{
+					if ( guard.getAttackTarget() == null )
+					{
+						villager.getNavigator().tryMoveToEntityLiving(guard, 0.7F);
+						
+						if ( attacker instanceof EntityPlayer ) 
+						{
+							guard.setAnnoyed( (EntityPlayer)attacker );
+							if ( !flag && guard.actionReady() && guard.getDistance(attacker) <= 8.0D )
+							{
+								guard.chat((EntityPlayer)attacker, "attackvillager", null);
+								flag = true;
+							}
+						}
+						guard.setAttackTarget(attacker);
+					}
+				}
+			}
 		}
-		else if ( attacker instanceof EntityGuard )
+		else if ( victim instanceof EntityAnimal )
+		{
+			if (victim instanceof EntityMule && attacker instanceof EntityPlayer)
+			{
+				List<EntityCaravan> caravans = victim.getEntityWorld().getEntitiesWithinAABB(EntityCaravan.class, victim.getEntityBoundingBox().grow(20.0D, 10.0D, 20.0D));
+				for (EntityCaravan caravan : caravans)
+				{
+					((EntityToroVillager)caravan).setUnderAttack( attacker );
+				}
+			}
+		}
+		
+		// === ATTACKER ===
+		if ( attacker instanceof EntityGuard )
 		{
 			if ( victim instanceof EntityCreeper )
 			{
@@ -445,13 +653,24 @@ public class EventHandlers
 				event.setAmount(0);
 				event.setCanceled(true);
 			}
-			else if ( !(victim instanceof EntityPlayer) )
+			else if ( victim instanceof EntityPlayer ) // PLAYER
 			{
-				event.setAmount(event.getAmount()*(ToroQuestConfiguration.guardDamageMultiplierToMobs + (rand.nextFloat() - 0.5f)/5f ) );
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.guardDamageBaseMultiplierToPlayers + this.healthDamageMultiplier(ToroQuestConfiguration.guardDamageAdditiveModifierPer1HP, ToroQuestConfiguration.guardBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
 				Province province = CivilizationUtil.getProvinceAt( attacker.getEntityWorld(), attacker.chunkCoordX, attacker.chunkCoordZ );
-				if ( province == null )
+				
+				if ( province == null || !victim.isNonBoss() || victim.getMaxHealth() >= ToroQuestConfiguration.minBaseHealthToBeConsideredBossMob ) // NO PROVINCE
 				{
-					event.setAmount(event.getAmount()*ToroQuestConfiguration.guardNerfOutsideProvince);
+					event.setAmount(event.getAmount()*ToroQuestConfiguration.guardDamageBaseMultiplierToMobsOutsideProvinceOrToBosses);
+					return;
+				}
+			}
+			else
+			{
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.guardDamageBaseMultiplierToMobs + this.healthDamageMultiplier(ToroQuestConfiguration.guardDamageAdditiveModifierPer1HP, ToroQuestConfiguration.guardBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
+				Province province = CivilizationUtil.getProvinceAt( attacker.getEntityWorld(), attacker.chunkCoordX, attacker.chunkCoordZ );
+				if ( province == null || !victim.isNonBoss() || victim.getMaxHealth() >= ToroQuestConfiguration.minBaseHealthToBeConsideredBossMob ) // NO PROVINCE
+				{
+					event.setAmount(event.getAmount()*ToroQuestConfiguration.guardDamageBaseMultiplierToMobsOutsideProvinceOrToBosses);
 					return;
 				}
 				CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(attacker.world);
@@ -459,51 +678,42 @@ public class EventHandlers
 				{
 					return;
 				}
-				if ( worldData.hasTrophyLord(province.id) )
+				if ( worldData.hasTrophyTitan(province.id) )
 				{
-					event.setAmount(event.getAmount()*2.0F);
+					event.setAmount(event.getAmount()*ToroQuestConfiguration.trophyTitanAdditionalGuardDamageMulitiplier);
 				}
 			}
 		}
-		else if (victim instanceof EntityAnimal)
+		else if ( attacker instanceof EntityToroMob )
 		{
-			if (victim instanceof EntityCow)
+			if ( attacker instanceof EntityOrc )
 			{
-				List<EntityToro> nearbyToros = victim.getEntityWorld().getEntitiesWithinAABB(EntityToro.class, victim.getEntityBoundingBox().grow(20.0D, 10.0D, 20.0D));
-				for (EntityToro toro : nearbyToros)
-				{
-					toro.setAttackTarget(attacker);
-				}
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.banditBaseDamageMultiplier + this.healthDamageMultiplier(ToroQuestConfiguration.banditDamageAdditiveModifierPer1HP, ToroQuestConfiguration.banditBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
 			}
-			else if (victim instanceof EntityMule && attacker instanceof EntityPlayer)
+			else // if ( !(attacker instanceof EntityBanditLord) )
 			{
-				List<EntityCaravan> caravans = victim.getEntityWorld().getEntitiesWithinAABB(EntityCaravan.class, victim.getEntityBoundingBox().grow(20.0D, 10.0D, 20.0D));
-				for (EntityCaravan caravan : caravans)
-				{
-					((EntityToroVillager)caravan).setUnderAttack( attacker );
-				}
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.orcBaseDamageMultiplier + this.healthDamageMultiplier(ToroQuestConfiguration.orcDamageAdditiveModifierPer1HP, ToroQuestConfiguration.orcBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
 			}
 		}
 		else if ( attacker instanceof EntityIronGolem )
 		{
 			if ( victim instanceof EntityToroNpc || victim instanceof EntityVillager )
 			{
-				((EntityIronGolem) attacker).setAttackTarget(null);
+				((EntityIronGolem)attacker).setAttackTarget(null);
 				event.setAmount(0);
 				event.setCanceled(true);
 			}
 		}
-		else if ( attacker instanceof EntityToroMob )
-		{
-			if( attacker instanceof EntitySentry )
-			{
-				event.setAmount(event.getAmount()*(ToroQuestConfiguration.banditDamageMultiplier + ((rand.nextFloat() - 0.5f)/5f ))/2 );
-			}
-			else // if( attacker instanceof EntityOrc )
-			{
-				event.setAmount(event.getAmount()*(ToroQuestConfiguration.orcDamageMultiplier + ((rand.nextFloat() - 0.5f)/5f ))/2 );
-			}
-		}
+	}
+	
+	protected float rngDamageMultiplier()
+	{
+		return 1.0F+((rand.nextFloat()-0.5F)/10.0F);
+	}
+	
+	protected float healthDamageMultiplier( float multiplier, float baseHealth, float maxHealth )
+	{
+		return (maxHealth - baseHealth) * multiplier;
 	}
 
 	private EntityLivingBase getAttacker(LivingHurtEvent event)
@@ -584,64 +794,110 @@ public class EventHandlers
 			{
 				return;
 			}
-			SavedInventory savedInventory = new SavedInventory();
-			boolean hasEnderIdol = false;
-			int m = 0;
-			// =-=-=-=-=-=-= MAIN =-=-=-=-=-=-=
-			for ( ItemStack itemStack : player.inventory.mainInventory )
+			
+			if ( !ToroQuestConfiguration.enderIdolTeleport )
 			{
-				if ( !hasEnderIdol && itemStack.getItem().equals(Item.getByNameOrId("toroquest:ender_idol")) )
+				SavedInventory savedInventory = new SavedInventory();
+				boolean hasEnderIdol = false;
+				int m = 0;
+				// =-=-=-=-=-=-= MAIN =-=-=-=-=-=-=
+				for ( ItemStack itemStack : player.inventory.mainInventory )
 				{
-					player.inventory.mainInventory.set(m, ItemStack.EMPTY);
+					if ( !hasEnderIdol && itemStack.getItem().equals(Item.getByNameOrId("toroquest:ender_idol")) )
+					{
+						player.inventory.mainInventory.set(m, ItemStack.EMPTY);
+						savedInventory.experienceTotal = (0 + player.experienceTotal);
+						hasEnderIdol = true;
+					}
+					else
+					{
+						savedInventory.mainInventory.set(m, itemStack);
+					}
+					m++;
+				}
+				// =-=-=-=-=-=-= ARMOR =-=-=-=-=-=-=
+				int a = 0;
+				for ( ItemStack itemStack : player.inventory.armorInventory )
+				{
+					savedInventory.armorInventory.set(a, itemStack);
+					a++;
+				}
+				// =-=-=-=-=-=-= OFF =-=-=-=-=-=-=
+				if ( !hasEnderIdol && player.inventory.offHandInventory.get(0).getItem().equals(Item.getByNameOrId("toroquest:ender_idol") ) )
+				{
+					player.inventory.offHandInventory.set(0, ItemStack.EMPTY);
 					savedInventory.experienceTotal = (0 + player.experienceTotal);
 					hasEnderIdol = true;
 				}
 				else
 				{
-					savedInventory.mainInventory.set(m, itemStack);
+					savedInventory.offHandInventory.set(0, player.inventory.offHandInventory.get(0));
 				}
-				m++;
-			}
-			// =-=-=-=-=-=-= ARMOR =-=-=-=-=-=-=
-			int a = 0;
-			for ( ItemStack itemStack : player.inventory.armorInventory )
-			{
-				savedInventory.armorInventory.set(a, itemStack);
-				a++;
-			}
-			// =-=-=-=-=-=-= OFF =-=-=-=-=-=-=
-			if ( !hasEnderIdol && player.inventory.offHandInventory.get(0).getItem().equals(Item.getByNameOrId("toroquest:ender_idol") ) )
-			{
-				player.inventory.offHandInventory.set(0, ItemStack.EMPTY);
-				savedInventory.experienceTotal = (0 + player.experienceTotal);
-				hasEnderIdol = true;
+				if ( hasEnderIdol )
+				{
+					player.inventory.clear();
+					player.closeScreen();
+					player.inventory.closeInventory(player);
+					player.experienceTotal = 0;
+					stack.put( player.getName(), savedInventory );
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDEREYE_DEATH, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					event.setCanceled(true);
+				}
+				else
+				{
+					savedInventory = null;
+					//if ( stack.containsKey( player.getName()) )
+					try
+					{
+						stack.remove( player.getName() );
+					}
+					catch ( Exception e )
+					{
+						
+					}
+				}
 			}
 			else
 			{
-				savedInventory.offHandInventory.set(0, player.inventory.offHandInventory.get(0));
-			}
-			if ( hasEnderIdol )
-			{
-				player.inventory.clear();
-				player.closeScreen();
-				player.inventory.closeInventory(player);
-				player.experienceTotal = 0;
-				stack.put( player.getName(), savedInventory );
-				player.world.playSound(player, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F );
-				player.world.playSound(player, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDEREYE_DEATH, SoundCategory.PLAYERS, 1.0F, 1.0F );
-				event.setCanceled(true);
-			}
-			else
-			{
-				savedInventory = null;
-				//if ( stack.containsKey( player.getName()) )
-				try
+				boolean hasEnderIdol = false;
+				int m = 0;
+				// =-=-=-=-=-=-= MAIN =-=-=-=-=-=-=
+				for ( ItemStack itemStack : player.inventory.mainInventory )
 				{
-					stack.remove( player.getName() );
+					if ( !hasEnderIdol && itemStack.getItem().equals(Item.getByNameOrId("toroquest:ender_idol")) )
+					{
+						player.inventory.mainInventory.set(m, ItemStack.EMPTY);
+						hasEnderIdol = true;
+					}
+					m++;
 				}
-				catch ( Exception e )
+				// =-=-=-=-=-=-= OFF =-=-=-=-=-=-=
+				if ( !hasEnderIdol && player.inventory.offHandInventory.get(0).getItem().equals(Item.getByNameOrId("toroquest:ender_idol") ) )
 				{
-					
+					player.inventory.offHandInventory.set(0, ItemStack.EMPTY);
+					hasEnderIdol = true;
+				}
+				if ( hasEnderIdol )
+				{
+					player.closeScreen();
+					player.inventory.closeInventory(player);
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDEREYE_DEATH, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.playSound(SoundEvents.ENTITY_ENDEREYE_DEATH, 1.0F, 1.0F );
+					player.playSound(SoundEvents.BLOCK_GLASS_BREAK, 1.0F, 1.0F );
+					player.playSound(SoundEvents.ENTITY_ENDERMEN_TELEPORT, 1.0F, 1.0F );
+					this.teleportRandomly(player);
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDEREYE_DEATH, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.PLAYERS, 1.0F, 1.0F );
+					player.playSound(SoundEvents.ENTITY_ENDEREYE_DEATH, 1.0F, 1.0F );
+					player.playSound(SoundEvents.BLOCK_GLASS_BREAK, 1.0F, 1.0F );
+					player.playSound(SoundEvents.ENTITY_ENDERMEN_TELEPORT, 1.0F, 1.0F );
+					player.addPotionEffect(new PotionEffect(MobEffects.BLINDNESS, 30, 1, true, false));
+					player.setHealth(player.getMaxHealth());
+					event.setCanceled(true);
 				}
 			}
 		}
@@ -679,38 +935,47 @@ public class EventHandlers
 		}
 	}
 
+	protected void teleportRandomly(EntityPlayer p)
+    {
+		BlockPos pos = CivilizationHandlers.findTeleportLocationFrom(p.world, p.getPosition());
+		if ( pos != null ) p.attemptTeleport(pos.getX()+(rand.nextBoolean()?8:-8), pos.getY(), pos.getZ()+(rand.nextBoolean()?8:-8));
+    }
+	
 	@SubscribeEvent
 	public void respawn(PlayerEvent.Clone event)
 	{
-		EntityPlayer player = event.getEntityPlayer();
-		if ( player == null )
+		if ( !ToroQuestConfiguration.enderIdolTeleport )
 		{
-			return;
-		}
-		try
-		{
-			SavedInventory savedIventory = stack.get( player.getName() );
-			int m = 0;
-			for ( ItemStack itemStack : savedIventory.mainInventory )
+			EntityPlayer player = event.getEntityPlayer();
+			if ( player == null )
 			{
-				player.inventory.mainInventory.set(m, itemStack);
-				m++;
+				return;
 			}
-			int a = 0;
-			for ( ItemStack itemStack : savedIventory.armorInventory )
+			try
 			{
-				player.inventory.armorInventory.set(a, itemStack);
-				a++;
+				SavedInventory savedIventory = stack.get( player.getName() );
+				int m = 0;
+				for ( ItemStack itemStack : savedIventory.mainInventory )
+				{
+					player.inventory.mainInventory.set(m, itemStack);
+					m++;
+				}
+				int a = 0;
+				for ( ItemStack itemStack : savedIventory.armorInventory )
+				{
+					player.inventory.armorInventory.set(a, itemStack);
+					a++;
+				}
+				player.inventory.offHandInventory.set(0, savedIventory.offHandInventory.get(0));
+				player.addExperience( savedIventory.experienceTotal );
+				player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.PLAYERS, 1.0F, 0.8F );
+				player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDERMEN_SCREAM, SoundCategory.PLAYERS, 0.8F, 0.8F );
+				stack.remove( player.getName() );
 			}
-			player.inventory.offHandInventory.set(0, savedIventory.offHandInventory.get(0));
-			player.addExperience( savedIventory.experienceTotal );
-			player.world.playSound(player, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDERMEN_TELEPORT, SoundCategory.PLAYERS, 1.0F, 0.8F );
-			player.world.playSound(player, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ENDERMEN_SCREAM, SoundCategory.PLAYERS, 0.8F, 0.8F );
-			stack.remove( player.getName() );
-		}
-		catch ( Exception e )
-		{
-			
+			catch ( Exception e )
+			{
+				
+			}
 		}
 	}
 }

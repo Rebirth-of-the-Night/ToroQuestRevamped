@@ -6,21 +6,21 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.common.MinecraftForge;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.Province;
-import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapability;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
-import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity.DataWrapper;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
 
 public class QuestRecruit extends QuestBase implements Quest
 {
@@ -44,11 +44,21 @@ public class QuestRecruit extends QuestBase implements Quest
 
 		Province province = PlayerCivilizationCapabilityImpl.get(player).getInCivilization();
 
-		if (province == null || province.civilization == null)
+		if ( province == null || province.civilization == null )
 		{
 			return;
 		}
 
+		handleRecruitment(player, province);
+	}
+	
+	public void onRecruit(EntityPlayer player, Province province)
+	{
+		if (player == null)
+		{
+			return;
+		}
+		
 		handleRecruitment(player, province);
 	}
 
@@ -110,21 +120,21 @@ public class QuestRecruit extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
-		if ( !data.getCompleted() )
-		{
-			if ( data.getChatStack().equals("") )
-			{
-				data.setChatStack( "You haven't recruited enough guards! Speak to a shopkeeper to purchase recruitment papers." );
-				this.setData(data);
-			}
-			// data.getPlayer().closeScreen();
-			return null;
-		}
-
 		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
 
 		if ( province == null || province.id == null || !province.id.equals(quest.getProvinceId()) )
 		{
+			return null;
+		}
+		
+		if ( !quest.getCompleted() )
+		{
+			if ( quest.getChatStack().equals("") )
+			{
+				quest.setChatStack("recruit.incomplete", quest.getPlayer(), null);
+				this.setData(quest);
+			}
+			// data.getPlayer().closeScreen();
 			return null;
 		}
 
@@ -132,31 +142,45 @@ public class QuestRecruit extends QuestBase implements Quest
 //		int amount = new DataWrapper().setData(quest).getRewardRep();
 //		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), playerCiv.getInCivilization().civilization, amount);
 		
-		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
+		
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(quest.getCiv()) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
 
-		List<ItemStack> rewards = getRewardItems(quest); // TODO
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+
+		List<ItemStack> rewards = getRewardItems(quest);
+		
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
-		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
-		this.setData(data);
+		quest.setChatStack("recruit.incomplete", quest.getPlayer(), null);
+
+		this.setData(quest);
 		return items;
 	}
 	
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		// if (!data.getPlayer().world.isRemote)
+		data.setChatStack("recruit.incomplete", data.getPlayer(), null);
+		int amount = getTargetAmount(data);
+		if ( amount <= 0 )
 		{
-			switch (data.getPlayer().world.rand.nextInt(4))
-			{
-				case 0:{data.setChatStack( "I am not sure how many more nights the village can survive with our current defenses. " + data.getPlayer().getName() + ", I need you to recruit and arm several of the villagers.");break;}
-				case 1:{data.setChatStack( "The villagers are fearful of the nights to come. Recruit several guards to better bolster our defenses.");break;}
-				case 2:{data.setChatStack( "We have lost good men in the last raid. Recruit more guards to help protect the village.");break;}
-				case 3:{data.setChatStack( "I need you to recruit more guards. The people respect you, " + data.getPlayer().getName() + ", and they are willing to fight for our province.");break;}
-			}
+			amount = 5;
 		}
+		in.add(new ItemStack(Item.getByNameOrId("toroquest:recruitment_papers"),amount));
 		this.setData(data);
 		return in;
 	}
@@ -164,7 +188,12 @@ public class QuestRecruit extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "I can only hope we survive the harsh nights to come..." );
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack("recruit.reject", data.getPlayer(), null);
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -175,7 +204,7 @@ public class QuestRecruit extends QuestBase implements Quest
 	@Override
 	public String getTitle(QuestData data)
 	{
-		return "quests.recruit_guards.title";
+		return "quests.recruit.title";
 	}
 
 	@Override
@@ -187,7 +216,7 @@ public class QuestRecruit extends QuestBase implements Quest
 		}
 		DataWrapper q = new DataWrapper().setData(data);
 		StringBuilder s = new StringBuilder();
-		s.append("quests.recruit_guards.description");
+		s.append("quests.recruit.description");
 		s.append("|").append(q.getTargetAmount());
 		s.append("|").append("guards");
 		s.append("|").append(getProvinceName(data.getPlayer(), data.getProvinceId()));
@@ -208,10 +237,16 @@ public class QuestRecruit extends QuestBase implements Quest
 		q.data.setQuestId(UUID.randomUUID());
 		q.data.setQuestType(ID);
 		q.data.setCompleted(false);
-		int roll = rand.nextInt(5)+3;
-		int em = roll*2+2;
+		int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization);
+		int roll = rand.nextInt(3)+2;
+		if ( rep >= 250 )
+		{
+			roll++;
+		}
+		int em = roll*2+6;
+		if ( !ToroQuestConfiguration.recruitVillagers ) em *= 2.35;
 		q.setRewardRep(em*2);
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
@@ -308,6 +343,5 @@ public class QuestRecruit extends QuestBase implements Quest
 		{
 			return data.getProvinceId().equals(getProvinceHuntedIn().id);
 		}
-
 	}
 }

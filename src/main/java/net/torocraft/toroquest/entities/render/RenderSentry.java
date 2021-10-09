@@ -4,14 +4,11 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RenderBiped;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.layers.LayerArrow;
-import net.minecraft.client.renderer.entity.layers.LayerBipedArmor;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumHandSide;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.model.Model64Layer;
 
@@ -96,6 +93,11 @@ public class RenderSentry extends RenderBiped<EntitySentry>
 				}
 			}
 		}
+		
+		if ( entity.isDrinkingPotion() )
+		{
+			modelbiped$armpose1 = Model64Layer.ArmPose.BOW_AND_ARROW;
+		}
 
 //		if (entity.getPrimaryHand() == EnumHandSide.RIGHT)
 		{
@@ -113,7 +115,7 @@ public class RenderSentry extends RenderBiped<EntitySentry>
 	@Override
 	protected void preRenderCallback(EntitySentry entitylivingbaseIn, float partialTickTime)
 	{
-		GlStateManager.scale(entitylivingbaseIn.getRenderSize(), entitylivingbaseIn.getRenderSize(), entitylivingbaseIn.getRenderSize());
+		GlStateManager.scale(entitylivingbaseIn.getRenderSizeXZ(), entitylivingbaseIn.getRenderSizeY(), entitylivingbaseIn.getRenderSizeXZ());
 	}
 	
 	@Override

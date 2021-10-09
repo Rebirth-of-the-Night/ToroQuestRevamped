@@ -12,8 +12,16 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import net.torocraft.toroquest.civilization.CivilizationType;
+import net.torocraft.toroquest.civilization.CivilizationUtil;
+import net.torocraft.toroquest.civilization.Province;
+import net.torocraft.toroquest.civilization.ReputationLevel;
+import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
+import net.torocraft.toroquest.civilization.quests.QuestBase;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.inventory.IVillageLordInventory;
 import net.torocraft.toroquest.network.ToroQuestPacketHandler;
 import net.torocraft.toroquest.network.message.MessageQuestUpdate;
@@ -34,14 +42,19 @@ public class VillageLordGuiContainer extends GuiContainer
 
 	private static int donateRepForItem = 0;
 	private static MessageCode donateMessageCode = MessageCode.EMPTY;
-
+	
 	private static String civName = "";
 	private static String questTitle = "";
 	private static String questDescription = "";
 	private static boolean questAccepted = false;
+	private static boolean questCompleted = false;
+	
+	private static CivilizationType civ = null;
+	
+	private EntityPlayer p = null;
 
 	private final IVillageLordInventory inventory;
-
+    
 	public VillageLordGuiContainer()
 	{
 		this(null, null, null);
@@ -50,8 +63,9 @@ public class VillageLordGuiContainer extends GuiContainer
 	public VillageLordGuiContainer(EntityPlayer player, IVillageLordInventory inventory, World world)
 	{
 		super(new VillageLordContainer(player, inventory, world));
+		
 		this.inventory = inventory;
-		// lord_gui size
+		this.p = player;
 		xSize = 238;
 		ySize = 240;
 		mousePressed = Minecraft.getSystemTime();
@@ -72,10 +86,18 @@ public class VillageLordGuiContainer extends GuiContainer
 		drawTexturedModalRect(guiLeft, guiTop, 0, 0, xSize, ySize);
 		drawDonateButton(mouseX, mouseY);
 
-		if (questAccepted)
-		{
-			drawAbandonButton(mouseX, mouseY);
-			drawCompleteButton(mouseX, mouseY);
+		if ( questAccepted )
+		{			
+			if ( questCompleted )
+			{
+				drawQuestCompleteButton(mouseX, mouseY);
+				drawQuestAbandonButton(mouseX, mouseY);
+			}
+			else
+			{
+				drawCompleteButton(mouseX, mouseY);
+				drawAbandonButton(mouseX, mouseY);
+			}
 		}
 		else
 		{
@@ -92,22 +114,94 @@ public class VillageLordGuiContainer extends GuiContainer
 		drawGuiTitle(LABEL_XPOS, LABEL_YPOS);
 		updateReputationDisplay(LABEL_XPOS, LABEL_YPOS);
 		drawQuestTitle(LABEL_XPOS, LABEL_YPOS);
-		//drawTrophyTitle(LABEL_XPOS, LABEL_YPOS);
 	}
-
-//	private void drawTrophyTitle(int xPos, int yPos)
-//	{
-//		//String text = I18n.format("quest.gui.title", VillageLordGuiContainer.civName);
-//		fontRenderer.drawString("Trophy Case", xPos + 129, yPos - 39, Color.darkGray.getRGB());
-//	}
 	
 	private void drawGuiTitle(int xPos, int yPos)
 	{
 		String text = I18n.format("quest.gui.title", VillageLordGuiContainer.civName);
 		
-		// int length = text.length();
-		
 		fontRenderer.drawString("§l"+text+"§r", xPos + 2, yPos, Color.darkGray.getRGB());
+		if ( this.p != null && civ != null )
+		{
+			int rep = PlayerCivilizationCapabilityImpl.get(this.p).getReputation(civ);
+
+			fontRenderer.drawStringWithShadow("§lPermissions & Perks:§r", xPos + 178, yPos + 134, -200);
+
+			if ( rep >= 0 )
+			{
+				fontRenderer.drawStringWithShadow("§lRecruit guards§r", xPos + 178, yPos + 145, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lRecruit guards§r", xPos + 178, yPos + 145, Color.darkGray.getRGB());
+			}
+			
+			if ( rep >= 50 || !ToroQuestConfiguration.loseReputationForCropGrief )
+			{
+				fontRenderer.drawStringWithShadow("§lHarvest crops§r", xPos + 178, yPos + 156, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lHarvest crops§r", xPos + 178, yPos + 156, Color.darkGray.getRGB());
+			}
+			
+			
+			if ( rep >= 100 || !ToroQuestConfiguration.loseReputationForAnimalGrief )
+			{
+				fontRenderer.drawStringWithShadow("§lButcher livestock§r", xPos + 178, yPos + 167, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lButcher livestock§r", xPos + 178, yPos + 167, Color.darkGray.getRGB());
+			}
+			
+			
+			if ( rep >= 250 || !ToroQuestConfiguration.loseReputationForBlockGrief )
+			{
+				fontRenderer.drawStringWithShadow("§lGrief & firespread§r", xPos + 178, yPos + 178, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lGrief & firespread§r", xPos + 178, yPos + 178, Color.darkGray.getRGB());
+			}
+			
+			
+			if ( rep >= 500 )
+			{
+				fontRenderer.drawStringWithShadow("§lRename province§r", xPos + 178, yPos + 189, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lRename province§r", xPos + 178, yPos + 189, Color.darkGray.getRGB());
+			}
+			
+			if ( rep >= 1000 )
+			{
+				fontRenderer.drawStringWithShadow("§lLegendary quests§r", xPos + 178, yPos + 200, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lLegendary quests§r", xPos + 178, yPos + 200, Color.darkGray.getRGB());
+			}
+			
+			if ( rep >= 2000 )
+			{
+				fontRenderer.drawStringWithShadow("§lDouble quest rewards§r", xPos + 178, yPos + 211, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lDouble quest rewards§r", xPos + 178, yPos + 211, Color.darkGray.getRGB());
+			}
+			
+			if ( rep >= 3000 )
+			{
+				fontRenderer.drawStringWithShadow("§lQuests grant experience§r", xPos + 178, yPos + 222, Color.white.getRGB());
+			}
+			else
+			{
+				fontRenderer.drawStringWithShadow("§lQuests grant experience§r", xPos + 178, yPos + 222, Color.darkGray.getRGB());
+			}
+		}
 	}
 
 	private void drawDonateButton(int mouseX, int mouseY)
@@ -136,10 +230,20 @@ public class VillageLordGuiContainer extends GuiContainer
 	{
 		drawActionButton("quest.gui.button.complete", Action.COMPLETE, mouseX, mouseY, 0);
 	}
+	
+	private void drawQuestCompleteButton(int mouseX, int mouseY)
+	{
+		drawActionButton("quest.gui.button.questcomplete", Action.COMPLETE, mouseX, mouseY, 0);
+	}
 
 	private void drawAbandonButton(int mouseX, int mouseY)
 	{
 		drawActionButton("quest.gui.button.reject", Action.REJECT, mouseX, mouseY, -65);
+	}
+	
+	private void drawQuestAbandonButton(int mouseX, int mouseY)
+	{
+		drawActionButton("quest.gui.button.rejectcomplete", Action.REJECT, mouseX, mouseY, -65);
 	}
 
 	protected void drawActionButton(String label, Action action, int mouseX, int mouseY, int xOffset) {
@@ -158,6 +262,7 @@ public class VillageLordGuiContainer extends GuiContainer
 
 	private void updateReputationDisplay(int xPos, int yPos)
 	{
+		// XXX
 		if (MessageCode.DONATION.equals(donateMessageCode))
 		{
 			fontRenderer.drawString(I18n.format("quest.gui.rep_for", donateRepForItem), xPos + 2, yPos + 17, Color.darkGray.getRGB());
@@ -252,8 +357,14 @@ public class VillageLordGuiContainer extends GuiContainer
 		return sb.toString();
 	}
 
-	public static void setProvinceName(String name) {
+	public static void setProvinceName(String name)
+	{
 		civName = name;
+	}
+	
+	public static void setCivilization(CivilizationType name)
+	{
+		civ = name;
 	}
 
 	public static void setDonateInfo(MessageSetItemReputationAmount message)
@@ -262,11 +373,12 @@ public class VillageLordGuiContainer extends GuiContainer
 		donateMessageCode = message.messageCode;
 	}
 
-	public static void setQuestData(String title, String description, boolean accepted)
+	public static void setQuestData( String title, String description, boolean accepted, boolean complete )
 	{
 		questTitle = translate(title);
 		questDescription = translate(description);
 		questAccepted = accepted;
+		questCompleted = complete;
 	}
 
 	private boolean mouseCooldownOver()

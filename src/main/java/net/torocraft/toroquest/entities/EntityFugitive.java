@@ -5,50 +5,29 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 
-import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.IEntityLivingData;
-import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
-import net.minecraft.entity.ai.EntityAIFollowGolem;
 import net.minecraft.entity.ai.EntityAIHarvestFarmland;
-import net.minecraft.entity.ai.EntityAIHurtByTarget;
-import net.minecraft.entity.ai.EntityAILookAtTradePlayer;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
-import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAIOpenDoor;
 import net.minecraft.entity.ai.EntityAIPanic;
-import net.minecraft.entity.ai.EntityAIPlay;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAITempt;
-import net.minecraft.entity.ai.EntityAITradePlayer;
 import net.minecraft.entity.ai.EntityAIVillagerInteract;
-import net.minecraft.entity.ai.EntityAIVillagerMate;
-import net.minecraft.entity.ai.EntityAIWander;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
-import net.minecraft.entity.ai.EntityAIWatchClosest2;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.item.EntityItem;
-import net.minecraft.entity.monster.EntityEvoker;
-import net.minecraft.entity.monster.EntityIronGolem;
 import net.minecraft.entity.monster.EntityMob;
-import net.minecraft.entity.monster.EntityVex;
-import net.minecraft.entity.monster.EntityVindicator;
-import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
@@ -58,18 +37,13 @@ import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.torocraft.toroquest.ToroQuest;
-import net.torocraft.toroquest.civilization.CivilizationHandlers;
-import net.torocraft.toroquest.civilization.Province;
-import net.torocraft.toroquest.civilization.quests.QuestBase;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
-import net.torocraft.toroquest.entities.ai.EntityAIAvoidBanditPlayer;
 import net.torocraft.toroquest.entities.render.RenderFugitive;
 
 public class EntityFugitive extends EntityVillager
@@ -99,7 +73,7 @@ public class EntityFugitive extends EntityVillager
 		RenderingRegistry.registerEntityRenderingHandler(EntityFugitive.class, new IRenderFactory<EntityFugitive>()
 		{
 			@Override
-			public Render<EntityFugitive> createRenderFor(RenderManager manager)
+			public RenderFugitive createRenderFor(RenderManager manager)
 			{
 				return new RenderFugitive(manager);
 			}
@@ -109,6 +83,7 @@ public class EntityFugitive extends EntityVillager
 	public EntityFugitive(World worldIn)
 	{
 		super(worldIn);
+        this.setSize(0.6F, 1.95F);
 	}
 
 	@Override
@@ -133,12 +108,9 @@ public class EntityFugitive extends EntityVillager
 	protected void initEntityAI()
 	{
 		this.tasks.addTask(0, new EntityAISwimming(this));
-		this.tasks.addTask(1, new EntityAIAvoidEntity<EntityPlayer>(this, EntityPlayer.class, PLAYER_WITH_LEAD, 32.0F, 0.7D, 0.9D));
-		this.tasks.addTask(2, new EntityAIAvoidEntity<EntityPlayer>(this, EntityPlayer.class, 32.0F, 0.6D, 0.8D));
-		this.tasks.addTask(3, new EntityAIAvoidEntity<EntityToroNpc>(this, EntityToroNpc.class, 16.0F, 0.4D, 0.6D));
-		this.tasks.addTask(4, new EntityAIAvoidEntity<EntityToroMob>(this, EntityToroMob.class, 32.0F, 0.5D, 0.7D));
-		this.tasks.addTask(5, new EntityAIAvoidEntity<EntityMob>(this, EntityMob.class, 32.0F, 0.5D, 0.7D));
-		this.tasks.addTask(6, new EntityAIPanic(this, 0.7D)
+//		this.tasks.addTask(4, new EntityAIAvoidEntity<EntityToroMob>(this, EntityToroMob.class, 8.0F, 0.5D, 0.7D));
+//		this.tasks.addTask(5, new EntityAIAvoidEntity<EntityMob>(this, EntityMob.class, 8.0F, 0.5D, 0.7D));
+		this.tasks.addTask(1, new EntityAIPanic(this, 0.7D)
 		{
 			
 			@Override
@@ -152,33 +124,34 @@ public class EntityFugitive extends EntityVillager
 		    }
 			
 			@Override
-			 protected boolean findRandomPosition()
-			    {
-			        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, underAttack.getPositionVector());
+			protected boolean findRandomPosition()
+		    {
+		        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, underAttack.getPositionVector());
 
-			        if (vec3d == null)
-			        {
-			            return false;
-			        }
-			        else
-			        {
-			            this.randPosX = vec3d.x;
-			            this.randPosY = vec3d.y;
-			            this.randPosZ = vec3d.z;
-			            return true;
-			        }
-			    }
+		        if (vec3d == null)
+		        {
+		            return false;
+		        }
+		        else
+		        {
+		            this.randPosX = vec3d.x;
+		            this.randPosY = vec3d.y;
+		            this.randPosZ = vec3d.z;
+		            return true;
+		        }
+		    }
 			
 		});
-        this.tasks.addTask(7, new EntityAITempt(this, 0.4D, Items.EMERALD, false));
+		this.tasks.addTask(2, new EntityAIAvoidEntity<EntityPlayer>(this, EntityPlayer.class, PLAYER_WITH_LEAD, 16.0F, 0.6D, 0.8D));
+        this.tasks.addTask(3, new EntityAITempt(this, 0.4D, Items.EMERALD, false));
+		this.tasks.addTask(4, new EntityAIAvoidEntity<EntityPlayer>(this, EntityPlayer.class, 8.0F, 0.5D, 0.7D));
+		this.tasks.addTask(5, new EntityAIAvoidEntity<EntityToroNpc>(this, EntityToroNpc.class, 8.0F, 0.4D, 0.6D));
         this.tasks.addTask(8, new EntityAIMoveIndoors(this));
         this.tasks.addTask(9, new EntityAIRestrictOpenDoor(this));
         this.tasks.addTask(10, new EntityAIOpenDoor(this, true));
-        this.tasks.addTask(11, new EntityAIMoveTowardsRestriction(this, 0.6D));
-        this.tasks.addTask(12, new EntityAIVillagerMate(this));
-        // this.tasks.addTask(13, new EntityAIWatchClosest2(this, EntityPlayer.class, 3.0F, 1.0F));
+        this.tasks.addTask(11, new EntityAIMoveTowardsRestriction(this, 0.55D));
         this.tasks.addTask(13, new EntityAIVillagerInteract(this));
-        this.tasks.addTask(14, new EntityAIWanderAvoidWater(this, 0.6D)
+        this.tasks.addTask(14, new EntityAIWanderAvoidWater(this, 0.55D)
         {
         	@Override
             protected Vec3d getPosition()
@@ -205,8 +178,8 @@ public class EntityFugitive extends EntityVillager
 		//super.onDeath(cause);
 		if (!world.isRemote)
 		{
-			dropItem(Items.LEAD, 1);
-			dropItem(Items.EMERALD, rand.nextInt(2)+1);
+			//dropItem(Items.LEAD, 1);
+			dropItem(Items.EMERALD, rand.nextInt(4)+1);
 		}
 	}
 
@@ -216,13 +189,13 @@ public class EntityFugitive extends EntityVillager
 	
 	
 
-	private void dropItem(ItemStack stack)
-	{
-		EntityItem dropItem = new EntityItem(world, posX, posY, posZ, stack);
-		dropItem.setNoPickupDelay();
-		world.spawnEntity(dropItem);
-	}
-	
+//	private void dropItem(ItemStack stack)
+//	{
+//		EntityItem dropItem = new EntityItem(world, posX, posY, posZ, stack);
+//		dropItem.setNoPickupDelay();
+//		world.spawnEntity(dropItem);
+//	}
+//	
 	// ===============================
 
 	/**
@@ -250,14 +223,6 @@ public class EntityFugitive extends EntityVillager
 			return !itemstack.isEmpty() && itemstack.getItem() == Items.LEAD;
 		}
 	};
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	protected SoundEvent getHurtSound(DamageSource damageSourceIn)
     {
@@ -293,8 +258,4 @@ public class EntityFugitive extends EntityVillager
         super.applyEntityAttributes();
         this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.5D);
     }
-	
-	
-	
-
 }

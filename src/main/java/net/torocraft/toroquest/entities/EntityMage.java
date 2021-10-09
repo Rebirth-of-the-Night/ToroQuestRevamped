@@ -88,6 +88,11 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 			NAME = ToroQuestEntities.ENTITY_PREFIX + NAME;
 		}
 	}
+	
+    public boolean isNonBoss()
+    {
+        return false;
+    }
 
 	private static final DataParameter<Boolean> STAFF_ATTACK = EntityDataManager.<Boolean> createKey(EntityMage.class, DataSerializers.BOOLEAN);
 
@@ -117,6 +122,36 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 		}
 	}
 
+	@Override
+	public boolean getAlwaysRenderNameTag()
+    {
+        return false;
+    }
+	
+	@Override
+    protected float getWaterSlowDown()
+    {
+        return 0.9F;
+    }
+	
+    public boolean startRiding(Entity entityIn, boolean force)
+    {
+    	return false;
+    }
+    
+	@Override
+	protected void updateLeashedState()
+    {
+	   this.clearLeashed(true, true);
+       return;
+    }
+	
+	@Override
+	public boolean canBeLeashedTo(EntityPlayer player)
+    {
+		return false;
+    }
+	
 	protected void achievement(DamageSource cause) {
 		if (world.isRemote) {
 			return;
@@ -171,6 +206,7 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 		dropItem.motionZ = 0.0;
 		dropItem.motionX = 0.0;
 		this.world.spawnEntity(dropItem);
+		dropItem.setGlowing(true);
 	}
 
 	@Override
@@ -189,7 +225,7 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 		tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
 		tasks.addTask(3, new EntityAILookIdle(this));
 		targetTasks.addTask(1, new EntityAIHurtByTarget(this, false, new Class[0]));
-		targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, true));
+		targetTasks.addTask(2, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, true));
 	}
 
 	protected void entityInit() {
@@ -242,12 +278,17 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 		return ((Boolean) this.getDataManager().get(IS_AGGRESSIVE)).booleanValue();
 	}
 
-	protected void applyEntityAttributes() {
+	protected void applyEntityAttributes()
+	{
 		super.applyEntityAttributes();
-		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(20.0D * ToroQuestConfiguration.bossHealthMultiplier);
 		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.25D);
+		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(200D * ToroQuestConfiguration.bossHealthMultiplier);
+		this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(7D * ToroQuestConfiguration.bossAttackDamageMultiplier);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(10.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(10.0D);
 	}
-
+	
 	/**
 	 * Called frequently so the entity can update its state every tick as
 	 * required. For example, zombies and skeletons use this to react to
@@ -265,7 +306,11 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 			return;
 		}
 		
-        this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
+		if (this.ticksExisted % 25 == 0)
+		{
+			this.heal(ToroQuestConfiguration.bossHealthMultiplier);
+	        this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
+		}
 
 		if (isDrinkingPotion())
 		{
@@ -442,22 +487,22 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 		target.addVelocity(forceX, 1, forceZ);
 		target.velocityChanged = true;
 
-		this.playSound(SoundEvents.ENTITY_ENDERDRAGON_FLAP, 1.0F, 0.5F);
+		this.playSound(SoundEvents.ENTITY_ENDERDRAGON_FLAP, 2.0F, 0.5F);
 	}
 
-	private void spawnParticles(double xSpeed, double ySpeed, double zSpeed) {
-
-		// TODO figure out how to spawn particles
-
-		if (this.world.isRemote) {
-			for (int i = 0; i < 32; ++i) {
-				world.spawnParticle(EnumParticleTypes.PORTAL, posX, posY, posZ, xSpeed, ySpeed, zSpeed, new int[0]);
-			}
-		} else {
-			this.world.setEntityState(this, (byte) 42);
-		}
-
-	}
+//	private void spawnParticles(double xSpeed, double ySpeed, double zSpeed) {
+//
+//		// TODO figure out how to spawn particles
+//
+//		if (this.world.isRemote) {
+//			for (int i = 0; i < 32; ++i) {
+//				world.spawnParticle(EnumParticleTypes.PORTAL, posX, posY, posZ, xSpeed, ySpeed, zSpeed, new int[0]);
+//			}
+//		} else {
+//			this.world.setEntityState(this, (byte) 42);
+//		}
+//
+//	}
 
 	protected void attackWithPotion(EntityLivingBase target) {
 		double targetY = target.posY + (double) target.getEyeHeight() - 1.100000023841858D;
@@ -525,6 +570,10 @@ public class EntityMage extends EntityMob implements IRangedAttackMob, IMob
 	public boolean attackEntityFrom(DamageSource source, float amount) {
 		if (this.isEntityInvulnerable(source)) {
 			return false;
+		}
+		
+		{
+	        this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
 		}
 
 		if (source instanceof EntityDamageSourceIndirect) {

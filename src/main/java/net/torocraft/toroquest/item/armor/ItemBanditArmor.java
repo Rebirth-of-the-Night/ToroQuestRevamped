@@ -6,11 +6,17 @@ import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
@@ -40,9 +46,7 @@ public class ItemBanditArmor extends ItemArmor {
 	@SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-    	{
-    		tooltip.add("Donate this item to a village lord for reputation.");
-    	}
+    	tooltip.add(I18n.format("item.bandit_helmet.description"));
     }
 
 	public static void registerRenders()
@@ -66,6 +70,27 @@ public class ItemBanditArmor extends ItemArmor {
 		this.setUnlocalizedName(unlocalizedName);
 		this.maxStackSize = 16;
 		setMaxDamage(0);
+	}
+	
+	@Override
+	public ActionResult<ItemStack> onItemRightClick(World worldIn, EntityPlayer playerIn, EnumHand handIn)
+    {
+		ItemStack bandana = playerIn.getHeldItem(handIn);
+        EntityEquipmentSlot entityequipmentslot = EntityLiving.getSlotForItemStack(bandana);
+        ItemStack headSlot = playerIn.getItemStackFromSlot(entityequipmentslot);
+
+        if (headSlot.isEmpty())
+        {
+        	ItemStack newBandanaStack = bandana.copy();
+        	newBandanaStack.setCount(1);
+            playerIn.setItemStackToSlot(entityequipmentslot, newBandanaStack);
+            bandana.setCount(bandana.getCount()-1);
+            return new ActionResult<ItemStack>(EnumActionResult.SUCCESS, bandana);
+        }
+        else
+        {
+            return new ActionResult<ItemStack>(EnumActionResult.FAIL, bandana);
+        }
 	}
 	
 	@Override

@@ -1,0 +1,12 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "ingredients": [
+        {
+            "item": "toroquest:toro_leather"
+        }
+    ],
+    "result": {
+        "item": "minecraft:leather",
+	"count": 4
+    }
+}

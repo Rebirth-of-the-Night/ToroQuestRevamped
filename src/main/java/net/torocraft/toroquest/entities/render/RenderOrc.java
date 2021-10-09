@@ -105,7 +105,7 @@ public class RenderOrc extends RenderBiped<EntityOrc>
 	@Override
 	protected void preRenderCallback(EntityOrc entitylivingbaseIn, float partialTickTime)
 	{
-		GlStateManager.scale(entitylivingbaseIn.getRenderSize(), entitylivingbaseIn.getRenderSize(), entitylivingbaseIn.getRenderSize());
+		GlStateManager.scale(entitylivingbaseIn.getRenderSizeXZ(), entitylivingbaseIn.getRenderSizeY(), entitylivingbaseIn.getRenderSizeXZ());
 	}
 	
 	@Override

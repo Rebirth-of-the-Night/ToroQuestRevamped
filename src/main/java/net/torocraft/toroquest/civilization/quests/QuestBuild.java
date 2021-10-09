@@ -7,13 +7,11 @@ import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockSlab;
-import net.minecraft.block.BlockStairs;
 import net.minecraft.block.BlockStone;
-import net.minecraft.block.SoundType;
 import net.minecraft.block.material.Material;
+import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
@@ -46,84 +44,57 @@ public class QuestBuild extends QuestBase implements Quest
 		ID = id;
 	}
 
+	@SuppressWarnings("deprecation")
 	@SubscribeEvent
 	public void onFarm(PlaceEvent event)
 	{
-		if (event.getPlayer() == null)
+		if ( event.getPlayer() == null || event.getPlayer().world.isRemote )
 		{
 			return;
 		}
+		
+        //super(Material.ROCK);
+//		System.out.println(event.getBlockSnapshot().getCurrentBlock().getBlock());
+//		System.out.println(event.getBlockSnapshot().getCurrentBlock().getBlock().getDefaultState());
+//		System.out.println(event.getBlockSnapshot().getCurrentBlock().getBlock().getDefaultState().getMaterial());
+//		System.out.println(event.getPlacedBlock());
+//		System.out.println(event.getPlacedBlock().getBlock());
+//		System.out.println(event.getPlacedBlock().getMaterial());
+//		System.out.println(event.getPlacedBlock().getBlock().getMaterial(event.getPlacedBlock().getBlock().getDefaultState()));
 
-		Province provinceFarmedIn = loadProvince(event.getPlayer().world, event.getBlockSnapshot().getPos());
-
-		if (provinceFarmedIn == null || provinceFarmedIn.civilization == null)
+		if ( event.getPlacedBlock().getMaterial() != Material.ROCK ) // || event.getPlacedBlock() instanceof BlockStone )
 		{
 			return;
 		}
-
-		handleFarmQuest(event.getPlayer(), provinceFarmedIn, event.getPlacedBlock().getBlock(), true);
-	}
-
-	@SubscribeEvent
-	public void onHarvest(BreakEvent event)
-	{
-		if (event.getPlayer() == null)
-		{
-			return;
-		}
-
-		Province provinceFarmedIn = loadProvince(event.getPlayer().world, event.getPos());
-
-		if (provinceFarmedIn == null || provinceFarmedIn.civilization == null)
-		{
-			return;
-		}
-
-		handleFarmQuest(event.getPlayer(), provinceFarmedIn, event.getState().getBlock(), false);
-	}
-
-	private void handleFarmQuest(EntityPlayer player, Province provinceFarmedIn, Block crop, boolean plant)
-	{
-		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
+		
+		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(event.getPlayer()).getCurrentQuests();
+		
 		DataWrapper quest = new DataWrapper();
-		for (QuestData data : quests)
+		
+		for ( QuestData data : quests )
 		{
 			quest.setData(data);
-			quest.farmedCrop = crop;
-			quest.provinceFarmedIn = provinceFarmedIn;
-			if (perform(quest, plant, crop))
+			
+			if ( quest.isBuildQuest() )
 			{
-				return;
+				Province province = PlayerCivilizationCapabilityImpl.get(event.getPlayer()).getInCivilization();
+
+				if ( province != null && province.civilization != null && quest.isInCorrectProvince(province) )
+				{
+					if ( perform(quest) )
+					{
+						return;
+					}
+				}
 			}
 		}
 	}
 	
-	public boolean perform(DataWrapper quest, boolean plant, Block crop)
+	public boolean perform(DataWrapper quest)
 	{
-		if (quest.getData().getPlayer().world.isRemote)
-		{
-			return false;
-		}
-		
-		if (!quest.isApplicable(crop))
-		{
-			return false;
-		}
-
 		if ( !quest.data.getCompleted() )
 		{
-			if (plant)
-			{
-				quest.setCurrentAmount(quest.getCurrentAmount() + 1);
-			}
-//			else if ( !(crop instanceof BlockStone) )
-//			{
-//				quest.setCurrentAmount(quest.getCurrentAmount() - 1);
-//				if ( quest.getCurrentAmount() < 0 )
-//				{
-//					quest.setCurrentAmount(0);
-//				}
-//			}
+			quest.setCurrentAmount(quest.getCurrentAmount() + 1);
 			
 			quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 			
@@ -142,18 +113,6 @@ public class QuestBuild extends QuestBase implements Quest
 	{
 		return "quests.build.title";
 	}
-
-//	private String cropName(Integer i) {
-//		if (i == null) {
-//			return "Crop";
-//		}
-//		Block crop = CROP_TYPES[i];
-//		if (crop == null) {
-//			System.out.println("invalid crop ID [" + i + "]");
-//			return "Crop";
-//		}
-//		return crop.getLocalizedName();
-//	}
 
 	@Override
 	public String getDescription(QuestData data)
@@ -186,9 +145,9 @@ public class QuestBuild extends QuestBase implements Quest
 		q.data.setCompleted(false);
 
 		int roll = rand.nextInt(3)*64+128;
-		int em = (int)Math.round((double)roll/32+4);
-		int rep = em*2;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		int em = (int)Math.round((double)roll/32)+6;
+		q.setRewardRep(em*2);
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
@@ -197,38 +156,30 @@ public class QuestBuild extends QuestBase implements Quest
 		
 		q.setTargetAmount(roll);
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em);
-		q.setRewardRep(rep);
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
-		setRewardItems(q.data, rewardItems);
-		this.setData(q.data);
-		return q.data;
+		setRewardItems(q.getData(), rewardItems);
+		this.setData(q.getData());
+		return q.getData();
 	}
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack("How hard is it for you to place just a LITTLE cobblestone around the village?! Unbelievable! I bet you have chests full of that s*** just laying around.");
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		data.setChatStack( "build.reject", data.getPlayer(), null );
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
 	}
-	
-	
 
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		//if (!data.getPlayer().world.isRemote)
-		{
-			switch (data.getPlayer().world.rand.nextInt(4))
-			{
-				case 0:{data.setChatStack("The guards are having trouble securing certain areas around the village. I'll need you to set up walls to bolster the province's defenses.");break;}
-				case 1:{data.setChatStack("Our province's defences are lacking! We have lost several villagers because of it. " + data.getPlayer().getName() + ", I need you to build more walls around the province to keep them safe.");break;}
-				case 2:{data.setChatStack("" + data.getPlayer().getName() + ", the province is in desperate need of walls to keep our villagers protected.");break;}
-				case 3:{data.setChatStack("This province is becoming overwhelmed by bandits and creatures of the night. We need you to start building walls around the province to keep them out and our villagers safe.");break;}
-			}
-		}
+		data.setChatStack( "build.accept", data.getPlayer(), null );
 		this.setData(data);
 		return in;
 	}
@@ -236,45 +187,61 @@ public class QuestBuild extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
-		if ( !quest.getCompleted() )
-		{
-			if ( quest.getChatStack().equals("")  )
-			{
-			    quest.setChatStack( "You haven't built enough of the wall, " + quest.getPlayer().getName() + "." );
-			    this.setData(quest);
-			}
-		    // // quest.getPlayer().closeScreen();
-			return null;
-		}
-
+		
 		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
 
 		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
 		{
 			return null;
 		}
-
+		
+		if ( !quest.getCompleted() )
+		{
+			if ( quest.getChatStack().equals("")  )
+			{
+				quest.setChatStack( "build.incomplete", quest.getPlayer(), null );
+			    this.setData(quest);
+			}
+			return null;
+		}
+		
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
 
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(province.civilization) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		
 		List<ItemStack> rewards = getRewardItems(quest);
+		
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
 
-		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
+		quest.setChatStack( "build.complete", quest.getPlayer(), null );
 		this.setData(quest);
-		
 		return items;
 	}
 
 	public static class DataWrapper
 	{
 		QuestData data = new QuestData();
-		private Province provinceFarmedIn;
-		private Block farmedCrop;
+		//private Province provinceFarmedIn;
+		//private Block farmedCrop;
 		
-		public QuestData getData() {
+		public QuestData getData()
+		{
 			return data;
 		}
 
@@ -283,21 +250,25 @@ public class QuestBuild extends QuestBase implements Quest
 			return this;
 		}
 
-		public Province getProvinceFarmedIn() {
-			return provinceFarmedIn;
+		public Integer getProvinceFarmedIn()
+		{
+			return i(data.getiData().get("province"));
+			// return provinceFarmedIn;
 		}
 
-		public void setProvinceFarmedIn(Province provinceFarmedIn) {
-			this.provinceFarmedIn = provinceFarmedIn;
+		public void setProvinceFarmedIn(Integer provinceFarmedIn)
+		{
+			data.getiData().put("province", provinceFarmedIn);
+			// this.provinceFarmedIn = provinceFarmedIn;
 		}
 
-		public Block getFarmedCrop() {
-			return farmedCrop;
-		}
-
-		public void setFarmedCrop(Block farmedCrop) {
-			this.farmedCrop = farmedCrop;
-		}
+//		public Block getFarmedCrop() {
+//			return farmedCrop;
+//		}
+//
+//		public void setFarmedCrop(Block farmedCrop) {
+//			this.farmedCrop = farmedCrop;
+//		}
 
 //		public Integer getCropType() {
 //			return i(data.getiData().get("type"));
@@ -339,24 +310,14 @@ public class QuestBuild extends QuestBase implements Quest
 			}
 		}
 
-		private boolean isApplicable(Block crop)
-		{
-			return isFarmQuest() && isInCorrectProvince() && isCorrectCrop(crop);
-		}
-
-		private boolean isFarmQuest()
+		private boolean isBuildQuest()
 		{
 			return data.getQuestType() == ID;
 		}
 
-		private boolean isInCorrectProvince()
+		private boolean isInCorrectProvince(Province provinceFarmedIn)
 		{
-			return data.getProvinceId().equals(getProvinceFarmedIn().id);
-		}
-
-		private boolean isCorrectCrop(Block crop)
-		{
-			return ( (crop.getMaterial(crop.getDefaultState()) == Material.ROCK || crop.getSoundType() == SoundType.STONE ) && (crop.getDefaultState().isFullBlock() || crop.getDefaultState() instanceof BlockStairs || crop.getDefaultState() instanceof BlockSlab ) );
+			return data.getProvinceId().equals( provinceFarmedIn.id );
 		}
 
 	}

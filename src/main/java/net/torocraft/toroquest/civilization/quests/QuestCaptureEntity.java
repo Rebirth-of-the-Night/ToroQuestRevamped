@@ -6,18 +6,24 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityXPOrb;
+import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.ItemLead;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.MapDecoration;
@@ -25,6 +31,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
+import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapability;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
@@ -50,49 +57,70 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
+		
+		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
+
+		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
+		{
+			return null;
+		}
+		
 		if (!quest.getCompleted())
 		{
 			if ( quest.getChatStack() == "" )
 			{
-				quest.setChatStack("You haven't returned the toro yet!");
+				quest.setChatStack( "capture_entity.incomplete", quest.getPlayer(), null );
 				this.setData(quest);
 			}
 			// quest.getPlayer().closeScreen();
 			return null;
 		}
-
-		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
-
-		if ( province == null || province.id == null || !province.id.equals(quest.getProvinceId()) )
-		{
-			return null;
-		}
-
+		
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
 
-		// quest.setChatStack( "I knew I could count on you, " + quest.getPlayer().getName() + "." );
-		this.setData(quest);
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(province.civilization) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
 
-		List<ItemStack> rewards = getRewardItems(quest); // TODO
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		
+		quest.setChatStack( "capture_entity.complete", quest.getPlayer(), null );
+
+		List<ItemStack> rewards = getRewardItems(quest);
+		
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
 		
+		this.setData(quest);
 		return items;
 	}
 	
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
 		if ( in == null )
 		{
 			if ( data.getChatStack() == "" )
 			{
-				data.setChatStack( "Return the tool that was provided, or 5 emeralds to pay for it." );
+				data.setChatStack( "rejectreturnitem", data.getPlayer(), null);
 				this.setData(data);
 			}
-			data.getPlayer().closeScreen();
 			return null;
 		}
 
@@ -127,12 +155,13 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 
 		if (!toolIncluded && emeraldRemainingCount > 0)
 		{
-			data.setChatStack( "Return the tool that was provided, or 5 emeralds to pay for it." );
+			data.setChatStack( "rejectreturnitem", data.getPlayer(), null);
 			this.setData(data);
 			data.getPlayer().closeScreen();
 			return null;
 		}
-		data.setChatStack( "B-but... my beautiful toro! Oh, how I long for his company..." );
+		
+		data.setChatStack( "capture_entity.reject", data.getPlayer(), null);
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return givenItems;
@@ -145,17 +174,18 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 		{
 			BlockPos pos = searchForSuitableLocation(data, 320, 0);
 			setSpawnPosition(data, pos);
-			addToroSpawner(data, data.getPlayer().getEntityWorld(), getSpawnPosition(data), getDefaultEnemies(data));
+			Boolean spawnBandits = rand.nextBoolean();
+			addToroSpawner(data, data.getPlayer().getEntityWorld(), getSpawnPosition(data), getDefaultEnemies(data, spawnBandits));
 			// if (data.getPlayer().world.isRemote)
 			{	try
 				{
-					if ( getRewardItems(data).get(0).getCount() == 0 )
+					if ( spawnBandits )
 					{
-						data.setChatStack("Bandits have stolen my prized toro! Bring him back, please — I will reward you!");
+						data.setChatStack( "capture_entity.acceptbandits", data.getPlayer(), null);
 					}
 					else
 					{
-						data.setChatStack( "Please, " + data.getPlayer().getName() + ". My prized toro has broken loose. Find and return him as soon as possible!");
+						data.setChatStack( "capture_entity.acceptnobandits", data.getPlayer(), null);
 					}
 				}
 				catch(Exception e)
@@ -164,26 +194,114 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 				}
 			}
 			this.setData(data);
-			setLocationBasedRewards(data);
 			ItemStack itemstack = new ItemStack(Items.LEAD, 1);
-			itemstack.setStackDisplayName( "Lasso" );
+			itemstack.setStackDisplayName( I18n.format("item.sheep_bindings.name") );
 			in.add(itemstack);
 		}
 		catch (Exception e)
 		{
-			System.out.println("error");
 			reject(data,in);
 		}
 		return in;
 	}
 	
-	private List<String> getDefaultEnemies(QuestData data)
+	public BlockPos searchForSuitableLocation( QuestData data, int range, int occupiedRange )
+	{
+		BlockPos pos = null;
+		for (int i = 0; i < 100; i++)
+		{
+			pos = randomLocation(data, rand, range, false, occupiedRange);
+			if (pos != null)
+			{
+				break;
+			}
+		}
+		if (pos == null)
+		{
+			for (int i = 0; i < 10; i++)
+			{
+				pos = randomLocation(data, rand, range*2, true, occupiedRange);
+				if (pos != null)
+				{
+					break;
+				}
+			}
+		}
+		return pos;
+	}
+
+	public BlockPos randomLocation(QuestData data, Random random, int range, boolean force, int occupiedRange)
+	{
+		Province province = getQuestProvince(data);
+		EntityPlayer player = data.getPlayer();
+		//random = new Random( rand.nextInt() + data.hashCode() + data.getQuestId().hashCode() );
+
+		if ( province == null || player == null )
+		{
+			return null;
+		}
+		
+		int x = (random.nextInt(range));
+		int z = (random.nextInt(range));
+		
+		while ( x + z < range/2 )
+		{
+			x = (random.nextInt(range));
+			z = (random.nextInt(range));
+		}
+		
+		x *= (random.nextInt(2)*2-1);
+		z *= (random.nextInt(2)*2-1);
+		
+		x += province.getCenterX();
+		z += province.getCenterZ();
+		
+		BlockPos pos = findSurface(player.world, x, z, force);
+
+		if ( force )
+		{
+			return pos;
+		}
+		
+		if (pos == null)
+		{
+			return null;
+		}
+		
+		Village village = player.world.getVillageCollection().getNearestVillage(pos, 16);
+
+		if ( village != null )
+		{
+			return null;
+		}
+		
+	    province = CivilizationUtil.getProvinceAt(player.world, x/16, z/16);
+	    
+		if ( province == null ) {province = CivilizationUtil.getProvinceAt(player.world, x/16+1, z/16+1);}
+		if ( province == null ) {province = CivilizationUtil.getProvinceAt(player.world, x/16+1, z/16-1);}
+		if ( province == null ) {province = CivilizationUtil.getProvinceAt(player.world, x/16-1, z/16+1);}
+		if ( province == null ) {province = CivilizationUtil.getProvinceAt(player.world, x/16-1, z/16-1);}
+	
+		if ( province != null)
+		{
+			return null;
+		}
+		
+		if (data.getPlayer().world.isAnyPlayerWithinRangeAt((double)pos.getX(),(double)pos.getY(),(double)pos.getZ(),32))
+		{
+			return null;
+		}
+
+		return pos;
+	}
+	
+	private List<String> getDefaultEnemies(QuestData data, Boolean spawnBandits)
 	{
 		List<String> entity = new ArrayList<String>();
-		entity.add("toroquest:toroquest_quest_toro");
+		entity.add("minecraft:sheep");
 		try
 		{
-			if ( getRewardItems(data).get(0).getCount() == 0 )
+			if ( spawnBandits )
 			{
 				entity.add("toroquest:toroquest_sentry");
 				entity.add("toroquest:toroquest_sentry");
@@ -195,20 +313,6 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 			
 		}
 		return entity;
-	}
-	
-	private void setLocationBasedRewards(QuestData data)
-	{
-		int roll = 10 + (int)Math.round(((getSpawnPosition(data).getDistance((data.getPlayer().getPosition()).getX(), (data.getPlayer().getPosition()).getY(), (data.getPlayer().getPosition()).getZ()) / 64)));
-		roll = MathHelper.clamp(roll, 8, 12);
-		setRewardRep(data, roll*2);
-		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
-		{
-			roll *= 2;
-		}
-		List<ItemStack> reward = new ArrayList<ItemStack>(1);
-		reward.add(new ItemStack(Items.EMERALD, roll));
-		setRewardItems(data, reward);
 	}
 
 	public boolean onReturn(EntityPlayer player)
@@ -289,7 +393,6 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 	@Override
 	public QuestData generateQuestFor(EntityPlayer player, Province province)
 	{
-		Random rand = new Random();
 		DataWrapper q = new DataWrapper();
 		q.data.setCiv(province.civilization);
 		q.data.setPlayer(player);
@@ -301,22 +404,17 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 		q.setCurrentAmount(0);
 		q.setTargetAmount(1);
 
-		int roll = rand.nextInt(2);
-		int em = roll;
-		int rep = em*2;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		int em = 22;
+		q.setRewardRep(em*2);
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
-
+		q.setCurrentAmount(0);
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
-		
-		// temporary //
-		q.setRewardRep(rep);
 		setRewardItems(q.data, rewardItems);
-
 		//setRewardRep(q.data, getRewardRep(q.data));
 		this.setData(q.data);
 		return q.data;
@@ -420,6 +518,46 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 			spawner.setSpawnRadius(16);
 			spawner.addEntityTag(data.getQuestId().toString());
 			spawner.addEntityTag("capture_quest");
+			int color = 0;
+			switch ( data.getCiv() )
+			{
+				case FIRE:
+				{
+					color = 1;
+					break;
+				}
+				case EARTH:
+				{
+					color = 2;
+					break;
+				}
+				case WIND:
+				{
+					color = 3;
+					break;
+				}
+				case WATER:
+				{
+					color = 4;
+					break;
+				}
+				case MOON:
+				{
+					color = 5;
+					break;
+				}
+				case SUN:
+				{
+					color = 6;
+					break;
+				}
+				default:
+				{
+					color = 0;
+					break;
+				}
+			}
+			spawner.setColor(color);
 		}
 		else
 		{

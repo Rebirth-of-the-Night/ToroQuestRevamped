@@ -1,78 +1,47 @@
 package net.torocraft.toroquest.entities.render;
 
-import java.util.List;
-
-import com.google.common.collect.Lists;
-
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RenderBiped;
 import net.minecraft.client.renderer.entity.RenderManager;
+import net.minecraft.client.renderer.entity.layers.LayerArrow;
 import net.minecraft.client.renderer.entity.layers.LayerBipedArmor;
 import net.minecraft.client.renderer.entity.layers.LayerHeldItem;
-import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.item.EnumAction;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumHandSide;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.entities.EntityBanditLord;
 import net.torocraft.toroquest.entities.EntitySentry;
-import net.torocraft.toroquest.entities.model.ModelSentry;
+import net.torocraft.toroquest.entities.model.Model64Layer;
+import net.torocraft.toroquest.entities.model.ModelGuard;
 
 @SideOnly(Side.CLIENT)
 public class RenderBanditLord extends RenderBiped<EntityBanditLord>
 {
-	private static ResourceLocation TEXTURES = new ResourceLocation(ToroQuest.MODID + ":textures/entity/bandit/bandit_0.png");
-	private final ModelSentry defaultModel;
+	// private static ResourceLocation TEXTURES = new ResourceLocation(ToroQuest.MODID + ":textures/entity/bandit/bandit.png");
 
-	private final List<LayerRenderer<EntityBanditLord>> defaultLayers;
+	private final Model64Layer defaultModel = (Model64Layer) mainModel;
 
 	public RenderBanditLord(RenderManager renderManagerIn)
 	{
-		super(renderManagerIn, new ModelSentry(), 0.75F);
-
-		//super(renderManagerIn, new ModelToroVillager(), 0.5F);
-        this.addLayer(new LayerHeldItem(this));
-        // this.addLayer(new LayerArrow(this));
-        //this.addLayer(new LayerDeadmau5Head(this));
-        //this.addLayer(new LayerCape(this));
-        //this.addLayer(new LayerCustomHead(this.getMainModel().bipedHead));
-        //this.addLayer(new LayerElytra(this));
-        //this.addLayer(new LayerEntityOnShoulder(renderManager));
-		//LayerRenderer<?> layerrenderer = (LayerRenderer) this.layerRenderers.get(0);
-        
-		defaultModel = (ModelSentry) mainModel;
+		super(renderManagerIn, new Model64Layer(), 0.5F);
 
 		LayerBipedArmor layerbipedarmor = new LayerBipedArmor(this)
 		{
 			protected void initArmor()
 			{
-				this.modelLeggings = new ModelSentry(0.5F, true);
-				this.modelArmor = new ModelSentry(0.75F, true);
+				this.modelLeggings = new ModelBiped(0.5F);
+				this.modelArmor = new ModelBiped(0.9F);
 			}
 		};
 		this.addLayer(layerbipedarmor);
 		
-		this.defaultLayers = Lists.newArrayList(this.layerRenderers);
+        this.addLayer(new LayerArrow(this));
+		
+		// this.defaultLayers = Lists.newArrayList(this.layerRenderers);
 	}
-
-	/**
-	 * Allows the render to do state modifications necessary before the model is
-	 * rendered.
-	 */
-	@Override
-	protected void preRenderCallback(EntityBanditLord entitylivingbaseIn, float partialTickTime)
-	{
-		super.preRenderCallback(entitylivingbaseIn, partialTickTime);
-		GlStateManager.scale(1.4F, 1.4F, 1.4F);
-	}
-
-//	public ResourceLocation getCapeTexture() {
-//		return CAPETEXTURE;
-//	}
 
 	/**
 	 * Renders the desired {@code T} type Entity.
@@ -84,57 +53,77 @@ public class RenderBanditLord extends RenderBiped<EntityBanditLord>
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
 	}
 
-	private void setModelVisibilities(EntitySentry clientPlayer)
+	private void setModelVisibilities(EntitySentry entity)
 	{
-		ModelSentry modelplayer = (ModelSentry) this.getMainModel();
+		ItemStack itemstack = entity.getHeldItemMainhand();
+		ItemStack itemstack1 = entity.getHeldItemOffhand();
+		
+		defaultModel.setVisible(true);
 
-		ItemStack itemstack = clientPlayer.getHeldItemMainhand();
-		ItemStack itemstack1 = clientPlayer.getHeldItemOffhand();
-		modelplayer.setVisible(true);
+		Model64Layer.ArmPose modelbiped$armpose = Model64Layer.ArmPose.EMPTY;
+		Model64Layer.ArmPose modelbiped$armpose1 = Model64Layer.ArmPose.EMPTY;
 
-		modelplayer.isSneak = clientPlayer.isSneaking();
-		ModelBiped.ArmPose modelbiped$armpose = ModelBiped.ArmPose.EMPTY;
-		ModelBiped.ArmPose modelbiped$armpose1 = ModelBiped.ArmPose.EMPTY;
+		if (itemstack != null)
+		{
+			modelbiped$armpose = Model64Layer.ArmPose.ITEM;
 
-		if (itemstack != null) {
-			modelbiped$armpose = ModelBiped.ArmPose.ITEM;
-
-			if (clientPlayer.getItemInUseCount() > 0) {
+			if (entity.getItemInUseCount() > 0)
+			{
 				EnumAction enumaction = itemstack.getItemUseAction();
 
-				if (enumaction == EnumAction.BLOCK) {
-					modelbiped$armpose = ModelBiped.ArmPose.BLOCK;
-				} else if (enumaction == EnumAction.BOW) {
-					modelbiped$armpose = ModelBiped.ArmPose.BOW_AND_ARROW;
+				if (enumaction == EnumAction.BLOCK)
+				{
+					modelbiped$armpose = Model64Layer.ArmPose.BLOCK;
+				}
+				else if (enumaction == EnumAction.BOW)
+				{
+					modelbiped$armpose = Model64Layer.ArmPose.BOW_AND_ARROW;
 				}
 			}
 		}
 
-		if (itemstack1 != null) {
-			modelbiped$armpose1 = ModelBiped.ArmPose.ITEM;
+		if (itemstack1 != null)
+		{
+			modelbiped$armpose1 = Model64Layer.ArmPose.ITEM;
 
-			if (clientPlayer.getItemInUseCount() > 0) {
+			if (entity.getItemInUseCount() > 0)
+			{
 				EnumAction enumaction1 = itemstack1.getItemUseAction();
 
-				if (enumaction1 == EnumAction.BLOCK) {
-					modelbiped$armpose1 = ModelBiped.ArmPose.BLOCK;
+				if (enumaction1 == EnumAction.BLOCK)
+				{
+					modelbiped$armpose1 = Model64Layer.ArmPose.BLOCK;
 				}
 			}
 		}
-
-		if (clientPlayer.getPrimaryHand() == EnumHandSide.RIGHT) {
-			modelplayer.rightArmPose = modelbiped$armpose;
-			modelplayer.leftArmPose = modelbiped$armpose1;
-		} else {
-			modelplayer.rightArmPose = modelbiped$armpose1;
-			modelplayer.leftArmPose = modelbiped$armpose;
+		
+		if ( entity.isDrinkingPotion() )
+		{
+			modelbiped$armpose1 = Model64Layer.ArmPose.BOW_AND_ARROW;
 		}
 
+//		if (entity.getPrimaryHand() == EnumHandSide.RIGHT)
+		{
+			defaultModel.rightArmPose = modelbiped$armpose;
+			defaultModel.leftArmPose = modelbiped$armpose1;
+		}
+//		else
+//		{
+//			defaultModel.rightArmPose = modelbiped$armpose1;
+//			defaultModel.leftArmPose = modelbiped$armpose;
+//		}
+
+	}
+	
+	@Override
+	protected void preRenderCallback(EntityBanditLord entitylivingbaseIn, float partialTickTime)
+	{
+		GlStateManager.scale(1.4F, 1.4F, 1.4F);
 	}
 	
 	@Override
 	protected ResourceLocation getEntityTexture(EntityBanditLord entity)
 	{
-		return TEXTURES;
+		return entity.getSkin();
 	}
 }

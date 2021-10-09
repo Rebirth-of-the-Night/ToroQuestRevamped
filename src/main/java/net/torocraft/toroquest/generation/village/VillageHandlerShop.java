@@ -7,18 +7,16 @@ import java.util.Random;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.block.Block;
 import net.minecraft.block.BlockChest;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.Mirror;
-import net.minecraft.util.Rotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.gen.structure.MapGenStructureIO;
@@ -28,16 +26,23 @@ import net.minecraft.world.gen.structure.StructureVillagePieces;
 import net.minecraft.world.gen.structure.StructureVillagePieces.PieceWeight;
 import net.minecraft.world.gen.structure.StructureVillagePieces.Start;
 import net.minecraft.world.gen.structure.StructureVillagePieces.Village;
-import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.fml.common.registry.VillagerRegistry.IVillageCreationHandler;
 import net.torocraft.toroquest.ToroQuest;
+import net.torocraft.toroquest.civilization.CivilizationUtil;
+import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityShopkeeper;
-import net.torocraft.toroquest.generation.village.VillageHandlerGuardTower.VillagePieceGuardTower;
 import net.torocraft.toroquest.generation.village.util.BlockMapMeasurer;
 import net.torocraft.toroquest.generation.village.util.VillagePieceBlockMap;
+import net.torocraft.toroquest.item.ItemScrollEarth;
+import net.torocraft.toroquest.item.ItemScrollFire;
+import net.torocraft.toroquest.item.ItemScrollMoon;
+import net.torocraft.toroquest.item.ItemScrollSun;
+import net.torocraft.toroquest.item.ItemScrollWater;
+import net.torocraft.toroquest.item.ItemScrollWind;
 
 public class VillageHandlerShop implements IVillageCreationHandler {
 
@@ -79,7 +84,7 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 		{
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
-			if ( i >= 0 && Math.abs(x) < i && Math.abs(z) < i )
+			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )
 			{
 				 nameType += "_destroyed";
 			}
@@ -106,8 +111,13 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 			{
 				List<String> entities = new ArrayList<String>();
 				entities.add(ToroQuest.MODID + ":" + EntityShopkeeper.NAME);
-				specialHandlingForSpawner(world, "xx", c, x, y, z, entities);
-				return true;
+				return specialHandlingForSpawner(world, "xx", c, x, y, z, entities);
+			}
+			if ( c.equals("XX") )
+			{
+				List<String> entities = new ArrayList<String>();
+				entities.add(ToroQuest.MODID + ":" + EntityGuard.NAME);
+				return specialHandlingForSpawner(world, "xx", c, x, y, z, entities);
 			}
 			else if ( c.equals("BB") )
 			{
@@ -144,6 +154,8 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 		
 		protected void setChestBlockState(World worldIn, IBlockState blockstateIn, int x, int y, int z, StructureBoundingBox boundingboxIn)
 	    {
+			if ( worldIn.isRemote ) return;
+
 	        BlockPos blockpos = new BlockPos(this.getXWithOffset(x, z), this.getYWithOffset(y), this.getZWithOffset(x, z));
 
 	        if (boundingboxIn.isVecInside(blockpos))
@@ -152,21 +164,24 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 				TileEntity tileentity = worldIn.getTileEntity( blockpos );
 				if ( tileentity instanceof TileEntityChest )
 				{
-					if ( !worldIn.isRemote )
+					//if ( !worldIn.isRemote )
 					{
 						//((TileEntityChest) tileentity).setLootTable(LootTableList.CHESTS_SIMPLE_DUNGEON, worldIn.rand.nextLong());
 						TileEntityChest t = (TileEntityChest) tileentity;
-						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Item.getByNameOrId("toroquest:recruitment_papers"), 1));
-						}
 						for ( int i = worldIn.rand.nextInt(5)+5; i > 0; i-- )
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.PAPER, 1) );
 						}
 						for ( int i = worldIn.rand.nextInt(6)+3; i > 0; i-- )
 						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EMERALD, worldIn.rand.nextInt(5)+1));
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EMERALD, 5));
+							}
+							else
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EMERALD, 1));
+							}
 						}
 						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
 						{
@@ -177,14 +192,132 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.WRITABLE_BOOK, 1 ));
 						}
-						for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.COMPASS, 1 ));
-						}
 						for ( int i = worldIn.rand.nextInt(3)+3; i > 0; i-- )
 						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EXPERIENCE_BOTTLE, worldIn.rand.nextInt(5)+1 ));
+							if ( worldIn.rand.nextInt(3) == 0 )
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EXPERIENCE_BOTTLE, 5));
+							}
+							else
+							{
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EXPERIENCE_BOTTLE, 1));
+							}
 						}
+						for ( int i = worldIn.rand.nextInt(3)+2; i > 0; i-- )
+						{
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_INGOT), 1 ));
+						}
+						for ( int i = worldIn.rand.nextInt(3)+2; i > 0; i-- )
+						{
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_NUGGET), worldIn.rand.nextInt(5)+1 ));
+						}
+						for ( int i = worldIn.rand.nextInt(3)+2; i > 0; i-- )
+						{
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_NUGGET), worldIn.rand.nextInt(5)+1 ));
+						}
+						
+//						Province province = CivilizationUtil.getProvinceAt( worldIn, x/16, z/16);
+//						
+//						if ( province != null && province.civilization != null )
+//						{
+//							switch ( province.civilization )
+//							{
+//								case EARTH:
+//								{
+//									ItemScrollEarth scroll = (ItemScrollEarth)Item.getByNameOrId("toroquest:scroll_earth");
+//									ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//									itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//									itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//									itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//									banner.setStackDisplayName(ToroQuestConfiguration.greenName + " Banner");
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									break;
+//								}
+//								case FIRE:
+//								{
+//									ItemScrollFire scroll = (ItemScrollFire)Item.getByNameOrId("toroquest:scroll_fire");
+//									ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//									itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//									itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//									itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//									banner.setStackDisplayName(ToroQuestConfiguration.redName + " Banner");
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//									
+//									break;
+//								}
+//								case SUN:
+//								{
+//									ItemScrollSun scroll = (ItemScrollSun)Item.getByNameOrId("toroquest:scroll_sun");
+//									ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//									itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//									itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//									itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//									banner.setStackDisplayName(ToroQuestConfiguration.yellowName + " Banner");
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//									
+//									break;
+//								}
+//								case WATER:
+//								{
+//									ItemScrollWater scroll = (ItemScrollWater)Item.getByNameOrId("toroquest:scroll_water");
+//									ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//									itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//									itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//									itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//									banner.setStackDisplayName(ToroQuestConfiguration.blueName + " Banner");
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//									
+//									break;
+//								}
+//								case MOON:
+//								{
+//									ItemScrollMoon scroll = (ItemScrollMoon)Item.getByNameOrId("toroquest:scroll_moon");
+//									ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//									itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//									itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//									itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//									banner.setStackDisplayName(ToroQuestConfiguration.blackName + " Banner");
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//									
+//									break;
+//								}
+//								case WIND:
+//								{
+//									ItemScrollWind scroll = (ItemScrollWind)Item.getByNameOrId("toroquest:scroll_wind");
+//									ItemStack itemstack = new ItemStack(scroll,worldIn.rand.nextInt(3)+1);
+//									itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+//									itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+//									itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//	
+//									ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+//									banner.setStackDisplayName(ToroQuestConfiguration.brownName + " Banner");
+//									setSlot(t, worldIn.rand.nextInt(27), itemstack);
+//									
+//									break;
+//								}
+//								default:
+//								{
+//									break;
+//								}
+//							}
+//						}
 					}
 				}
 	        }
@@ -220,7 +353,7 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 		@Override
 		protected void alterPalette(Map<String, IBlockState> palette)
 		{
-			palette.put("Bs", Blocks.BOOKSHELF.getDefaultState());
+			//palette.put("Bs", Blocks.BOOKSHELF.getDefaultState());
 		}
 
 	}
