@@ -9,23 +9,27 @@ import net.torocraft.toroquest.civilization.CivilizationClientHandlers;
 import net.torocraft.toroquest.entities.render.ToroQuestEntityRenders;
 import net.torocraft.toroquest.item.ToroQuestItems;
 
-public class ClientProxy extends CommonProxy {
+public class ClientProxy extends CommonProxy
+{
 
 	@Override
-	public void preInit(FMLPreInitializationEvent e) {
+	public void preInit(FMLPreInitializationEvent e)
+	{
 		super.preInit(e);
 		ToroQuestEntityRenders.init();
 		MinecraftForge.EVENT_BUS.register(new CivilizationClientHandlers());
 	}
 
 	@Override
-	public void init(FMLInitializationEvent e) {
+	public void init(FMLInitializationEvent e)
+	{
 		super.init(e);
 		ToroQuestItems.registerRenders();
 	}
 
 	@Override
-	public void postInit(FMLPostInitializationEvent e) {
+	public void postInit(FMLPostInitializationEvent e)
+	{
 		super.postInit(e);
 	}
 	

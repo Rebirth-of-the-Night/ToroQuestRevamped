@@ -55,7 +55,7 @@ public class ItemTrophyTitan extends ItemTrophy
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: You gain the fortitude of the grave titan; gaining resistance to all damage while in that province.\n\n§oEw. Now you know what those gross sausage-noses look like up real close.");
+		tooltip.add("Give this trophy to a Village Lord: Guards are inspired by your heroic act of bravery, and now deal additional damage to mobs while in that province.\n\n§oEww... Now you know what those gross sausage-noses look like up real close.");
     }
 
 }

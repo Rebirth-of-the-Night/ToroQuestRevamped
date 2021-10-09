@@ -6,16 +6,16 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
+import net.minecraft.client.resources.I18n;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.common.MinecraftForge;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.Province;
-import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapability;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
@@ -109,21 +109,21 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
-		if ( !data.getCompleted() )
-		{
-			if ( data.getChatStack().equals("") )
-			{
-				data.setChatStack( "You haven't made enough trades with the villagers!" );
-				this.setData(data);
-			}
-			// data.getPlayer().closeScreen();
-			return null;
-		}
-
 		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
 
 		if ( province == null || province.id == null || !province.id.equals(quest.getProvinceId()) )
 		{
+			return null;
+		}
+		
+		if ( !quest.getCompleted() )
+		{
+			if ( quest.getChatStack().equals("") )
+			{
+				quest.setChatStack("trade.incomplete", quest.getPlayer(), null);
+				this.setData(quest);
+			}
+			// data.getPlayer().closeScreen();
 			return null;
 		}
 
@@ -131,30 +131,37 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 //		int amount = new DataWrapper().setData(quest).getRewardRep();
 //		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), playerCiv.getInCivilization().civilization, amount);
 
-		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
+		
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(quest.getCiv()) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
 
 		List<ItemStack> rewards = getRewardItems(quest); // TODO
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
-		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
-		this.setData(data);
+		quest.setChatStack("trade.complete", quest.getPlayer(), null);
+		this.setData(quest);
 		return items;
 	}
 	
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		// if (!data.getPlayer().world.isRemote)
-		{
-			switch (data.getPlayer().world.rand.nextInt(3))
-			{
-				case 0:{data.setChatStack("Trade has been cut off with one of our allied provinces and the market has suffered from it. Trade with some of the villagers to push along the economy.");break;}
-				case 1:{data.setChatStack("The most recent attack on one of trade routes has slowed the economy. I need you to trade with the villagers and get things moving again.");break;}
-				case 2:{data.setChatStack("The market has been stagnant. I need you to trade with some of the villagers to help keep the economy moving.");break;}
-			}
-		}
+		data.setChatStack("trade.accept", data.getPlayer(), null);
 		this.setData(data);
 		return in;
 	}
@@ -162,7 +169,12 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack("So be it.");
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack("trade.reject", data.getPlayer(), null);
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -188,7 +200,8 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 		s.append("quests.trade_villagers.description");
 		s.append("|").append(q.getTargetAmount());
 		s.append("|").append(getProvinceName(data.getPlayer(), data.getProvinceId()));
-		s.append("|").append(q.getCurrentAmount()  + "\n\n" );
+		s.append("|").append(q.getCurrentAmount());
+		s.append("|").append("\n\n");
 		s.append("|").append(listItems(getRewardItems(q.data)) + ",\n" );
 		s.append("|").append(getRewardRep(data));
 		return s.toString();
@@ -205,10 +218,10 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 		q.data.setQuestId(UUID.randomUUID());
 		q.data.setQuestType(ID);
 		q.data.setCompleted(false);
-		int roll = rand.nextInt(6)+3;
+		int roll = rand.nextInt(5)*2+8;
 		int em = roll;
 		q.setRewardRep(em*2);
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}

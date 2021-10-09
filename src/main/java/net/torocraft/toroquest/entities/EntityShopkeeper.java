@@ -2,16 +2,28 @@ package net.torocraft.toroquest.entities;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Predicate;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockFenceGate;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.IMerchant;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAILookAtTradePlayer;
+import net.minecraft.entity.ai.EntityAIMoveIndoors;
+import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
+import net.minecraft.entity.ai.EntityAIOpenDoor;
+import net.minecraft.entity.ai.EntityAIPanic;
+import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAITradePlayer;
 import net.minecraft.entity.ai.EntityAIVillagerInteract;
+import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
-import net.minecraft.entity.ai.EntityAIWatchClosest2;
+import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
@@ -19,6 +31,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.village.MerchantRecipe;
@@ -31,7 +46,10 @@ import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.EntityAIAvoidBanditPlayer;
+import net.torocraft.toroquest.entities.ai.EntityAIAvoidEnemies;
 import net.torocraft.toroquest.entities.trades.ToroVillagerTrades;
+import net.torocraft.toroquest.generation.village.util.VillagePieceBlockMap;
 import net.torocraft.toroquest.item.ItemScrollEarth;
 import net.torocraft.toroquest.item.ItemScrollFire;
 import net.torocraft.toroquest.item.ItemScrollMoon;
@@ -90,90 +108,247 @@ public class EntityShopkeeper extends EntityToroVillager implements IMerchant
 		}
 		return super.processInteract(player, hand);
 	}
-//	@Override
-//	public boolean processInteract(EntityPlayer player, EnumHand hand)
-//	{
-//		ItemStack itemstack = player.getHeldItem(hand);
-//		Item item = itemstack.getItem();
-//		if ( item.equals(Item.getByNameOrId("toroquest:recruitment_papers")) )
-//		{
-//			return true;
-//		}
-//		return super.processInitialInteract(player, hand);
-//	}
-	
 	
 	@Override
 	protected void initEntityAI()
     {              
 		this.tasks.addTask(0, new EntityAISwimming(this));
-        this.tasks.addTask(1, new EntityAITradePlayer(this));
-        this.tasks.addTask(1, new EntityAILookAtTradePlayer(this));
-        this.tasks.addTask(9, new EntityAIWatchClosest2(this, EntityPlayer.class, 3.0F, 1.0F));
-        this.tasks.addTask(9, new EntityAIVillagerInteract(this));
-        this.tasks.addTask(10, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F));
+		this.tasks.addTask(1, new EntityAIAvoidBanditPlayer<EntityPlayer>(this, EntityPlayer.class, 12.0F, 0.5D, 0.65D));
+		this.tasks.addTask(1, new EntityAIAvoidEnemies<EntityLiving>(this, 12.0F, 0.5D, 0.65D));
+		this.tasks.addTask(1, new EntityAIPanic(this, 0.65D)
+		{
+			
+			@Override
+			public boolean shouldExecute()
+		    {
+		        if ( (underAttack != null && underAttack.isEntityAlive() && this.creature.getDistance(underAttack) < 16) || isBurning() )
+		        {
+		            return this.findRandomPosition();
+		        }
+		        return false;
+		    }
+			
+			@Override
+			protected boolean findRandomPosition()
+		    {
+		        Vec3d vec3d = null;
+
+				if ( underAttack != null && underAttack.getPositionVector() != null )
+				{
+			        vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, underAttack.getPositionVector());
+				}
+				else
+				{
+			        vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, this.creature.getPositionVector());
+				}
+				
+		        if ( vec3d == null )
+		        {
+		            return false;
+		        }
+		        else
+		        {
+		            this.randPosX = vec3d.x;
+		            this.randPosY = vec3d.y;
+		            this.randPosZ = vec3d.z;
+		            return true;
+		        }
+		    }
+		});
+        this.tasks.addTask(4, new EntityAITradePlayer(this));
+        this.tasks.addTask(5, new EntityAILookAtTradePlayer(this));
+
+        this.tasks.addTask(7, new EntityAIMoveIndoors(this));
+        this.tasks.addTask(8, new EntityAIRestrictOpenDoor(this));
+        this.tasks.addTask(9, new EntityAIOpenDoor(this, true));
+//    	{
+//        	public void startExecuting()
+//            {
+//        		
+//            }
+//    	});
+        this.tasks.addTask(10, new EntityAIMoveTowardsRestriction(this, 0.6D));
+        
+        this.tasks.addTask(11, new EntityAIVillagerInteract(this));
+        this.tasks.addTask(12, new EntityAIWanderAvoidWater(this, 0.5D)
+        {
+        	@Override
+        	public boolean shouldExecute()
+            {
+                if ( !this.mustUpdate )
+                {
+                    if ( this.entity.getIdleTime() >= 100 )
+                    {
+                        return false;
+                    }
+
+                    if ( !this.entity.isInWater() && !this.entity.isInLava() && this.entity.getRNG().nextInt(this.executionChance) != 0)
+                    {
+                        return false;
+                    }
+                }
+
+                Vec3d vec3d = this.getPosition();
+
+                if ( vec3d == null )
+                {
+                    return false;
+                }
+                else
+                {
+                    this.x = vec3d.x;
+                    this.y = vec3d.y;
+                    this.z = vec3d.z;
+                    this.mustUpdate = false;
+                    return true;
+                }
+            }
+        	
+        	@Override
+            protected Vec3d getPosition()
+            {
+        		if ( EntityShopkeeper.this.hasEmeraldBlock || EntityShopkeeper.this.isMating() )
+                {
+                	return null;
+                }
+        		if ( !this.entity.hasPath() && ( this.entity.isInWater() || this.entity.isInLava() ) )
+                {
+                    Vec3d vec3d = RandomPositionGenerator.getLandPos(this.entity, 15, 7);
+                    return vec3d == null ? super.getPosition() : vec3d;
+                }
+                else
+                {
+                    return this.entity.getRNG().nextFloat() >= this.probability ? RandomPositionGenerator.getLandPos(this.entity, 10, 7) : super.getPosition();
+                }
+            }
+        });
+        this.tasks.addTask(13, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F)
+        {
+        	@Override
+        	public boolean shouldExecute()
+            {
+				if ( isMating() )
+				{
+					return false;
+				}
+				return super.shouldExecute();
+            }
+        });
     }
 	
-//
-//	@Override
-//	public boolean processInteract(EntityPlayer player, EnumHand hand)
-//	{
-//		//
-//		ItemStack itemstack = player.getHeldItem(hand);
-//        boolean flag = itemstack.getItem() == Items.NAME_TAG;
-//
-//        if (flag)
-//        {
-//            itemstack.interactWithEntity(player, this, hand);
-//            return true;
-//        }
-//        
-//        
-//		if (!flag && isEntityAlive() && !isTrading() && !isChild() && !player.isSneaking())
-//		{
-//
-//			if (!this.world.isRemote)
-//			{
-//
-//				RepData rep = getReputation(player);
-//
-//				if (rep.rep.equals(ReputationLevel.OUTCAST) || rep.rep.equals(ReputationLevel.ENEMY) || rep.rep.equals(ReputationLevel.VILLAIN))
-//				{
-//					chat( player, "I will not trade with a filthy " + rep.rep + " like you!" );
-//				}
-//				else
-//				{
-//					this.setCustomer(player);
-//					player.displayVillagerTradeGui(this);
-//				}
-//
-//			}
-//
-//			player.addStat(StatList.TALKED_TO_VILLAGER);
-//			return true;
-//		}
-//		else
-//		{
-//			return super.processInteract(player, hand);
-//		}
-//	}
-//
-//	public void setCustomer(EntityPlayer player)
-//	{
-//		super.setCustomer(player);
-//	}
-//
-//	public EntityPlayer getCustomer() {
-//		return super.getCustomer();
-//	}
-//
-//
+	boolean hasEmeraldBlock = false;
 	
 	@Override
-	public MerchantRecipeList getRecipes(EntityPlayer player)
+	public void onLivingUpdate()
 	{
-		return this.createTradesBaseOnRep(player);
+		super.onLivingUpdate();
+
+		if ( this.world.isRemote )
+		{
+			return;
+		}
+		
+//		if ( this.collidedHorizontally )
+//		{
+//			BlockPos pos = this.getPosition().down();
+//	        Block b;
+//	        
+//			int x = pos.getX();
+//		    int y = pos.getY();
+//		    int z = pos.getZ();
+//			System.out.println("?????????");
+//
+//			for ( int xx = -2; xx <= 2; xx++ )
+//			{
+//				for ( int zz = -2; zz <= 2; zz++ )
+//				{
+//					for ( int yy = -1; yy <= 1; yy++ )
+//					{
+//						pos = new BlockPos(new BlockPos(x+xx,y+yy,z+zz));
+//						b = this.getWorld().getBlockState(pos).getBlock();
+//						
+//						if ( b instanceof BlockFenceGate )
+//						{
+//							System.out.println("goo");
+//							this.getEntityWorld().setBlockState(pos, b.getDefaultState().withProperty(BlockFenceGate.OPEN, Boolean.valueOf(true)), 10);
+//							this.getEntityWorld().markBlockRangeForRenderUpdate(pos, pos);
+//						}
+//					}
+//				}
+//			}
+//		}
+		
+		if ( this.ticksExisted % 200 == 10 )
+		{
+	        BlockPos pos = this.getPosition().down();
+	        Block b;
+
+			if ( this.getWorld().getBlockState(pos).getBlock() == Blocks.EMERALD_BLOCK )
+			{
+				boolean noNearbyShopkeepers = this.getEntityWorld().getEntitiesWithinAABB(EntityShopkeeper.class, new AxisAlignedBB(this.getPosition()).grow(2, 2, 2), new Predicate<EntityShopkeeper>()
+				{
+					public boolean apply(@Nullable EntityShopkeeper entity)
+					{
+						return entity != EntityShopkeeper.this;
+					}
+				}).isEmpty();
+				
+		        if ( noNearbyShopkeepers )
+		        {
+		        	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.0D);
+		        	this.hasEmeraldBlock = true;
+		        }
+			}
+			else
+			{
+		        this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.5D);
+		        
+		        int x = pos.getX();
+		        int y = pos.getY();
+		        int z = pos.getZ();
+
+		        for ( int xx = -8; xx <= 8; xx++ )
+				{
+					for ( int zz = -8; zz <= 8; zz++ )
+					{
+						for ( int yy = -3; yy <= 3; yy++ )
+						{
+							pos = new BlockPos(new BlockPos(x+xx,y+yy,z+zz));
+							b = this.getWorld().getBlockState(pos).getBlock();
+							
+							if ( b == Blocks.EMERALD_BLOCK )
+							{
+								boolean noNearbyShopkeepers = this.getEntityWorld().getEntitiesWithinAABB(EntityShopkeeper.class, new AxisAlignedBB(pos).grow(2, 2, 2), new Predicate<EntityShopkeeper>()
+								{
+									public boolean apply(@Nullable EntityShopkeeper entity)
+									{
+										return entity != EntityShopkeeper.this;
+									}
+								}).isEmpty();
+								
+						        if ( noNearbyShopkeepers )
+						        {
+									this.hasEmeraldBlock = this.getNavigator().tryMoveToXYZ(x+xx+0.5D,y+yy+0.5D,z+zz+0.5D, 0.6D);
+									return;
+						        }
+							}
+						}
+					}
+				}
+	        	this.hasEmeraldBlock = false;
+			}
+		}
 	}
+	
+//	@Override
+//	protected void initEntityAI()
+//    {              
+//		this.tasks.addTask(0, new EntityAISwimming(this));
+//        this.tasks.addTask(1, new EntityAITradePlayer(this));
+//        this.tasks.addTask(1, new EntityAILookAtTradePlayer(this));
+//        this.tasks.addTask(9, new EntityAIVillagerInteract(this));
+//        this.tasks.addTask(10, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F));
+//    }
 	
 	@Override
 	protected MerchantRecipeList createTradesBaseOnRep(EntityPlayer player)
@@ -182,12 +357,13 @@ public class EntityShopkeeper extends EntityToroVillager implements IMerchant
 		try
 		{
 			Province province = CivilizationUtil.getProvinceAt( player.world, player.chunkCoordX, player.chunkCoordZ);
+			
 			int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation( province.civilization );
 			
 			if ( province == null || province.civilization == null )
 			{
-				this.playSound(SoundEvents.ENTITY_VILLAGER_AMBIENT, 1.25F, 1.1F);
-				this.canTalk = 3;
+				this.playSound(SoundEvents.ENTITY_VILLAGER_AMBIENT, 1.0F, 1.0F);
+				this.canTalk = 2;
 				return recipeList;
 			}
 			else if ( rep <= -50 )
@@ -195,89 +371,132 @@ public class EntityShopkeeper extends EntityToroVillager implements IMerchant
 				if ( this.canTalk <= 0 )
 				{
 					this.reportToGuards(player);
-					this.playSound(SoundEvents.ENTITY_VILLAGER_AMBIENT, 1.25F, 1.1F);
+					this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
 					this.canTalk = 1;
 				}
 				return recipeList;
 			}
 			
-			recipeList = ToroVillagerTrades.trades(player, rep, province.civilization, "shopkeeper", "x" );
-
 			Item item = Item.getByNameOrId(ToroQuestConfiguration.scrollTradeItem);
+			
 			int amount = ToroQuestConfiguration.scrollTradeAmount;
 			
-			if ( item == null || amount < 1 )
+			if ( item != null && amount > 0 )
 			{
-				return recipeList;
+				switch ( province.civilization )
+				{
+					case EARTH:
+					{
+						ItemScrollEarth scroll = (ItemScrollEarth)Item.getByNameOrId("toroquest:scroll_earth");
+						ItemStack itemstack = new ItemStack(scroll,1);
+						itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+						itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+						itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+						recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
+						
+						if ( ToroQuestConfiguration.bannerTradeAmount > 0 )
+						{
+							ItemStack banner = VillagePieceBlockMap.getGreenBanner();
+							banner.setStackDisplayName(province.civilization.getDisplayName(player) + " Banner");
+							recipeList.add(new MerchantRecipe(new ItemStack(Items.EMERALD ,ToroVillagerTrades.getSellPrice(ToroQuestConfiguration.bannerTradeAmount, rep) ),ItemStack.EMPTY,banner,0,99999));
+						}
+						break;
+					}
+					case FIRE:
+					{
+						ItemScrollFire scroll = (ItemScrollFire)Item.getByNameOrId("toroquest:scroll_fire");
+						ItemStack itemstack = new ItemStack(scroll,1);
+						itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+						itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+						itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+						recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
+						
+						if ( ToroQuestConfiguration.bannerTradeAmount > 0 )
+						{
+							ItemStack banner = VillagePieceBlockMap.getRedBanner();
+							banner.setStackDisplayName(province.civilization.getDisplayName(player) + " Banner");
+							recipeList.add(new MerchantRecipe(new ItemStack(Items.EMERALD ,ToroVillagerTrades.getSellPrice(ToroQuestConfiguration.bannerTradeAmount, rep) ),ItemStack.EMPTY,banner,0,99999));
+						}
+						break;
+					}
+					case SUN:
+					{
+						ItemScrollSun scroll = (ItemScrollSun)Item.getByNameOrId("toroquest:scroll_sun");
+						ItemStack itemstack = new ItemStack(scroll,1);
+						itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+						itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+						itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+						recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
+						
+						if ( ToroQuestConfiguration.bannerTradeAmount > 0 )
+						{
+							ItemStack banner = VillagePieceBlockMap.getYellowBanner();
+							banner.setStackDisplayName(province.civilization.getDisplayName(player) + " Banner");
+							recipeList.add(new MerchantRecipe(new ItemStack(Items.EMERALD ,ToroVillagerTrades.getSellPrice(ToroQuestConfiguration.bannerTradeAmount, rep) ),ItemStack.EMPTY,banner,0,99999));
+						}
+						break;
+					}
+					case WATER:
+					{
+						ItemScrollWater scroll = (ItemScrollWater)Item.getByNameOrId("toroquest:scroll_water");
+						ItemStack itemstack = new ItemStack(scroll,1);
+						itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+						itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+						itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+						recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
+						
+						if ( ToroQuestConfiguration.bannerTradeAmount > 0 )
+						{
+							ItemStack banner = VillagePieceBlockMap.getBlueBanner();
+							banner.setStackDisplayName(province.civilization.getDisplayName(player) + " Banner");
+							recipeList.add(new MerchantRecipe(new ItemStack(Items.EMERALD ,ToroVillagerTrades.getSellPrice(ToroQuestConfiguration.bannerTradeAmount, rep) ),ItemStack.EMPTY,banner,0,99999));
+						}
+						break;
+					}
+					case MOON:
+					{
+						ItemScrollMoon scroll = (ItemScrollMoon)Item.getByNameOrId("toroquest:scroll_moon");
+						ItemStack itemstack = new ItemStack(scroll,1);
+						itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+						itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+						itemstack.setStackDisplayName("Teleport scroll:  " + province.name);
+						recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
+						
+						if ( ToroQuestConfiguration.bannerTradeAmount > 0 )
+						{
+							ItemStack banner = VillagePieceBlockMap.getBlackBanner();
+							banner.setStackDisplayName(province.civilization.getDisplayName(player) + " Banner");
+							recipeList.add(new MerchantRecipe(new ItemStack(Items.EMERALD ,ToroVillagerTrades.getSellPrice(ToroQuestConfiguration.bannerTradeAmount, rep) ),ItemStack.EMPTY,banner,0,99999));
+						}
+						break;
+					}
+					case WIND:
+					{
+						ItemScrollWind scroll = (ItemScrollWind)Item.getByNameOrId("toroquest:scroll_wind");
+						ItemStack itemstack = new ItemStack(scroll,1);
+						itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
+						itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
+						itemstack.setStackDisplayName("Teleport scroll: " + province.name);
+						recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
+						
+						if ( ToroQuestConfiguration.bannerTradeAmount > 0 )
+						{
+							ItemStack banner = VillagePieceBlockMap.getBrownBanner();
+							banner.setStackDisplayName(province.civilization.getDisplayName(player) + " Banner");
+							recipeList.add(new MerchantRecipe(new ItemStack(Items.EMERALD ,ToroVillagerTrades.getSellPrice(ToroQuestConfiguration.bannerTradeAmount, rep) ),ItemStack.EMPTY,banner,0,99999));
+						}
+						break;
+					}
+					default:
+					{
+						break;
+					}
+				}
 			}
-			
-			switch ( province.civilization )
+			MerchantRecipeList t = ToroVillagerTrades.trades(this, player, rep, province.civilization, "shopkeeper", "x" );
+			for ( MerchantRecipe tt : t)
 			{
-				
-				case EARTH:
-				{
-					ItemScrollEarth scroll = (ItemScrollEarth)Item.getByNameOrId("toroquest:scroll_earth");
-					ItemStack itemstack = new ItemStack(scroll,1);
-					itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
-					itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
-					itemstack.setStackDisplayName("Teleport scroll: " + CivilizationUtil.chatColor(province.civilization) + province.name);
-					recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
-					break;
-				}
-				case FIRE:
-				{
-					ItemScrollFire scroll = (ItemScrollFire)Item.getByNameOrId("toroquest:scroll_fire");
-					ItemStack itemstack = new ItemStack(scroll,1);
-					itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
-					itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
-					itemstack.setStackDisplayName("Teleport scroll: " + CivilizationUtil.chatColor(province.civilization) + province.name);
-					recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
-					break;
-				}
-				case SUN:
-				{
-					ItemScrollSun scroll = (ItemScrollSun)Item.getByNameOrId("toroquest:scroll_sun");
-					ItemStack itemstack = new ItemStack(scroll,1);
-					itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
-					itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
-					itemstack.setStackDisplayName("Teleport scroll: " + CivilizationUtil.chatColor(province.civilization) + province.name);
-					recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
-					break;
-				}
-				case WATER:
-				{
-					ItemScrollWater scroll = (ItemScrollWater)Item.getByNameOrId("toroquest:scroll_water");
-					ItemStack itemstack = new ItemStack(scroll,1);
-					itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
-					itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
-					itemstack.setStackDisplayName("Teleport scroll: " + CivilizationUtil.chatColor(province.civilization) + province.name);
-					recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
-					break;
-				}
-				case MOON:
-				{
-					ItemScrollMoon scroll = (ItemScrollMoon)Item.getByNameOrId("toroquest:scroll_moon");
-					ItemStack itemstack = new ItemStack(scroll,1);
-					itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
-					itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
-					itemstack.setStackDisplayName("Teleport scroll: " + CivilizationUtil.chatColor(province.civilization) + province.name);
-					recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
-					break;
-				}
-				case WIND:
-				{
-					ItemScrollWind scroll = (ItemScrollWind)Item.getByNameOrId("toroquest:scroll_wind");
-					ItemStack itemstack = new ItemStack(scroll,1);
-					itemstack.setTagInfo("province", new NBTTagString(province.id.toString()));
-					itemstack.setTagInfo("province_name", new NBTTagString(province.name.toString()));
-					itemstack.setStackDisplayName("Teleport scroll:" + CivilizationUtil.chatColor(province.civilization) + province.name);
-					recipeList.add(new MerchantRecipe(new ItemStack(item ,ToroVillagerTrades.getSellPrice(amount, rep) ),ItemStack.EMPTY,itemstack,0,99999));
-					break;
-				}
-				default:
-				{
-					return recipeList;
-				}
+				recipeList.add(tt);
 			}
 			return recipeList;
 		}
@@ -285,52 +504,5 @@ public class EntityShopkeeper extends EntityToroVillager implements IMerchant
 		{
 			return recipeList;
 		}
-//		RepData repData = getReputation(player);
-//		MerchantRecipeList recipeListDefault = ToroVillagerTrades.trades(player, repData.rep, repData.civ, "shopkeeper", "x" );
-//		recipeList.addAll(recipeListDefault);
-//		return recipeList;
-	};
-//
-//	/**
-//	 * Get the formatted ChatComponent that will be used for the sender's
-//	 * username in chat
-//	 */
-//	public ITextComponent getDisplayName() {
-//		TextComponentTranslation textcomponenttranslation = new TextComponentTranslation("entity.toroquest.shopkeeper.name", new Object[0]);
-//		textcomponenttranslation.getStyle().setHoverEvent(this.getHoverEvent());
-//		textcomponenttranslation.getStyle().setInsertion(this.getCachedUniqueIdString());
-//		return textcomponenttranslation;
-//	};
-//
-//	private void chat(EntityPlayer player, String message) {
-//		player.sendMessage(new TextComponentString(message));
-//	}
-//
-//	private static class RepData {
-//		CivilizationType civ = CivilizationType.EARTH;
-//		ReputationLevel rep = ReputationLevel.DRIFTER;
-//	}
-//
-//	private RepData getReputation(EntityPlayer player) {
-//		RepData rep = new RepData();
-//
-//		if (player == null) {
-//			return rep;
-//		}
-//
-//		Province province = CivilizationUtil.getProvinceAt(world, chunkCoordX, chunkCoordZ);
-//
-//		if (province == null) {
-//			return rep;
-//		}
-//
-//		rep.civ = province.civilization;
-//
-//		if (rep.civ == null) {
-//			return rep;
-//		}
-//		rep.rep = ReputationLevel.fromReputation(PlayerCivilizationCapabilityImpl.get(player).getReputation(rep.civ));
-//		return rep;
-//	}
-
+	}
 }

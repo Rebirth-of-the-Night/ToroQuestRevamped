@@ -2,6 +2,8 @@ package net.torocraft.toroquest.item;
 
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import net.torocraft.toroquest.block.BlockVillageSpawner;
+import net.torocraft.toroquest.block.TileEntityVillageSpawner;
 import net.torocraft.toroquest.item.armor.ItemBanditArmor;
 import net.torocraft.toroquest.item.armor.ItemLegendaryBanditArmor;
 import net.torocraft.toroquest.item.armor.ItemRoyalArmor;
@@ -36,6 +38,13 @@ public class ToroQuestItems
 		ItemScrollSun.registerRenders();
 		ItemScrollMoon.registerRenders();
 		ItemCityKey.registerRenders();
+		ItemArtifactRed.registerRenders();
+		ItemArtifactBlack.registerRenders();
+		ItemArtifactGreen.registerRenders();
+		ItemArtifactBlue.registerRenders();
+		ItemArtifactBrown.registerRenders();
+		ItemArtifactYellow.registerRenders();
+		ItemDwarvenArtifact.registerRenders();
 	}
 	
 	

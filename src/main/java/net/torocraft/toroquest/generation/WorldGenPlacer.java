@@ -31,9 +31,6 @@ public class WorldGenPlacer implements IWorldGenerator {
 		GameRegistry.registerWorldGenerator(new WorldGenPlacer(), 2);
 	}
 
-	public static final int LOW_CHANCE = 2000;
-	public static final int MID_CHANCE = 800;
-	public static final int HIGH_CHANCE = 100;
 	public static final Random random = new Random();
 
 	@Override
@@ -87,28 +84,12 @@ public class WorldGenPlacer implements IWorldGenerator {
 					{
 						BlockPos pos = new BlockPos(x+xx,y+yy,z+zz);
 						Block block = world.getBlockState(pos).getBlock();
-						if ( block != null && ( block instanceof BlockLeaves || block instanceof BlockLog ) )
+						if ( block instanceof BlockLeaves || block instanceof BlockLog )
 						{
 							world.setBlockState(pos, Blocks.AIR.getDefaultState());
 						}
 					}
 				}
-				/*
-				if ( distFromCenter <= 181 )
-				{
-					BlockPos pos = new BlockPos(x+xx,0,z+zz);
-					pos = this.getSurfacePositionClearLeaves(world, pos);
-					if ( pos == null )
-					{
-						break;
-					}
-					if ( world.rand.nextInt(distFromCenter) < 64 )
-					{
-						pos = pos.up();
-						world.setBlockState(pos, Blocks.WEB.getDefaultState());
-					}
-				}
-				*/
 			}
 		}
 	}
@@ -122,7 +103,7 @@ public class WorldGenPlacer implements IWorldGenerator {
 		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
 		if ( new MageTowerGenerator().generate(world, random, pos) )
 		{
-			System.out.println("ToroQuest Gen Placer: Mage Tower " + pos);
+			//System.out.println("ToroQuest Gen Placer: Mage Tower " + pos);
 		}
 	}
 
@@ -135,7 +116,7 @@ public class WorldGenPlacer implements IWorldGenerator {
 		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
 		if (new BastionsLairGenerator().generate(world, random, pos))
 		{
-			System.out.println("ToroQuest Gen Placer: Bastion's Lair " + pos);
+			//System.out.println("ToroQuest Gen Placer: Bastion's Lair " + pos);
 		}
 	}
 	
@@ -148,7 +129,7 @@ public class WorldGenPlacer implements IWorldGenerator {
 		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
 		if (new SpiderLairGenerator().generate(world, random, pos))
 		{
-			System.out.println("ToroQuest Gen Placer: Spider's Lair" + pos);
+			//System.out.println("ToroQuest Gen Placer: Spider's Lair" + pos);
 		}
 	}
 
@@ -161,11 +142,11 @@ public class WorldGenPlacer implements IWorldGenerator {
 		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
 		if ( new PigPortalGenerator().generate(world, random, pos) )
 		{
-			System.out.println("ToroQuest Gen Placer: Pig Portal" + pos);
+			//System.out.println("ToroQuest Gen Placer: Pig Portal" + pos);
 		}
 		else
 		{
-			System.out.println("ERROR SPAWNING: PORTAL");
+			//System.out.println("ERROR SPAWNING: PORTAL");
 		}
 
 	}
@@ -179,7 +160,7 @@ public class WorldGenPlacer implements IWorldGenerator {
 		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
 		if ( new MonolithGenerator().generate( world, random, pos ) )
 		{
-			System.out.println("ToroQuest Gen Placer: Monolith " + pos);
+			//System.out.println("ToroQuest Gen Placer: Monolith " + pos);
 		}
 	}
 	
@@ -188,7 +169,7 @@ public class WorldGenPlacer implements IWorldGenerator {
 //		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
 //		if ( new HouseGenerator().generate( world, random, pos ) )
 //		{
-//			System.out.println("ToroQuest Gen Placer: Bandits " + pos);
+//			//System.out.println("ToroQuest Gen Placer: Bandits " + pos);
 //		}
 //	}
 	
@@ -198,23 +179,10 @@ public class WorldGenPlacer implements IWorldGenerator {
 		{
 			// return;
 		}
-		BlockPos pos = new BlockPos( x, 32, z );
+		BlockPos pos = new BlockPos( x, 40, z );
 		if ( new ThroneRoomGenerator().generate(world, random, pos) )
 		{
-			System.out.println("ToroQuest Gen Placer: Throne Room " + pos);
-		}
-	}
-
-	public static void genGraveyard(World world, int x, int z)
-	{
-		if (!CivilizationsWorldSaveData.get(world).canGenStructure("graveyard", x, z))
-		{
-			// return;
-		}
-		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
-		if ( new GraveyardGenerator().generate(world, random, pos) )
-		{
-			System.out.println("ToroQuest Gen Placer: Graveyard " + pos);
+			//System.out.println("ToroQuest Gen Placer: Throne Room " + pos);
 		}
 	}
 	
@@ -225,9 +193,9 @@ public class WorldGenPlacer implements IWorldGenerator {
 			// return;
 		}
 		BlockPos pos = new BlockPos( x, world.getActualHeight(), z );
-		if ( new GraveyardTitanGenerator().generate(world, random, pos) )
+		if ( new GraveyardGenerator().generate(world, random, pos) )
 		{
-			System.out.println("ToroQuest Gen Placer: GraveyardTitan " + pos);
+			//System.out.println("ToroQuest Gen Placer: GraveyardTitan " + pos);
 		}
 	}
 }

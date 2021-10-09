@@ -1,4 +1,4 @@
-        Pw
+        Pw     
   CsCsCsCsCsCsCs
   CsDrDrDrDrDrCs
   CsDrDrDrDrDrCs
@@ -10,95 +10,107 @@ PwCsDrDrDrDrDrCsPw
   CsDrDrDrDrDrCs
   CsDrDrDrDrDrCs
   CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
   CsCsCsCsCsCsCs
         Pw
 ######################################
-        Sv
-  SbCsCsCsCsCsSb
+        Sv      
+  Sc--CsCsCsCsSb
   --CsCsCsCsCsCs
+  --ScCsCsCsCsCs
+S>CsCsCsScCsCsSc
+  Cs--CsCsCsCsCs
+  CsCsCsCsCsCsCsSc
+  SbCsCsCsCsCsSb
   CsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsS<
-  CsCsCsCsCsCsCs
-  CsCsCsCsCsCsCs
-  CsCsCsCsCsCs--
-  CsCsCsCsCsCsCs
-  CsCsCsCsCsCsCs
-  CsCsCsCsCsCsCs
-  CsCsCsCsCsCsCs
-  Sb--CsCsCsCsSb
-        S^
+ScCsCsCsScCsCsCs
+CsCsCsScCsCsCs--
+  CsCsCsScCs--Sc
+  CsCsCsCsScCs--
+  SbCsCsCsCsCs--
+        S^      Sc
 ######################################
-  
+                
   SbPwPwdvPwPwSb
-  PwXX----XXXXPw
-  ----BB--BBBBPw
-  FF------------
-  --FF------l>Pw
-  Pw----------Pw
-  PwPwPw--PwPw--
   Pw----------Pw
   Pw----------Pw
+  d>--FF---Sc---
+  Pwl<---Sc---Pw
   Pw----------Pw
+  SbPwPw--PwPwSb
+  --Sw--------Pw
   Pw----------Pw
-  SbPwPwd^PwPwSb
+  PwFw------Fw--
+  Pw--------Sw--
+  PwPwSw--------
+  SbPwPwd^Pw----
+                
 ######################################
-  
-  FF--*R  *R*R*R
-  *R----------*R
-    ----------*R
-    ----------  
-  *Rl<------l>*R
-  *R----------*R
-  *R*R*R--*R*R--
-  *R------------
-  *R----------*R
-  ------------*R
-  *R----------*R
-  *R*R*R  *R*R*R
+                
+  An------BB--An
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  An----------An
+  --------------
+  Gp----------Gp
+  GpWp------WpGp
+  ------------Gp
+  ------BB--BB--
+  An------BB--An
+                
 ######################################
-  
-  --PwPwPwPwPwSb
-  ------t^----Pw
+                
+  SbPw------PwSb
   ------------Pw
-  ----------t>Pw
+  ------------Pw
+  ------------Pw
   ----------l>Pw
   Pw----------Pw
-  PwPwPw--PwPwPw
+  SbPw----PwPwSb
   Pw----------Pw
-  ----------t>Pw
-  ------------Pw
+  --------------
+  --------------
+  --------------
   Pw----------Pw
-  SbPwPwPw--PwSb
+  SbPw------PwSb
+                
 #######################################
-  
-  Lg----LgLgLgLg
-  --PwPwPwPwPwLg
-  LgPwPwPwPwPwLg
-  LgPwPwPwPwPw--
-  Lgl<PwPwPw----
-  LgPwPwPwPwPwLg
-  LgPwPwPwPwPwLg
-  LgPwPwPwPwPwLg
-  LgPwPwPwPwPwLg
-  LgPwPwPwPwPwLg
-  --PwPwPwPwPwLg
-  --LgLgLgLgLgLg
+        Fw      
+  LgLgLgLzLgLgLg
+  LgPw--PwPwPwLg
+  Lg------PwPwLg
+  ----PwPw------
+  Lgl<PwPwPwl>Lg
+  LgPwPwPwSwPwLg
+  LxPwPw--PwPwLxFw
+  LgPwSw--PwPwLg
+  --Pw------PwLg
+  --------------
+  --PwPw--SwPwLg
+  LgPwPwPwPw--Lg
+  LgLgLgLzLgLg--
+        Fw      
 ######################################
-  
-  FwFwFwFwFwFwFw
-  Fw----Fw----Fw
-  Fw----Fw----Fw
+                
+  FwFw--FwFwFwFw
   Fw----------Fw
-  Fwtd--Fw--tdFw
-  Fw----Fw----Fw
-  Fw----xx----Fw
-  Fw----Fw----Fw
+  Fw------------
+  --------------
   Fw----Fw----Fw
   Fw----Fw----Fw
-  Fw----Fw----Fw
-  FwFwFwFwFwFwFw
+  ------------Fw
+  ------------Fw
+  --------------
+  --------------
+  ------Fw----FF
+  Fw----Fw------
+  FwFwFwFwFw----
+                
 ######################################
-  
+                
   --------------
   --------------
   ------Fw------
@@ -111,39 +123,12 @@ PwCsDrDrDrDrDrCsPw
   --------------
   --------------
   --------------
+                
 ######################################
-  
+                
   --------------
   --------------
   ------Fw------
-  ----------*R--
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-######################################
-  
-  --------------
-  --------------
-  ------Fc------
-  --------*RFF--
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-######################################
-  
-  --------------
-  --------------
-  ------*R*R----
   --------------
   --------------
   --------------
@@ -153,17 +138,4 @@ PwCsDrDrDrDrDrCsPw
   --------------
   --------------
   --------------
-######################################
-
-  --------------
-  --------------
-  ------*R------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
-  --------------
+                

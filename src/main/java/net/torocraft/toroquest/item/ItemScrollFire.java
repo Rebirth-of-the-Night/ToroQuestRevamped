@@ -31,7 +31,7 @@ public class ItemScrollFire extends ItemTownScroll
 	{
 		super(province);
 		this.setHasSubtypes(true);
-        this.setMaxStackSize(1);
+        this.setMaxStackSize(16);
         this.setCreativeTab(CreativeTabs.MISC);
 	}
 	

@@ -3,8 +3,6 @@ package net.torocraft.toroquest.entities;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAITarget;
-import net.minecraft.entity.monster.EntityCreeper;
-import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.util.math.AxisAlignedBB;
 

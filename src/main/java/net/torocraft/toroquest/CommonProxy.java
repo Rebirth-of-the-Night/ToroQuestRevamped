@@ -2,13 +2,20 @@ package net.torocraft.toroquest;
 
 import java.io.File;
 
+import net.minecraft.block.Block;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.util.datafix.DataFixer;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.torocraft.toroquest.block.BlockSmartBanner;
+import net.torocraft.toroquest.block.BlockVillageSpawner;
 import net.torocraft.toroquest.civilization.CivilizationGeneratorHandlers;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
@@ -22,33 +29,27 @@ import net.torocraft.toroquest.generation.village.VillageHandlerGuardTower;
 import net.torocraft.toroquest.generation.village.VillageHandlerKeep;
 import net.torocraft.toroquest.generation.village.VillageHandlerShop;
 import net.torocraft.toroquest.gui.VillageLordGuiHandler;
-//import net.torocraft.toroquest.material.ToolMaterials;
 import net.torocraft.toroquest.network.ToroQuestPacketHandler;
 
+@EventBusSubscriber
 public class CommonProxy
 {
+	
+    @SubscribeEvent
+    public static void registerBlocks(RegistryEvent.Register<Block> event)
+    {
+        event.getRegistry().register(new BlockVillageSpawner());
+        event.getRegistry().register(new BlockSmartBanner());
+    }
 
-//	@Mod.EventHandler
-//	public void preInit(FMLPreInitializationEvent event)
-//	{
-//		Configuration config = new Configuration(new File(event.getModConfigurationDirectory().getAbsolutePath() + "test"));
-//		
-//	}
+    @SubscribeEvent
+    public static void registerItems(RegistryEvent.Register<Item> event)
+    {
+        event.getRegistry().register(new ItemBlock(BlockVillageSpawner.INSTANCE).setRegistryName(BlockVillageSpawner.REGISTRY_NAME));
+        //event.getRegistry().register(new ItemBlock(BlockSmartBanner.INSTANCE).setRegistryName(BlockSmartBanner.REGISTRY_NAME));
+    }
 	
-//	@Config(modid = ToroQuest.MODID, name = "toroquest/" + "toroquest")
-//	public static class ConfigHandler
-//	{
-//
-//		public static final Compat compat = new Compat();
-//
-//		public static class Compat
-//		{
-////			@Config.LangKey("config.toroquest:toroquest")
-////   		@Config.Comment("Should Echo add any interactions at all with Botania?")
-////			public boolean botania = true;
-//		}
-//	}
-	
+	//@Mod.EventHandler
 	public void preInit(FMLPreInitializationEvent e)
 	{
 		
@@ -73,22 +74,31 @@ public class CommonProxy
 		Quests.init();
 	}
 
+	//@Mod.EventHandler
 	private void initConfig(File configFile)
 	{
 		ToroQuestConfiguration.init(configFile);
 		MinecraftForge.EVENT_BUS.register(new ToroQuestConfiguration());
 	}
 
+	//@Mod.EventHandler
 	public void init(FMLInitializationEvent e)
 	{
 		PlayerCivilizationCapabilityImpl.register();
-
 		WorldGenPlacer.init();
 		ToroQuestEntities.init();
+		initRegistries();
 	}
 
+	//@Mod.EventHandler
 	public void postInit(FMLPostInitializationEvent e)
 	{
 
 	}
+	
+	public static void initRegistries()
+	{
+		SoundHandler.registerSounds();
+	}
+	
 }

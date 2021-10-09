@@ -3,6 +3,7 @@ package net.torocraft.toroquest.generation.village.util;
 import java.io.IOException;
 import java.util.Map;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
 import net.minecraft.block.BlockBed.EnumPartType;
 import net.minecraft.block.BlockDoor;
@@ -72,12 +73,32 @@ public abstract class BlockMapBuilder extends BlockMapBase
 
 	public String colorChange()
 	{
-		return "**";
+		return "CC";
 	}
 	
 	public String carpetChange()
 	{
-		return "cR";
+		return "cc";
+	}
+	
+	public void bannerChange(String s)
+	{
+		
+	}
+	
+	public String bedChange(String s)
+	{
+		return s;
+	}
+	
+	public String woolChange()
+	{
+		return "WW";
+	}
+	
+	public String flowerChange()
+	{
+		return "FL";
 	}
 	
 	private void placeBlock(String c)
@@ -86,18 +107,21 @@ public abstract class BlockMapBuilder extends BlockMapBase
 		{
 			return;
 		}
-		
+
 		if (specialBlockHandling(c, x, y, z))
 		{
 			return;
-		}
-													
+		}					
 		
 		IBlockState block = palette.get(c);
 		
 		// color specific structures ==============================
-		if ( c.equals("*R") ) {block = palette.get(colorChange());}
-		else if ( c.equals("cR") ) {block = palette.get(carpetChange());}
+		if 		( c.equals("*C") ) {block = palette.get(colorChange());}
+		else if ( c.equals("*c") ) {block = palette.get(carpetChange());}
+		else if ( c.equals("wc") ) {block = palette.get(woolChange());}
+		else if ( c.equals("FL") ) {block = palette.get(flowerChange());}
+		//else if ( c.contains("@") ) {block = palette.get(bannerChange(c));} //{setBlockState();bannerChange(c,x,y,z);return;}
+		//else if ( c.contains("$") ) {block = palette.get(bedChange(c));}
 		// ========================================================
 		
 		if (block == null)

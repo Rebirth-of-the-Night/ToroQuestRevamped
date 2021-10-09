@@ -48,8 +48,16 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 	public boolean escorted = false;
 	protected Random rand = new Random();
 	protected int despawnTimer = 1200;
-	protected int banditSpawns = 2;
+	protected int banditSpawns = 1;
 	protected boolean backupLeash = true;
+	
+	protected boolean despawn = false;
+	
+	@Override
+	protected boolean canDespawn()
+	{
+		return this.despawn;
+	}
 		
 	@Override
 	public void setMurder( EntityPlayer player )
@@ -63,10 +71,10 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 	@Override
 	public void readEntityFromNBT(NBTTagCompound compound)
 	{
-	    super.readEntityFromNBT(compound);
 		this.escorted = compound.getBoolean("escorted");
 		this.despawnTimer = compound.getInteger("despawnTimer");
 		this.backupLeash = compound.getBoolean("backupLeash");
+	    super.readEntityFromNBT(compound);
 	}
 
 
@@ -74,10 +82,10 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 	@Override
 	public void writeEntityToNBT(NBTTagCompound compound)
 	{
-		super.writeEntityToNBT(compound);
 		compound.setBoolean("escorted", this.escorted);
 		compound.setInteger("despawnTimer", this.despawnTimer);
 		compound.setBoolean("backupLeash", this.backupLeash);
+		super.writeEntityToNBT(compound);
 	}
 
 	public static void init(int entityId)
@@ -105,23 +113,27 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 			
 			if ( rand.nextInt(4) == 0 )
 			{
-				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.BREAD),rand.nextInt(6)));
-				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.WHEAT),rand.nextInt(6)));
+				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.BREAD),1));
+				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.WHEAT),5));
 			}
 			else if ( rand.nextInt(4) == 0 )
 			{
-				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.EMERALD),rand.nextInt(6)));
+				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.EMERALD),5));
 			}
 			else if ( rand.nextInt(4) == 0 )
 			{
-				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Blocks.WOOL),16));
+				//for ( int i = rand.nextInt(3)+3; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Blocks.),rand.nextInt(5)+1));
+				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.RABBIT_HIDE),5));
+				for ( int i = rand.nextInt(4)+2; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.LEATHER),5));
 			}
 			else
 			{
-				for ( int i = rand.nextInt(4)+4; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.APPLE),rand.nextInt(6)));
+				for ( int i = rand.nextInt(3)+2; i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.BEETROOT),5));
+				for ( int i = rand.nextInt(4); i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.APPLE),5));
+				for ( int i = rand.nextInt(4); i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.CARROT),5));
+				for ( int i = rand.nextInt(4); i > 0; i-- ) mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.POTATO),5));
 			}
-			// mule.replaceItemInInventory(500+rand.nextInt(18), new ItemStack((Items.APPLE),1));
-
+			
 			mule.setPosition(this.posX, this.posY, this.posZ);
 			mule.tasks.addTask(1, new EntityAISmartTempt( mule, 1.5, Items.AIR ) );
 			mule.tasks.addTask(0, new EntityAIDespawn(mule));
@@ -160,7 +172,7 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 				}
 			}
     		
-			List<EntityPlayer> players = world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32), new Predicate<EntityPlayer>()
+			List<EntityPlayer> players = world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(25, 15, 25), new Predicate<EntityPlayer>()
 			{
 				public boolean apply(@Nullable EntityPlayer entity)
 				{
@@ -168,16 +180,18 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 				}
 			});
 			
-			if ( players.isEmpty() )
+			if ( players.isEmpty() || this.world.getWorldTime() >= 21900 && this.world.getWorldTime() <= 22000 )
 			{
     			if ( --despawnTimer < 0 )
     			{
+    				this.despawn = true;
+    				this.setHealth(0);
     				setDead();
     			}
     			return;
 			}
 			
-			List<EntityMule> mules = world.getEntitiesWithinAABB(EntityMule.class, new AxisAlignedBB(getPosition()).grow(32, 16, 32), new Predicate<EntityMule>()
+			List<EntityMule> mules = world.getEntitiesWithinAABB(EntityMule.class, new AxisAlignedBB(getPosition()).grow(25, 15, 25), new Predicate<EntityMule>()
 			{	
     			public boolean apply(@Nullable EntityMule entity)
     			{
@@ -200,7 +214,7 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 	        				backupLeash = false;
 	    				}
         			}
-	    			if ( !mule.getPassengers().isEmpty() )
+	    			if ( rand.nextBoolean() && !mule.getPassengers().isEmpty() )
     				{
 	    				mule.removePassengers();
 		            	this.playSound( SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F );
@@ -212,10 +226,12 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
     			}
     		}
 			
-			if ( banditSpawns > 0 && rand.nextInt(80) == 0 )
+			if ( banditSpawns > 0 && rand.nextInt(100) == 0 )
 			{
-				banditSpawns--;
-	    		spawnSentryNearPlayer();
+				if ( spawnSentryNearPlayer() )
+				{
+					banditSpawns--;
+				}
 			}
 			
 			Province province = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
@@ -398,25 +414,28 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 //    	}
 //    };
 	
-	protected void spawnSentryNearPlayer()
+	protected boolean spawnSentryNearPlayer()
 	{
 		World world = this.world;
-		if ( world.isRemote ) return;
+		
+		if ( world.isRemote ) 
+		{
+			return false;
+		}
 
 		try
 		{
-			int range = 64;
+			int range = 50;
 			{
-				
 				Province province = CivilizationUtil.getProvinceAt(world, this.chunkCoordX, this.chunkCoordZ);
 				
 				if ( province != null )
 				{
-					return;
+					return false;
 				}
 				
 				int villageCenterX = (int)this.posX;
-				int villageCenterZ = (int)this.posY;
+				int villageCenterZ = (int)this.posZ;
 				
 				int x = (rand.nextInt(range));
 				int z = (rand.nextInt(range));
@@ -439,21 +458,19 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 				
 				if (banditSpawnPos == null)
 				{
-					return;
+					return false;
 				}
 				
 				province = CivilizationUtil.getProvinceAt(world, banditSpawnPos.getX()/16, banditSpawnPos.getZ()/16);
 				
 				if ( province != null )
 				{
-					return;
+					return false;
 				}
 				
-				List<EntityPlayer> nearbyPlayers = world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(banditSpawnPos).grow(32, 32, 32));
-				
-				if ( nearbyPlayers.size() > 0 )
+				if ( !world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(banditSpawnPos).grow(20, 10, 20)).isEmpty() )
 				{
-					return;
+					return false;
 				}
 				
 				if ( ToroQuestConfiguration.orcsAreNeutral || rand.nextBoolean() )
@@ -462,7 +479,7 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 					{
 						EntitySentry entity = new EntitySentry(world);
 						entity.despawnTimer--;
-						entity.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY(), banditSpawnPos.getZ() + 0.5 );
+						entity.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY() + 0.1, banditSpawnPos.getZ() + 0.5 );
 						entity.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(entity)), (IEntityLivingData) null);
 						world.spawnEntity(entity);
 						entity.setAttackTarget(this);
@@ -475,20 +492,20 @@ public class EntityCaravan extends EntityToroVillager implements IMerchant
 					{
 						EntitySentry entity = new EntityOrc(world);
 						entity.despawnTimer--;
-						entity.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY(), banditSpawnPos.getZ() + 0.5 );
+						entity.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY() + 0.1, banditSpawnPos.getZ() + 0.5 );
 						entity.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(entity)), (IEntityLivingData) null);
 						world.spawnEntity(entity);
 						entity.setAttackTarget(this);
 						entity.setRaidLocation(villageCenterX, villageCenterZ);
 					}
 				}
-				return;
+				return true;
 			}
 		}
 		catch (Exception e)
 		{
 			System.out.println("ERROR SPAWNING EntityBandit: " + e);
-			return;
+			return false;
 		}
 	}
 }

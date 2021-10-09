@@ -55,7 +55,7 @@ public class ItemTrophyPig extends ItemTrophy
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: The corrupted heart of the pig-demon slowly replenishes your hunger while in your province.\n\n§oWho needs food when you have demon magic?");
+		tooltip.add("Give this trophy to a Village Lord: The corrupted heart of the Demon-Pig slowly replenishes your hunger while in that province.\n\n§oWho needs food when you have demon magic?");
     }
 
 }

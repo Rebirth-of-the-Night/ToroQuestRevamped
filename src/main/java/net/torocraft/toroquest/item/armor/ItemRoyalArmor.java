@@ -4,15 +4,28 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Predicate;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.IEntityLivingData;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundCategory;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -20,6 +33,14 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
+import net.torocraft.toroquest.civilization.CivilizationUtil;
+import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
+import net.torocraft.toroquest.civilization.Province;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.EntityGuard;
+import net.torocraft.toroquest.entities.EntityOrc;
+import net.torocraft.toroquest.entities.EntitySentry;
+import net.torocraft.toroquest.entities.EntityVillageLord;
 import net.torocraft.toroquest.material.ArmorMaterials;
 
 @Mod.EventBusSubscriber
@@ -28,70 +49,76 @@ public class ItemRoyalArmor extends ItemArmor {
 	public static final String NAME = "royal";
 
 	public static ItemRoyalArmor helmetItem;
-	public static ItemRoyalArmor chestplateItem;
-	public static ItemRoyalArmor leggingsItem;
-	public static ItemRoyalArmor bootsItem;
+//	public static ItemRoyalArmor chestplateItem;
+//	public static ItemRoyalArmor leggingsItem;
+//	public static ItemRoyalArmor bootsItem;
 
 	@SubscribeEvent
-	public static void init(final RegistryEvent.Register<Item> event) {
-		bootsItem = new ItemRoyalArmor(NAME + "_boots", 1, EntityEquipmentSlot.FEET);
-		leggingsItem = new ItemRoyalArmor(NAME + "_leggings", 2, EntityEquipmentSlot.LEGS);
+	public static void init(final RegistryEvent.Register<Item> event)
+	{
 		helmetItem = new ItemRoyalArmor(NAME + "_helmet", 1, EntityEquipmentSlot.HEAD);
-		chestplateItem = new ItemRoyalArmor(NAME + "_chestplate", 1, EntityEquipmentSlot.CHEST);
-
-		bootsItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_boots"));
-		event.getRegistry().register(bootsItem);
-
-		leggingsItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_leggings"));
-		event.getRegistry().register(leggingsItem);
-
+//		chestplateItem = new ItemRoyalArmor(NAME + "_chestplate", 1, EntityEquipmentSlot.CHEST);
+//		leggingsItem = new ItemRoyalArmor(NAME + "_leggings", 2, EntityEquipmentSlot.LEGS);
+//		bootsItem = new ItemRoyalArmor(NAME + "_boots", 1, EntityEquipmentSlot.FEET);
+		
 		helmetItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_helmet"));
 		event.getRegistry().register(helmetItem);
 
-		chestplateItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_chestplate"));
-		event.getRegistry().register(chestplateItem);
+//		chestplateItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_chestplate"));
+//		event.getRegistry().register(chestplateItem);
+//		leggingsItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_leggings"));
+//		event.getRegistry().register(leggingsItem);
+//		bootsItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_boots"));
+//		event.getRegistry().register(bootsItem);
 	}
 	
 	@SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-    	if ( stack.getItem() == Item.getByNameOrId("toroquest:royal_helmet") )
-    	{
-    		tooltip.add("Donate this trophy to a village lord: Guards are inspired by the crown; they deal additional damage to mobs while in your province.\n\n§oWho did you kill to get this crown, Kingslayer?");
-    	}
-		else
-		{
-			
-		}
+//    	if ( stack.getItem() == Item.getByNameOrId("toroquest:royal_helmet") )
+//    	{
+    		if ( ToroQuestConfiguration.useCrownToCreateNewProvinces )
+    		{
+    			tooltip.add("Crown a Guard within a civilization to create a new Village Lord, or crown a hired Guard to create a new province under a new ruler!\n\n§oWho did you kill to get this crown, Kingslayer?");
+    		}
+    		else
+    		{
+        		tooltip.add("Crown a Guard within a civilization to create a new Village Lord!\n\n§oWho did you kill to get this crown, Kingslayer?");
+    		}
+//    	}
+//		else
+//		{
+//			
+//		}
     }
 
 	public static void registerRenders()
 	{
 		registerRendersHelmet();
-		registerRendersChestPlate();
-		registerRendersLeggings();
-		registerRendersBoots();
+//		registerRendersChestPlate();
+//		registerRendersLeggings();
+//		registerRendersBoots();
 	}
 
-	private static void registerRendersBoots()
-	{
-		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(bootsItem, 0, model("boots"));
-	}
+//	private static void registerRendersBoots()
+//	{
+//		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(bootsItem, 0, model("boots"));
+//	}
 
-	private static void registerRendersLeggings()
-	{
-		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(leggingsItem, 0, model("leggings"));
-	}
+//	private static void registerRendersLeggings()
+//	{
+//		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(leggingsItem, 0, model("leggings"));
+//	}
 
 	private static void registerRendersHelmet()
 	{
 		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(helmetItem, 0, model("helmet"));
 	}
 
-	private static void registerRendersChestPlate()
-	{
-		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(chestplateItem, 0, model("chestplate"));
-	}
+//	private static void registerRendersChestPlate()
+//	{
+//		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(chestplateItem, 0, model("chestplate"));
+//	}
 
 	private static ModelResourceLocation model(String model)
 	{
@@ -112,5 +139,129 @@ public class ItemRoyalArmor extends ItemArmor {
         if (!mat.isEmpty() && net.minecraftforge.oredict.OreDictionary.itemMatches(mat,repair,false)) return true;
         return super.getIsRepairable(toRepair, repair);
     }
+	
+	
+	@Override
+	public ActionResult<ItemStack> onItemRightClick(World worldIn, EntityPlayer playerIn, EnumHand handIn)
+    {
+		if ( playerIn == null || playerIn.world == null )
+		{
+			return super.onItemRightClick(worldIn, playerIn, handIn);
+		}
+        
+		ItemStack i = playerIn.getHeldItem(handIn);
+		
+		if ( i != null && !i.isEmpty() ) // && i.getItem() == Item.getByNameOrId("toroquest:royal_helmet") )
+		{
+			if ( ToroQuestConfiguration.useCrownToCreateNewProvinces && playerIn.dimension == 0 )
+			{
+				List<EntityGuard> guards = playerIn.world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(playerIn.getPosition()).grow(3, 3, 3));
+				
+				if ( !guards.isEmpty() )
+				{
+					Province provinceOn = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX, playerIn.chunkCoordZ);
+					if ( provinceOn != null )
+					{
+						if ( provinceOn.hasLord )
+						{
+							playerIn.sendStatusMessage(new TextComponentString( "§oThis province already has a ruler!§r" ), true);
+			        		return super.onItemRightClick(worldIn, playerIn, handIn);
+						}
+						else
+						{
+							for ( EntityGuard guard : guards )
+							{
+				            	EntityVillageLord vl = new EntityVillageLord(worldIn);
+					            if( !worldIn.isRemote )
+					            {
+									vl.setPosition(guard.posX,guard.posY,guard.posZ);
+									vl.addArmor();
+									guard.setDead();
+									guard.setHealth(0);
+									worldIn.spawnEntity(vl);
+									vl.playTameEffect((byte) 6);
+				                    vl.world.setEntityState(vl, (byte)6);
+									vl.playSound(SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 1.0F, 0.8F);
+									vl.playSound(SoundEvents.BLOCK_ANVIL_USE, 0.8F, 0.8F);
+									vl.playSound(SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, 1.0F, 1.0F);
+									for ( EntityPlayer player : vl.world.playerEntities )
+									{
+										{
+											player.sendMessage(new TextComponentString("§lA new Lord has been crowned!§r"));
+										}
+									}
+					            }
+					            if ( provinceOn != null )
+								{
+									vl.setCivilization(provinceOn.civilization);
+									provinceOn.hasLord = true;
+								}
+								return super.onItemRightClick(worldIn, playerIn, handIn);
+							}
+							return super.onItemRightClick(worldIn, playerIn, handIn);
+						}
+					}
+					else
+					{
+						Province 			    	 provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX+6, playerIn.chunkCoordZ+6);
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX+6, playerIn.chunkCoordZ-6);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX-6, playerIn.chunkCoordZ+6);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX-6, playerIn.chunkCoordZ-6);}
+						
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX+7, playerIn.chunkCoordZ);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX, playerIn.chunkCoordZ+7);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX-7, playerIn.chunkCoordZ);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX, playerIn.chunkCoordZ-7);}
+						
+						if ( provinceNear != null )
+						{
+							playerIn.sendStatusMessage(new TextComponentString( "§oToo close to another province!§r" ), true);
+			        		return super.onItemRightClick(worldIn, playerIn, handIn);
+						}
+						
+						for ( EntityGuard guard : guards )
+						{
+							if ( CivilizationUtil.getProvinceAt(playerIn.getEntityWorld(), playerIn.chunkCoordX, playerIn.chunkCoordZ) == null )
+							{
+					            EntityVillageLord vl = new EntityVillageLord(worldIn);
+								CivilizationsWorldSaveData.get(worldIn).register(playerIn.chunkCoordX, playerIn.chunkCoordZ);
+					            if( !worldIn.isRemote )
+					            {
+									vl.setPosition(guard.posX,guard.posY,guard.posZ);
+									vl.addArmor();
+									guard.setDead();
+									guard.setHealth(0);
+									worldIn.spawnEntity(vl);
+									vl.playTameEffect((byte) 6);
+				                    vl.world.setEntityState(vl, (byte)6);
+									vl.playSound(SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 1.0F, 0.8F);
+									vl.playSound(SoundEvents.BLOCK_ANVIL_USE, 0.8F, 0.8F);
+									vl.playSound(SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, 1.0F, 0.9F);
+									playerIn.sendStatusMessage(new TextComponentString( "§oProvince founded!§r" ), true);
+									for ( EntityPlayer player : vl.world.playerEntities )
+									{
+										{
+											player.sendMessage(new TextComponentString("§lA new Lord has been crowned!§r"));
+										}
+									}
+					            }
+					            provinceOn = CivilizationUtil.getProvinceAt(playerIn.getEntityWorld(), playerIn.chunkCoordX, playerIn.chunkCoordZ);
+								if ( provinceOn != null )
+								{
+									vl.setCivilization(provinceOn.civilization);
+									provinceOn.hasLord = true;
+								}
+								return new ActionResult<ItemStack>(EnumActionResult.FAIL, ItemStack.EMPTY);
+							}
+							return super.onItemRightClick(worldIn, playerIn, handIn);
+						}
+						return super.onItemRightClick(worldIn, playerIn, handIn);
+					}
+				}
+			}
+		}
+		return super.onItemRightClick(worldIn, playerIn, handIn);
+    }
 
 }
+					

@@ -54,7 +54,7 @@ public class ItemTrophySkeleton extends ItemTrophy
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: You gain the vampiric abilites of the vampire lord; you slowly regenrate health while in your province.\n\n§oAnd you thought bats couldn't get anymore annoying, ha!");
+		tooltip.add("Give this trophy to a Village Lord: Embrace the vampiric abilites of the Vampire Lord, allowing you slowly regenrate health while in that province.\n\n§oAnd you thought bats couldn't get anymore annoying, ha!");
     }
 
 }

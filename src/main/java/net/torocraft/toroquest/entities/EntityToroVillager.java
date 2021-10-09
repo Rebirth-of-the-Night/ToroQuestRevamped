@@ -1,4 +1,3 @@
-//TODO
 package net.torocraft.toroquest.entities;
 
 import java.util.Collections;
@@ -8,6 +7,11 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockBed;
+import net.minecraft.block.BlockDoor;
+import net.minecraft.block.material.Material;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityAgeable;
 import net.minecraft.entity.EntityList;
@@ -16,7 +20,6 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.INpc;
-import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAILookAtTradePlayer;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
@@ -24,12 +27,10 @@ import net.minecraft.entity.ai.EntityAIOpenDoor;
 import net.minecraft.entity.ai.EntityAIPanic;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAISwimming;
-import net.minecraft.entity.ai.EntityAITempt;
 import net.minecraft.entity.ai.EntityAITradePlayer;
 import net.minecraft.entity.ai.EntityAIVillagerInteract;
 import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
-import net.minecraft.entity.ai.EntityAIWatchClosest2;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
@@ -42,11 +43,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.translation.I18n;
@@ -55,7 +56,6 @@ import net.minecraft.village.MerchantRecipeList;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.torocraft.toroquest.ToroQuest;
-import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.CivilizationType;
 import net.torocraft.toroquest.civilization.CivilizationUtil;
@@ -65,6 +65,7 @@ import net.torocraft.toroquest.civilization.quests.QuestRecruit;
 import net.torocraft.toroquest.civilization.quests.QuestTradeWithVillagers;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.ai.EntityAIAvoidBanditPlayer;
+import net.torocraft.toroquest.entities.ai.EntityAIAvoidEnemies;
 import net.torocraft.toroquest.entities.ai.EntityAISmartTempt;
 import net.torocraft.toroquest.entities.ai.EntityAIToroVillagerMate;
 import net.torocraft.toroquest.entities.trades.ToroVillagerTrades;
@@ -73,12 +74,26 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 {
 	public int canTalk;
 	
-	public int blockedTrade = 0;
-	
-	public EntityLivingBase underAttack = null;
-	
 	public boolean uiClick = false;
-		
+	
+	@Override
+	public int getHorizontalFaceSpeed()
+	{
+		return 10;
+	}
+	
+	@Override
+	protected boolean canDespawn()
+	{
+		return false;
+	}
+	
+//	@Override
+//	public void setScaleForAge(boolean child)
+//    {
+//        this.setScale(child ? 0.5F : 1.0F); // (70000.0F-this.getGrowingAge()) / 100000.0F : 1.0F)
+//    }
+	
 //	public void setAnnoyed()
 //	{
 //		this.isAnnoyed = true;
@@ -121,15 +136,15 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 //		return false;
 //    }
 	
+
+	public int blockedTrade = 0;
+	public EntityLivingBase underAttack = null;
+	
 	public void blockTrade()
 	{
-		if ( this.blockedTrade < 4 )
+		if ( this.blockedTrade < 8 )
 		{
-			this.blockedTrade = 4;
-		}
-		else
-		{
-			this.blockedTrade += 1;
+			this.blockedTrade += 4;
 		}
 	}
 	
@@ -140,20 +155,23 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 			this.underAttack = (EntityPlayer)entity;
 			if ( this.blockedTrade < 16 )
 			{
-				this.blockedTrade = 16;
+				this.blockedTrade += 4;
 			}
-			else this.blockedTrade += 4;
 		}
-		else if ( this.blockedTrade < 8 )
+		else
 		{
-			this.blockedTrade = 8;
+			this.underAttack = null;
+			if ( this.blockedTrade < 8 )
+			{
+				this.blockedTrade += 2;
+			}
 		}
 	}
 	
 	public void setMurder( EntityPlayer player )
 	{
 		this.underAttack = player;
-		this.blockedTrade += 32;
+		this.blockedTrade = 64;
 	}
 	
 	// public boolean canPickPocket = true;
@@ -200,17 +218,15 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	protected void initEntityAI()
     {              
 		this.tasks.addTask(0, new EntityAISwimming(this));
-		this.tasks.addTask(1, new EntityAIAvoidBanditPlayer<EntityPlayer>(this, EntityPlayer.class, 32.0F, 0.5D, 0.65D));
-		this.tasks.addTask(1, new EntityAIAvoidEntity<EntityMob>(this, EntityMob.class, 32.0F, 0.5D, 0.65D));
-		this.tasks.addTask(1, new EntityAIAvoidEntity<EntityToroMob>(this, EntityToroMob.class, 32.0F, 0.5D, 0.65D));
-		this.tasks.addTask(1, new EntityAIAvoidEntity<EntityWolfRaider>(this, EntityWolfRaider.class, 32.0F, 0.5D, 0.65D));
+		this.tasks.addTask(1, new EntityAIAvoidBanditPlayer<EntityPlayer>(this, EntityPlayer.class, 12.0F, 0.5D, 0.65D));
+		this.tasks.addTask(1, new EntityAIAvoidEnemies<EntityLiving>(this, 12.0F, 0.5D, 0.65D));
 		this.tasks.addTask(1, new EntityAIPanic(this, 0.65D)
 		{
 			
 			@Override
 			public boolean shouldExecute()
 		    {
-		        if ( underAttack != null && underAttack.isEntityAlive() && this.creature.getDistance(underAttack) < 16 )
+		        if ( (underAttack != null && underAttack.isEntityAlive() && this.creature.getDistance(underAttack) < 16) || isBurning() )
 		        {
 		            return this.findRandomPosition();
 		        }
@@ -220,9 +236,18 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 			@Override
 			protected boolean findRandomPosition()
 		    {
-		        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, underAttack.getPositionVector());
+		        Vec3d vec3d = null;
 
-		        if (vec3d == null)
+				if ( underAttack != null && underAttack.getPositionVector() != null )
+				{
+			        vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, underAttack.getPositionVector());
+				}
+				else
+				{
+			        vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, this.creature.getPositionVector());
+				}
+				
+		        if ( vec3d == null )
 		        {
 		            return false;
 		        }
@@ -235,49 +260,96 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 		        }
 		    }
 		});
-        this.tasks.addTask(2, new EntityAITradePlayer(this));
-        this.tasks.addTask(2, new EntityAILookAtTradePlayer(this));
-        this.tasks.addTask(3, new EntityAISmartTempt(this, 0.4D, Item.getByNameOrId("toroquest:recruitment_papers"))
-		{
-        	@Override
-			public boolean shouldExecute()
-		    {
-		        if ( (underAttack != null && underAttack.isEntityAlive()) || blockedTrade > 0 )
-		        {
-			        return false;
-		        }
-		        return super.shouldExecute();
-		    }
-		});
-        this.tasks.addTask(3, new EntityAISmartTempt(this, 0.4D, Items.EMERALD)
+        this.tasks.addTask(3, new EntityAIToroVillagerMate(this));
+        this.tasks.addTask(4, new EntityAITradePlayer(this));
+        this.tasks.addTask(5, new EntityAILookAtTradePlayer(this));
+//        this.tasks.addTask(6, new EntityAISmartTempt(this, 0.4D, Item.getByNameOrId("toroquest:recruitment_papers"))
+//		{
+//        	@Override
+//			public boolean shouldExecute()
+//		    {
+//		        if ( (underAttack != null && underAttack.isEntityAlive()) || blockedTrade > 0 || isBurning() || isMating() )
+//		        {
+//			        return false;
+//		        }
+//		        return super.shouldExecute();
+//		    }
+//		});
+        this.tasks.addTask(6, new EntityAISmartTempt(this, 0.4D, Items.EMERALD)
         {
         	@Override
 			public boolean shouldExecute()
 		    {
         		super.shouldExecute();
-		        if ( (underAttack != null && underAttack.isEntityAlive()) || blockedTrade > 0 )
+		        if ( (underAttack != null && underAttack.isEntityAlive()) || blockedTrade > 0 || isBurning() || isMating() )
 		        {
 			        return false;
 		        }
 		        return super.shouldExecute();
 		    }
 		});
-        this.tasks.addTask(4, new EntityAIMoveIndoors(this));
-        this.tasks.addTask(5, new EntityAIRestrictOpenDoor(this));
-        this.tasks.addTask(6, new EntityAIOpenDoor(this, true));
-        this.tasks.addTask(7, new EntityAIMoveTowardsRestriction(this, 0.6D));
-        this.tasks.addTask(8, new EntityAIToroVillagerMate(this));
+        this.tasks.addTask(7, new EntityAIMoveIndoors(this));
+        this.tasks.addTask(8, new EntityAIRestrictOpenDoor(this));
+        this.tasks.addTask(9, new EntityAIOpenDoor(this, true));
+        this.tasks.addTask(10, new EntityAIMoveTowardsRestriction(this, 0.6D));
         // this.tasks.addTask(9, new EntityAIFollowGolem(this));
-        this.tasks.addTask(10, new EntityAIWatchClosest2(this, EntityPlayer.class, 3.0F, 1.0F));
+//        this.tasks.addTask(10, new EntityAIWatchClosest2(this, EntityPlayer.class, 3.0F, 1.0F)
+//        {
+//        	@Override
+//        	public boolean shouldExecute()
+//            {
+//				if ( isMating() )
+//				{
+//					return false;
+//				}
+//				return super.shouldExecute();
+//            }
+//        });
         this.tasks.addTask(11, new EntityAIVillagerInteract(this));
         this.tasks.addTask(12, new EntityAIWanderAvoidWater(this, 0.5D)
         {
         	@Override
+        	public boolean shouldExecute()
+            {
+                if ( !this.mustUpdate )
+                {
+                    if ( this.entity.getIdleTime() >= 100 )
+                    {
+                        return false;
+                    }
+
+                    if ( !this.entity.isInWater() && !this.entity.isInLava() && this.entity.getRNG().nextInt(this.executionChance) != 0)
+                    {
+                        return false;
+                    }
+                }
+
+                Vec3d vec3d = this.getPosition();
+
+                if ( vec3d == null )
+                {
+                    return false;
+                }
+                else
+                {
+                    this.x = vec3d.x;
+                    this.y = vec3d.y;
+                    this.z = vec3d.z;
+                    this.mustUpdate = false;
+                    return true;
+                }
+            }
+        	
+        	@Override
             protected Vec3d getPosition()
             {
-                if ( this.entity.isInWater() || this.entity.isInLava() )
+        		if ( EntityToroVillager.this.isMating() )
                 {
-                    Vec3d vec3d = RandomPositionGenerator.getLandPos(this.entity, 16, 8);
+                	return null;
+                }
+        		if ( !this.entity.hasPath() && ( this.entity.isInWater() || this.entity.isInLava() ) )
+                {
+                    Vec3d vec3d = RandomPositionGenerator.getLandPos(this.entity, 15, 7);
                     return vec3d == null ? super.getPosition() : vec3d;
                 }
                 else
@@ -286,7 +358,18 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
                 }
             }
         });
-        this.tasks.addTask(13, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F));
+        this.tasks.addTask(13, new EntityAIWatchClosest(this, EntityLiving.class, 8.0F)
+        {
+        	@Override
+        	public boolean shouldExecute()
+            {
+				if ( isMating() )
+				{
+					return false;
+				}
+				return super.shouldExecute();
+            }
+        });
     }
 	
 	@Override
@@ -298,11 +381,6 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	@Override
 	public String getName()
     {
-//		if (this.hasCustomName())
-//      {
-//          return this.getCustomNameTag();
-//      }
-//      else
         {
             String s = EntityList.getEntityString(this);
 
@@ -317,58 +395,81 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 
 	@Override
 	public boolean processInteract( EntityPlayer player, EnumHand hand )
-	{
-		if ( player == null || hand == null || !this.isEntityAlive() || this.isTrading() || this.isChild() )
+	{		
+		if ( world == null || world.isRemote || player == null || hand == null || !this.isEntityAlive() || this.isTrading() || this.isChild() || this.isMating() )
     	{
-			return true;
+			return false;
     	}
+				
+		for ( ItemStack itemStack : player.getArmorInventoryList() )
+		{
+			if ( itemStack.getItem().equals(Item.getByNameOrId("toroquest:bandit_helmet") ) || itemStack.getItem().equals(Item.getByNameOrId("toroquest:legendary_bandit_helmet") ) )
+			{
+				if ( this.canTalk < 1 )
+				{
+					this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
+					this.canTalk = 2;
+				}
+				this.setUnderAttack(player);
+				return false;
+			}
+		}
 		
 		RepData repData = getReputation(player);
 		
 		if ( repData == null || repData.civ == null || repData.rep == null )
 		{
-			return true;
+			if ( this.canTalk < 1 )
+			{
+				this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
+				this.canTalk = 2;
+			}
+			return false;
 		}
 		
 		// Cheeky way of saving NBT data, career types will not work without this code block!
 		if ( this.job == 0 )
 		{
-			this.setCustomer(player);
-			player.displayVillagerTradeGui(this);
+			super.getRecipes(player);
+	        this.setCustomer(null);
 			NBTTagCompound compound = new NBTTagCompound();
 	        this.writeEntityToNBT(compound);
-	        this.setCustomer(null);
-	        player.closeScreen();
 		}
 		
 		ItemStack itemstack = player.getHeldItem(hand);
 		Item item = itemstack.getItem();
 		
-        if ( player.isSneaking() && item.equals(Item.getByNameOrId("toroquest:recruitment_papers")) )
+		if ( (this.underAttack == player) || ( repData.rep != null && repData.rep < -50 ) )
+		{
+			if ( this.canTalk < 1 )
+			{
+	    		this.callForHelp(player, true);
+				this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.2F, 0.9F);
+				this.canTalk = 2;
+			}
+			return false;
+		}
+
+        if ( ToroQuestConfiguration.recruitVillagers && player.isSneaking() && item.equals(Item.getByNameOrId("toroquest:recruitment_papers")) )
         {
-        	if ( repData.rep >= 0 && this.underAttack == null && this.blockedTrade < 1 )
+        	if ( repData.rep != null && repData.rep >= 0 && this.underAttack == null && this.blockedTrade < 1 )
     		{
-	        	playSound(SoundEvents.ENTITY_ILLAGER_CAST_SPELL, 1.5F, 1.5F);
-	        	playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.0F);
+	        	playSound(SoundEvents.ENTITY_ILLAGER_CAST_SPELL, 1.2F, 1.2F);
+	        	playSound(SoundEvents.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 1.0F);
+	        	playSound(SoundEvents.BLOCK_ANVIL_USE, 0.6F, 1.0F);
 	        	player.setHeldItem(hand, new ItemStack(item, itemstack.getCount()-1 ));
 				EntityGuard newEntity = new EntityGuard(world);
-				BlockPos pos = this.getPosition();
-				if ( player.isSneaking() )
-				{
-					BlockPos topPos = CivilizationHandlers.findSpawnSurface( world, pos );
-					if ( topPos != null )
-					{
-						pos = topPos;
-					}
-				}
-				newEntity.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-				newEntity.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(pos)), (IEntityLivingData) null);
+				newEntity.setPosition(this.posX, this.posY, this.posZ);
+				newEntity.onInitialSpawn(this.world.getDifficultyForLocation(new BlockPos(this.getPosition())), (IEntityLivingData) null);
 				this.setDead();
-
+				newEntity.actionTimer = 1;
 				world.spawnEntity(newEntity);
+    			newEntity.playTameEffect(false);
+    			newEntity.world.setEntityState(newEntity, (byte)6);
 				// l spawning uuid?
 				newEntity.setCivilization(repData.civ);
-				CivilizationHandlers.adjustPlayerRep(player, player.chunkCoordX, player.chunkCoordX, ToroQuestConfiguration.recruitGuardRepGain);
+				newEntity.setMeleeWeapon();
+				CivilizationHandlers.adjustPlayerRep(player, repData.civ, ToroQuestConfiguration.recruitGuardRepGain);
 				// QUEST
 				try
 				{
@@ -378,53 +479,78 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 				{
 					
 				}
-				if ( rand.nextInt(3) == 0 ) newEntity.chat(player, "For the king!");
+				newEntity.chat(newEntity, player, "civvillagerrecruit", repData.civ.getDisplayName(player));
     		}
-        	else
-        	{
-        		if ( this.canTalk <= 0 )
-				{
-        			this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
-        			this.canTalk = 3;
-				}
-        	}
-        	return true;
-        }
-        else
-        {
-        	if ( (this.underAttack != null && this.underAttack == player) || ( repData.rep < -50 ) )
+        	else if ( this.canTalk <= 0 )
 			{
-        		this.callForHelp(player);
-				if ( this.canTalk <= 0 )
-				{
-					this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.25F, 0.9F);
-					this.setUnderAttack(player);
-					this.canTalk = 3;
-				}
+    			this.playTameEffect(false);
+    			this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
+    			this.canTalk = 2;
 			}
-        	else if ( this.blockedTrade > 0 )
+        	return false;
+        }
+        
+    	
+    	if ( this.blockedTrade > 0 )
+		{
+    		if ( this.canTalk <= 0 )
 			{
-        		if ( this.canTalk <= 0 )
-				{
-					this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.25F, 0.9F);
-					this.canTalk = 3;
-				}
+				this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.2F, 0.9F);
+				this.canTalk = 1;
+			}
+    		return false;
+		}
+		else
+		{
+			// TRADE
+			this.getRecipes(player);
+			
+			if ( this.buyingList == null || this.buyingList.isEmpty() )
+			{
+				if ( this.canTalk <= 0 )
+    			{
+    				this.playSound(SoundEvents.ENTITY_VILLAGER_NO, 1.0F, 1.0F);
+    				this.canTalk = 1;
+    			}
+                return false;
 			}
 			else
-			{
-				if ( this.canTalk <= 0 )
-				{
-					this.playSound(SoundEvents.ENTITY_VILLAGER_TRADING, 1.0F, 1.0F);
-					this.canTalk = 3;
-				}
-				this.setCustomer(player);
-				player.displayVillagerTradeGui(this);
-			}
-        	return true;
+            {
+                this.setCustomer(player);
+                player.displayVillagerTradeGui(this);
+
+    			if ( this.canTalk <= 0 )
+    			{
+    				this.playSound(SoundEvents.ENTITY_VILLAGER_TRADING, 1.0F, 1.0F);
+    				this.canTalk = 1;
+    			}
+    			return true;
+            }
+			
 		}
 	}
 	
-	public void callForHelp( EntityLivingBase attacker )
+	protected void playTameEffect(boolean play)
+    {
+        EnumParticleTypes enumparticletypes = EnumParticleTypes.HEART;
+        
+        // TODO chat bubbles?
+
+        if (!play)
+        {
+            enumparticletypes = EnumParticleTypes.SMOKE_NORMAL;
+        }
+
+        for (int i = 0; i < 7; ++i)
+        {
+            double d0 = this.rand.nextGaussian() * 0.02D;
+            double d1 = this.rand.nextGaussian() * 0.02D;
+            double d2 = this.rand.nextGaussian() * 0.02D;
+            this.world.spawnParticle(enumparticletypes, this.posX + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, this.posY + 0.5D + (double)(this.rand.nextFloat() * this.height), this.posZ + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, d0, d1, d2);
+        }
+    }
+	
+	public void callForHelp( EntityLivingBase attacker, boolean attackThem )
 	{
 //		if ( this.world.isRemote )
 //		{
@@ -433,7 +559,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 		
 		this.setUnderAttack(attacker);
 		
-		List<EntityToroVillager> villagers = world.getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(getPosition()).grow(20, 10, 20), new Predicate<EntityToroVillager>()
+		List<EntityToroVillager> villagers = world.getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(getPosition()).grow(12, 8, 12), new Predicate<EntityToroVillager>()
 		{
 			public boolean apply(@Nullable EntityToroVillager entity)
 			{
@@ -443,27 +569,42 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 
 		for (EntityToroVillager villager : villagers)
 		{
-			if ( !(villager.canEntityBeSeen(attacker)) )
+			if ( villager.canEntityBeSeen(attacker) )
 			{
-				continue;
+				villager.setUnderAttack(attacker);
 			}
-			villager.setUnderAttack(attacker);
 		}
 		
-		List<EntityToroNpc> guards = world.getEntitiesWithinAABB(EntityToroNpc.class, new AxisAlignedBB(getPosition()).grow(40, 20, 40), new Predicate<EntityToroNpc>()
+		List<EntityGuard> guards = world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(getPosition()).grow(15, 10, 15), new Predicate<EntityGuard>()
 		{
-			public boolean apply(@Nullable EntityToroNpc entity)
+			public boolean apply(@Nullable EntityGuard entity)
 			{
 				return true;
 			}
 		});
-		Collections.shuffle(guards);
-		for (EntityToroNpc guard : guards)
+		
+		boolean flag = false;
+		
+		for (EntityGuard guard : guards)
 		{
-			if ( !guard.inCombat && guard.getAttackTarget() == null )
+			if ( guard.getAttackTarget() == null )
 			{
 				this.getNavigator().tryMoveToEntityLiving(guard, 0.7F);
-				guard.setAttackTarget(attacker);
+				
+				if ( attacker instanceof EntityPlayer ) 
+				{
+					guard.setAnnoyed( (EntityPlayer)attacker );
+					if ( !flag && guard.actionReady() && guard.getDistance(attacker) <= 8.0D )
+					{
+						guard.chat((EntityPlayer)attacker, "attackvillager", null);
+						flag = true;
+					}
+				}
+				
+				if ( guard.isAnnoyed() || attackThem )
+				{
+					guard.setAttackTarget(attacker);
+				}
 			}
 		}
 		
@@ -472,7 +613,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	// guards move to the player
 	public void reportToGuards( EntityPlayer player )
 	{
-		List<EntityToroNpc> guards = world.getEntitiesWithinAABB(EntityToroNpc.class, new AxisAlignedBB(getPosition()).grow(40, 20, 40), new Predicate<EntityToroNpc>()
+		List<EntityToroNpc> guards = world.getEntitiesWithinAABB(EntityToroNpc.class, new AxisAlignedBB(getPosition()).grow(15, 15, 15), new Predicate<EntityToroNpc>()
 		{
 			public boolean apply(@Nullable EntityToroNpc entity)
 			{
@@ -493,10 +634,15 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	@Override
 	public MerchantRecipeList getRecipes(EntityPlayer player)
 	{
-		return this.createTradesBaseOnRep(player);
-		// this.populateBuyingList();
+//		if ( this.buyingList == null )
+//      {
+        this.buyingList = this.createTradesBaseOnRep(player);
+//      }
+
+        return net.minecraftforge.event.ForgeEventFactory.listTradeOffers(this, player, buyingList);
 	}
 	
+    private MerchantRecipeList buyingList;
 	boolean hitSafety = false;
 	
 	@Override
@@ -505,6 +651,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 
 		super.onLivingUpdate();
 		this.uiClick = true;
+		
 		if ( this.world.isRemote )
 		{
 			return;
@@ -520,7 +667,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 //		}
 
 
-		if ( ticksExisted % 100 == 0 )
+		if ( this.ticksExisted % 100 == 0 )
 		{
 //			if ( world % 1200 == 0 )
 //			{
@@ -543,7 +690,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 				this.canTalk--;
 			}
 			
-			if ( this.blockedTrade > 0 && rand.nextBoolean() )
+			if ( this.blockedTrade > 0 )
     		{
     			this.blockedTrade--;
     		}
@@ -558,25 +705,25 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	// Create trades from toroquest config
 	protected MerchantRecipeList createTradesBaseOnRep(EntityPlayer player)
 	{
-//		NBTTagCompound compound = this.getEntityData();
-//		this.getJob(compound);
-//		System.out.println("Varient: " + this.varient);
-		
 		RepData repData = getReputation(player);
+		
 		if ( repData == null || repData.civ == null || repData.rep == null || repData.rep < -50 ) // TODO if job == null
 		{
 			return new MerchantRecipeList();
 		}
 		
         // this.getProfessionForge().getCareer(this.careerId).getName()
-		// System.out.println( "job nameeeeee: " + this.jobName + " " + this.varient + " " + this.maxTrades);												// 09090909099090909090
-		return ToroVillagerTrades.trades(player, repData.rep, repData.civ, this.jobName, ""+this.varient );
-	};
+		// System.out.println( "job name: " + this.jobName + " " + this.varient + " " + this.maxTrades);
+		
+		return ToroVillagerTrades.trades(this, player, repData.rep, repData.civ, this.jobName, ""+this.varient );
+	}
+	
+	public ItemStack treasureMap = null;
 	
 	@Override
 	public boolean canBeLeashedTo(EntityPlayer player)
 	{
-		this.callForHelp( player );
+		this.callForHelp( player, false );
 		if ( !this.getLeashed() )
 		{
 			RepData repData = getReputation(player);
@@ -591,7 +738,8 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	public EntityToroVillager(World worldIn)
 	{
 		super(worldIn);
-		this.setSize(0.6F, 1.95F);
+		this.setSize(0.59F, 1.85F);
+		this.stepHeight = 1.05F;
         NBTTagCompound compound = new NBTTagCompound();
         this.writeEntityToNBT(compound);
 	}
@@ -599,7 +747,8 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	public EntityToroVillager(World worldIn, int professionId )
 	{
 		super(worldIn, professionId);
-        this.setSize(0.6F, 1.95F);
+        this.setSize(0.59F, 1.85F);
+		this.stepHeight = 1.05F;
         NBTTagCompound compound = new NBTTagCompound();
         this.writeEntityToNBT(compound);
 	}
@@ -697,9 +846,19 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount)
 	{
+		if ( this.world.isRemote )
+        {
+            return false;
+        }
+		
+		if ( source.getTrueSource() instanceof EntityToroNpc )
+		{
+			amount = 0;
+			return false;
+		}
 		if ( source.getTrueSource() == null )
 		{
-			if ( this.isInLava() )
+			//if ( this.isInLava() )
 			{
 		        Vec3d vec3d = RandomPositionGenerator.getLandPos(this, 8, 4);
 	            if ( vec3d != null )
@@ -709,24 +868,20 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 			}
 			return super.attackEntityFrom(source, amount);
 		}
-		if ( source.getTrueSource() instanceof EntityLivingBase )
+		else if ( source.getTrueSource() instanceof EntityLivingBase )
 		{
 			EntityLivingBase e = (EntityLivingBase)source.getTrueSource();
-
-			if ( e instanceof EntityToroNpc )
-			{
-				return false;
-			}
 			
 			if ( this.hitSafety )
 			{
 				this.hitSafety = false;
+				this.playSound(SoundEvents.BLOCK_CLOTH_BREAK, 1.0F, 1.0F);
 				return false;
 			}
 			
 			if ( e instanceof EntityPlayer )
 			{
-				int entities = this.world.getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.getPosition()).grow(3, 3, 3), new Predicate<EntityLivingBase>()
+				List<EntityLivingBase> enemies = e.getEntityWorld().getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getPosition()).grow(16, 12, 16), new Predicate<EntityLivingBase>()
 				{
 					public boolean apply(@Nullable EntityLivingBase entity)
 					{
@@ -739,15 +894,14 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 							return false;
 						}
 					}
-				}).size();
+				});
 				
-				if ( entities > 0 )
+				if ( !enemies.isEmpty() )
 				{
 					return false;
 				}
 			}
-			
-			this.callForHelp(e);
+			this.callForHelp(e, true);
 		}
 		return super.attackEntityFrom(source, amount);
 	}
@@ -770,11 +924,21 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	@Override
 	public EntityVillager createChild(EntityAgeable ageable)
     {
+		
+//		EntityToroVillager entityvillager = new EntityToroVillager(this.world);
+//        entityvillager.onInitialSpawn(this.world.getDifficultyForLocation(new BlockPos(entityvillager)), (IEntityLivingData)null);
+//        return entityvillager;
+	        
 		EntityVillager villager = new EntityVillager(null);
 		villager.setDead();
         EntityToroVillager entityvillager = new EntityToroVillager( this.world, villager.getProfession() ); // TODO
-        // entityvillager.onInitialSpawn(this.world.getDifficultyForLocation(new BlockPos(entityvillager)), (IEntityLivingData)null);
+        entityvillager.onInitialSpawn(this.world.getDifficultyForLocation(new BlockPos(entityvillager)), (IEntityLivingData)null);
         return entityvillager;
+        
+        
+        
+        
+        
         
         /* EntityVillager villager = (EntityVillager)entity;
 		villager.setDead();
@@ -812,7 +976,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
     	
     	
     	
-        this.setIsWillingToMate(true);
+        // this.setIsWillingToMate(true);
         
         
         
@@ -860,6 +1024,69 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
         	
         }
         
+    }
+	
+	@Override
+	public boolean getIsWillingToMate(boolean updateFirst)
+    {
+        if ( updateFirst && this.bedLocation == null )
+        {
+        	int s = 8;
+        	int x = (int)(this.posX+0.5D);
+        	int y = (int)(this.posY+0.5D);
+        	int z = (int)(this.posZ+0.5D);
+			
+			for ( int xx = x-s; x+s >= xx; xx++ )
+			{
+				for ( int yy = y-s; y+s >= yy; yy++ )
+				{
+					for ( int zz = z-s; z+s >= zz; zz++ )
+					{
+						Block bed = this.world.getBlockState((new BlockPos(xx, yy, zz))).getBlock();
+    					if ( bed instanceof BlockBed )
+    					{
+    						// System.out.println(bed);
+    						this.bedLocation = new BlockPos(xx, yy, zz);
+    				        return this.bedLocation != null ? true: false;
+    					}
+					}
+				}
+			}
+        }
+        return this.bedLocation != null ? true: false;
+    }
+	
+    public BlockPos bedLocation = null;
+	
+	@Nullable
+	@Override
+	protected SoundEvent getAmbientSound()
+    {
+        if ( this.isTrading() ) 
+        {
+        	return SoundEvents.ENTITY_VILLAGER_TRADING;
+        }
+        else if ( rand.nextBoolean() )
+        {
+        	return SoundEvents.ENTITY_VILLAGER_AMBIENT;
+        }
+        else
+        {
+        	return null;
+        }
+    }
+	
+	@Override
+	public void setIsWillingToMate(boolean isWillingToMate)
+    {
+        if ( isWillingToMate )
+        {
+        	this.getIsWillingToMate(true);
+        }
+        else
+        {
+        	this.bedLocation = null;
+        }
     }
 	
 //	static class TreasureMapForEmeralds implements EntityVillager.ITradeList

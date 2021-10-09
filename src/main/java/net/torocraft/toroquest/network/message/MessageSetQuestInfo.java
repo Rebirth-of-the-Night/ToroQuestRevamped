@@ -11,6 +11,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.minecraftforge.fml.relauncher.Side;
+import net.torocraft.toroquest.civilization.CivilizationType;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.QuestDelegator;
@@ -25,11 +26,13 @@ public class MessageSetQuestInfo implements IMessage {
 	private QuestData currentQuest;
 	private QuestData nextQuest;
 	
-	public MessageSetQuestInfo() {
+	public MessageSetQuestInfo()
+	{
 
 	}
 
-	public MessageSetQuestInfo(Province civ, QuestData current, QuestData next) {
+	public MessageSetQuestInfo(Province civ, QuestData current, QuestData next)
+	{
 		this.civ = civ;
 		this.currentQuest = current;
 		this.nextQuest = next;
@@ -37,20 +40,28 @@ public class MessageSetQuestInfo implements IMessage {
 		serializeData();
 	}
 	
-	private void createMessage() {
+	private void createMessage()
+	{
 		questMessage = new QuestMessage();
 		questMessage.provinceName = civ.name;
+		questMessage.civl = civ.civilization;
 		
-		if(currentQuest != null) {
+		if ( currentQuest != null )
+		{
 			QuestDelegator quest = new QuestDelegator(currentQuest);
 			questMessage.questTitle = quest.getTitle();
 			questMessage.questDescription = quest.getDescription();
 			questMessage.accepted = true;
-		} else {
+			questMessage.completed = currentQuest.getCompleted();
+
+		}
+		else
+		{
 			QuestDelegator quest = new QuestDelegator(nextQuest);
 			questMessage.questTitle = quest.getTitle();
 			questMessage.questDescription = quest.getDescription();
 			questMessage.accepted = false;
+			questMessage.completed = false;
 		}
 	}
 	
@@ -73,29 +84,38 @@ public class MessageSetQuestInfo implements IMessage {
 		}
 	}
 	
-	private void deserializeData() {
+	private void deserializeData()
+	{
 		questMessage = new Gson().fromJson(questMessageJson, QuestMessage.class);
 	}
 	
-	public static class Worker {
-		public void work(MessageSetQuestInfo message) {
+	public static class Worker
+	{
+		public void work(MessageSetQuestInfo message)
+		{
 			Minecraft minecraft = Minecraft.getMinecraft();
 			final EntityPlayer player = minecraft.player;
 
-			if (player == null) {
+			if (player == null)
+			{
 				return;
 			}
-			
+			if ( message.questMessage.civl != null )
+			{
+				VillageLordGuiContainer.setCivilization(message.questMessage.civl);
+			}
 			VillageLordGuiContainer.setProvinceName(message.questMessage.provinceName);
-			VillageLordGuiContainer.setQuestData(message.questMessage.questTitle, message.questMessage.questDescription, message.questMessage.accepted);
+			VillageLordGuiContainer.setQuestData(message.questMessage.questTitle, message.questMessage.questDescription, message.questMessage.accepted, message.questMessage.completed);
 		}
 	}
 
 	public static class Handler implements IMessageHandler<MessageSetQuestInfo, IMessage> {
 
 		@Override
-		public IMessage onMessage(final MessageSetQuestInfo message, MessageContext ctx) {
-			if (ctx.side != Side.CLIENT) {
+		public IMessage onMessage(final MessageSetQuestInfo message, MessageContext ctx)
+		{
+			if (ctx.side != Side.CLIENT)
+			{
 				return null;
 			}
 
@@ -110,10 +130,13 @@ public class MessageSetQuestInfo implements IMessage {
 		}	
 	}
 	
-	public static class QuestMessage {
+	public static class QuestMessage
+	{
 		public String provinceName;
 		public String questTitle;
 		public String questDescription;
 		public boolean accepted;
+		public boolean completed;
+		public CivilizationType civl;
 	}
 }

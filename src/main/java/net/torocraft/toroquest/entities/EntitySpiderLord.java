@@ -7,9 +7,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockAir;
-import net.minecraft.block.BlockBush;
 import net.minecraft.block.BlockDynamicLiquid;
 import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.BlockStaticLiquid;
@@ -29,13 +26,11 @@ import net.minecraft.entity.ai.EntityAIWanderAvoidWater;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.EntityCaveSpider;
-import net.minecraft.entity.monster.EntitySpider;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -44,6 +39,7 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.datafix.DataFixer;
@@ -92,6 +88,42 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		});
 	}
 	
+	@Override
+	public boolean getAlwaysRenderNameTag()
+    {
+        return false;
+    }
+	
+	@Override
+    protected float getWaterSlowDown()
+    {
+        return 0.9F;
+    }
+	
+    public boolean startRiding(Entity entityIn, boolean force)
+    {
+    	return false;
+    }
+    
+	@Override
+	protected void updateLeashedState()
+    {
+	   this.clearLeashed(true, true);
+       return;
+    }
+	
+	@Override
+	public boolean canBeLeashedTo(EntityPlayer player)
+    {
+		return false;
+    }
+	
+	@Override
+	public int getHorizontalFaceSpeed()
+	{
+		return 5;
+	}
+	
 	// INCREASE RENDER DISTNACE
 	@SideOnly(Side.CLIENT)
     public AxisAlignedBB getRenderBoundingBox()
@@ -123,6 +155,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		this.setSize(4.9F, 1.9F);
 		this.setRealSize(4.9F, 1.9F);
 		this.experienceValue = 400;
+		this.stepHeight = 4.05F;
 	}
 
 	@Override
@@ -139,9 +172,9 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.6D);
 		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(300D * ToroQuestConfiguration.bossHealthMultiplier);
 		this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(5D * ToroQuestConfiguration.bossAttackDamageMultiplier);
-		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(50.0D);
 		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(10.0D);
-		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(2.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(10.0D);
 		this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(100.0D);
 	}
 	/**
@@ -150,8 +183,10 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 	 * from nbt. Mainly used for initializing attributes and inventory
 	 */
 	@Nullable
-	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata) {
+	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata)
+	{
 		livingdata = super.onInitialSpawn(difficulty, livingdata);
+		this.setRaidLocation( (int)this.posX, (int)this.posZ, (int)this.posY );
 		return livingdata;
 	}
 
@@ -174,7 +209,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
         this.tasks.addTask(6, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
         this.tasks.addTask(6, new EntityAILookIdle(this));
         this.targetTasks.addTask(0, new EntityAIHurtByTarget(this, false, new Class[0]));
-		this.targetTasks.addTask(1, new EntityAINearestAttackableTarget(this, EntityPlayer.class, true));
+		this.targetTasks.addTask(1, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, true));
 	}
 
 	public boolean isClearWebsReady = false;
@@ -252,8 +287,8 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
         	d0 = 0; //leapTarget.posX - this.posX;
         	d1 = 0; //leapTarget.posZ - this.posZ;
         }
-		this.playSound(SoundEvents.BLOCK_CLOTH_PLACE, 2.0F, 0.3F);
-		this.playSound(SoundEvents.BLOCK_SAND_FALL, 2.0F, 0.8F);
+		this.playSound(SoundEvents.BLOCK_CLOTH_PLACE, 3.0F, 0.3F);
+		this.playSound(SoundEvents.BLOCK_SAND_FALL, 3.0F, 0.8F);
 		this.setPositionAndUpdate(this.posX, this.posY+2, this.posZ);
 		if ( !this.world.isRemote ) this.addVelocity(d0/6.0, 2.0, d1/6.0);
     }
@@ -278,6 +313,9 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		this.playSound(SoundEvents.ENTITY_LIGHTNING_THUNDER, 2.0F, 0.6F);
 		this.playSound(SoundEvents.ENTITY_LIGHTNING_IMPACT, 2.0F, 0.4F);
 		
+		this.playStompEffect();
+		this.world.setEntityState(this, (byte)36);
+
 		int x = this.getPosition().getX();
 		int y = this.getPosition().getY();
 		int z = this.getPosition().getZ();
@@ -308,6 +346,15 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
     	this.explode = true;
     }
     
+    @SideOnly(Side.CLIENT)
+    public void handleStatusUpdate(byte id)
+    {
+    	if ( id == 36 )
+    	{
+    		this.playStompEffect();
+    	}
+    	super.handleStatusUpdate(id);
+    }
     protected boolean explode = false;
     
     private void explode()
@@ -320,7 +367,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
     	this.targetLastPosX = null;
         this.targetLastPosZ = null;
 		
-    	List<EntityLivingBase> e = this.world.getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.getPosition()).grow(64, 32, 64), new Predicate<EntityLivingBase>()
+    	List<EntityLivingBase> e = this.world.getEntitiesWithinAABB(EntityLivingBase.class, new AxisAlignedBB(this.getPosition()).grow(22, 22, 22), new Predicate<EntityLivingBase>()
 		{
 			public boolean apply(@Nullable EntityLivingBase entity)
 			{
@@ -334,14 +381,44 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 			
 			if ( entity != this && dist < 512 )
 			{
-				entity.setPositionAndUpdate(entity.posX, entity.posY+1.5, entity.posZ);
-				entity.addVelocity((0.8/(entity.posX-this.posX)), MathHelper.clamp(32.0/(Math.sqrt(dist)),1.0,16.0), 0.8/(entity.posZ-this.posZ)); //-entity.getDistanceSq(this)/(entity.getDistanceSq(this)+1)
+				entity.setPositionAndUpdate(entity.posX, entity.posY+((512.0-dist)/256.0), entity.posZ);
+				entity.addVelocity((0.8/(entity.posX-this.posX)), MathHelper.clamp(37.5/(Math.sqrt(dist)),1.0,15.0), 0.8/(entity.posZ-this.posZ)); //-entity.getDistanceSq(this)/(entity.getDistanceSq(this)+1)
 				entity.velocityChanged = true;
-            	entity.attackEntityFrom(DamageSource.GENERIC, (float)((18.0/(Math.sqrt(dist)+1.0))*ToroQuestConfiguration.bossAttackDamageMultiplier) );
+            	entity.attackEntityFrom(new DamageSource("explosion"), (float)((22.0-(Math.sqrt(dist)))*ToroQuestConfiguration.bossAttackDamageMultiplier) );
             	entity.setLastAttackedEntity(this);
 				entity.setRevengeTarget(this);
 			}
 		}
+    }
+    
+    protected void playStompEffect()
+    {
+        EnumParticleTypes enumparticletypes = EnumParticleTypes.CLOUD;
+        
+        for (int i = 0; i <= 16; i++)
+        {
+            double x = MathHelper.sqrt(i/16.0D) * 1.0D;
+            double y = MathHelper.sqrt((16.0D-i)/16.0D) * 1.0D;
+            this.world.spawnParticle(enumparticletypes, this.posX + this.width/2.0F, this.posY + 0.2F, this.posZ + this.width/2.0F, x, 0, y);
+        }
+        for (int i = 0; i <= 16; i++)
+        {
+            double x = MathHelper.sqrt(i/16.0D) * 1.0D;
+            double y = -MathHelper.sqrt((16.0D-i)/16.0D) * 1.0D;
+            this.world.spawnParticle(enumparticletypes, this.posX + this.width/2.0F, this.posY + 0.2F, this.posZ + this.width/2.0F, x, 0, y);
+        }
+        for (int i = 0; i <= 16; i++)
+        {
+            double x = -MathHelper.sqrt(i/16.0D) * 1.0D;
+            double y = MathHelper.sqrt((16.0D-i)/16.0D) * 1.0D;
+            this.world.spawnParticle(enumparticletypes, this.posX + this.width/2.0F, this.posY + 0.2F, this.posZ + this.width/2.0F, x, 0, y);
+        }
+        for (int i = 0; i <= 16; i++)
+        {
+            double x = -MathHelper.sqrt(i/16.0D) * 1.0D;
+            double y = -MathHelper.sqrt((16.0D-i)/16.0D) * 1.0D;
+            this.world.spawnParticle(enumparticletypes, this.posX + this.width/2.0F, this.posY + 0.2F, this.posZ + this.width/2.0F, x, 0, y);
+        }
     }
     
     @Override
@@ -350,42 +427,42 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
         return false;
     }
     
-    private void deadSpidersCreateWebs(EntityLivingBase spider)
-    {
-    	double x = spider.posX;
-    	double y = spider.posY;
-    	double z = spider.posZ;
-    	Block block = this.world.getBlockState(new BlockPos(x,y,z)).getBlock(); 
-		if ((block instanceof BlockBush) || block instanceof BlockAir)
-		{
-			this.world.setBlockState(new BlockPos(x,y,z), Blocks.WEB.getDefaultState());
-		}
-		block = this.world.getBlockState(new BlockPos(x-1,y,z)).getBlock(); 
-		if ((block instanceof BlockBush) || block instanceof BlockAir)
-		{
-			this.world.setBlockState(new BlockPos(x-1,y,z), Blocks.WEB.getDefaultState());
-		}
-		block = this.world.getBlockState(new BlockPos(x+1,y,z)).getBlock(); 
-		if ((block instanceof BlockBush) || block instanceof BlockAir)
-		{
-			this.world.setBlockState(new BlockPos(x+1,y,z), Blocks.WEB.getDefaultState());
-		}
-		block = this.world.getBlockState(new BlockPos(x,y,z-1)).getBlock(); 
-		if ((block instanceof BlockBush) || block instanceof BlockAir)
-		{
-			this.world.setBlockState(new BlockPos(x,y,z-1), Blocks.WEB.getDefaultState());
-		}
-		block = this.world.getBlockState(new BlockPos(x,y,z+1)).getBlock(); 
-		if ((block instanceof BlockBush) || block instanceof BlockAir)
-		{
-			this.world.setBlockState(new BlockPos(x,y,z+1), Blocks.WEB.getDefaultState());
-		}
-    }
+//    private void deadSpidersCreateWebs(EntityLivingBase spider)
+//    {
+//    	double x = spider.posX;
+//    	double y = spider.posY;
+//    	double z = spider.posZ;
+//    	Block block = this.world.getBlockState(new BlockPos(x,y,z)).getBlock(); 
+//		if ((block instanceof BlockBush) || block instanceof BlockAir)
+//		{
+//			this.world.setBlockState(new BlockPos(x,y,z), Blocks.WEB.getDefaultState());
+//		}
+//		block = this.world.getBlockState(new BlockPos(x-1,y,z)).getBlock(); 
+//		if ((block instanceof BlockBush) || block instanceof BlockAir)
+//		{
+//			this.world.setBlockState(new BlockPos(x-1,y,z), Blocks.WEB.getDefaultState());
+//		}
+//		block = this.world.getBlockState(new BlockPos(x+1,y,z)).getBlock(); 
+//		if ((block instanceof BlockBush) || block instanceof BlockAir)
+//		{
+//			this.world.setBlockState(new BlockPos(x+1,y,z), Blocks.WEB.getDefaultState());
+//		}
+//		block = this.world.getBlockState(new BlockPos(x,y,z-1)).getBlock(); 
+//		if ((block instanceof BlockBush) || block instanceof BlockAir)
+//		{
+//			this.world.setBlockState(new BlockPos(x,y,z-1), Blocks.WEB.getDefaultState());
+//		}
+//		block = this.world.getBlockState(new BlockPos(x,y,z+1)).getBlock(); 
+//		if ((block instanceof BlockBush) || block instanceof BlockAir)
+//		{
+//			this.world.setBlockState(new BlockPos(x,y,z+1), Blocks.WEB.getDefaultState());
+//		}
+//    }
     
     @Override
     public boolean attackEntityAsMob(Entity entityIn)
     {
-        return true;
+        return false;
     }
     
     public void onUpdate()
@@ -403,7 +480,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 
             if (i > 0 && this.timeSinceIgnited == 0)
             {
-                this.playSound(SoundEvents.ENTITY_CREEPER_PRIMED, 1.0F, 0.7F);
+                this.playSound(SoundEvents.ENTITY_CREEPER_PRIMED, 2.0F, 0.7F);
             }
 
             this.timeSinceIgnited += i;
@@ -450,7 +527,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		{
 			if ( this.combatTimer < 1 )
 			{
-				explode();
+				this.explode();
 				this.combatTimer = 2;
 			}
 			else
@@ -476,7 +553,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		}
 	}
 	
-
+	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount)
 	{
 		if (this.world.isRemote)
@@ -486,7 +563,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		
         this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
 		
-		if ( this.isEntityInvulnerable(source) || source == DamageSource.FALL || source == null || source.getTrueSource() == null || !(this.isEntityAlive()) )
+		if ( source == null || this.isEntityInvulnerable(source) || source == DamageSource.FALL || source.getTrueSource() == null || !(this.isEntityAlive()) )
 		{
 			return false;
 		}
@@ -523,31 +600,31 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 	public Integer raidZ = null;
 	public Integer raidY = null;
 	protected Random rand = new Random();
-	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 0.7D, 48);
+	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 0.7D, 16, 16);
 	
 	@Override
 	public void readEntityFromNBT(NBTTagCompound compound)
 	{
-	    super.readEntityFromNBT(compound);
 	    if ( compound.hasKey("raidX") && compound.hasKey("raidZ") && compound.hasKey("raidY") )
 	    {
 	    	this.raidX = compound.getInteger("raidX");
-	    	this.raidY = compound.getInteger("raidZ");
-	    	this.raidZ = compound.getInteger("raidY");
+	    	this.raidZ = compound.getInteger("raidZ");
+	    	this.raidY = compound.getInteger("raidY");
 	    	this.setRaidLocation( compound.getInteger("raidX"), compound.getInteger("raidZ"), compound.getInteger("raidY") );
 	    }
+	    super.readEntityFromNBT(compound);
 	}
 	
 	@Override
 	public void writeEntityToNBT(NBTTagCompound compound)
 	{
-		super.writeEntityToNBT(compound);
 		if ( this.raidX != null && this.raidZ != null && this.raidY != null )
 		{
 			compound.setInteger("raidX", this.raidX);
 			compound.setInteger("raidZ", this.raidZ);
 			compound.setInteger("raidY", this.raidY);
 		}
+		super.writeEntityToNBT(compound);
 	}
 	
 	/* Set the direction for bandits to move to */
@@ -668,10 +745,11 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		ItemStack stack = new ItemStack(Item.getByNameOrId("toroquest:trophy_spider"));
 		EntityItem dropItem = new EntityItem(world, posX, posY, posZ, stack.copy());
 		dropItem.setNoPickupDelay();
-		dropItem.motionY = 0.25;
+		dropItem.motionY = 0.5;
 		dropItem.motionZ = 0.0;
 		dropItem.motionX = 0.0;
 		this.world.spawnEntity(dropItem);
+		dropItem.setGlowing(true);
 	}
 
 	private void dropLootItem(Item item, int amount)
@@ -750,49 +828,49 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
     }
 
     
-    private void triggerBossAbilitySpiders()
-	{
-		int spiders = world.getEntitiesWithinAABB(EntitySpider.class, new AxisAlignedBB(this.getPosition()).grow(64, 32, 64)).size();
-
-		if (spiders > 9)
-		{
-			return;
-		}
-		spawnSpiders();
-	}
-
-	private void spawnSpiders()
-	{
-		this.playSound(SoundEvents.ENTITY_SLIME_SQUISH, 2.0F, 1.2F);
-		int amount = 1 + rand.nextInt(3);
-		
-		for (int i = 0; i < amount; i++)
-		{
-			spawnSpider();
-		}
-	}
-
-	protected void spawnSpider()
-	{
-		EntitySpider mob = new EntitySpider(world);
-		BlockPos pos = this.getPosition();
-		mob.setPosition(pos.getX(),pos.getY(),pos.getZ());
-		mob.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.4D);
-    	world.spawnEntity(mob);
-    	mob.spawnRunningParticles();
-		mob.setAttackTarget(this.getAttackTarget());
-		mob.removePotionEffect(MobEffects.INVISIBILITY);
-		mob.removePotionEffect(MobEffects.SPEED);
-		mob.removePotionEffect(MobEffects.STRENGTH);
-		mob.removePotionEffect(MobEffects.REGENERATION);
-	}
+//    private void triggerBossAbilitySpiders()
+//	{
+//		int spiders = world.getEntitiesWithinAABB(EntitySpider.class, new AxisAlignedBB(this.getPosition()).grow(64, 32, 64)).size();
+//
+//		if (spiders > 9)
+//		{
+//			return;
+//		}
+//		spawnSpiders();
+//	}
+//
+//	private void spawnSpiders()
+//	{
+//		this.playSound(SoundEvents.ENTITY_SLIME_SQUISH, 2.0F, 1.2F);
+//		int amount = 1 + rand.nextInt(3);
+//		
+//		for (int i = 0; i < amount; i++)
+//		{
+//			spawnSpider();
+//		}
+//	}
+//
+//	protected void spawnSpider()
+//	{
+//		EntitySpider mob = new EntitySpider(world);
+//		BlockPos pos = this.getPosition();
+//		mob.setPosition(pos.getX(),pos.getY(),pos.getZ());
+//		mob.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.4D);
+//    	world.spawnEntity(mob);
+//    	mob.spawnRunningParticles();
+//		mob.setAttackTarget(this.getAttackTarget());
+//		mob.removePotionEffect(MobEffects.INVISIBILITY);
+//		mob.removePotionEffect(MobEffects.SPEED);
+//		mob.removePotionEffect(MobEffects.STRENGTH);
+//		mob.removePotionEffect(MobEffects.REGENERATION);
+//	}
 	
 	 /**
      * Returns the current state of creeper, -1 is idle, 1 is 'in fuse'
      */
     public int getCreeperState()
     {
-        return ((Integer)this.dataManager.get(STATE)).intValue();
+        return this.dataManager.get(STATE).intValue();
     }
 
     /**

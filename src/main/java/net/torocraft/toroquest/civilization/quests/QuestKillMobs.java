@@ -1,16 +1,18 @@
 package net.torocraft.toroquest.civilization.quests;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DamageSource;
@@ -19,14 +21,16 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
+import net.torocraft.toroquest.civilization.CivilizationType;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
-import net.torocraft.toroquest.entities.EntitySentry;
-import net.torocraft.toroquest.entities.EntityWolfRaider;
+import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.config.ToroQuestConfiguration.KillMob;
 
 public class QuestKillMobs extends QuestBase implements Quest
 {
@@ -45,8 +49,6 @@ public class QuestKillMobs extends QuestBase implements Quest
 	@SubscribeEvent
 	public void onKill(LivingDeathEvent event)
 	{
-		EntityPlayer player = null;
-		EntityLivingBase victim = (EntityLivingBase) event.getEntity();
 		DamageSource source = event.getSource();
 
 		if ( source == null || source.getTrueSource() == null )
@@ -54,49 +56,62 @@ public class QuestKillMobs extends QuestBase implements Quest
 			return;
 		}
 		
+		EntityPlayer player = null;
+		
 		if ( source.getTrueSource() instanceof EntityPlayer )
 		{
 			player = (EntityPlayer) source.getTrueSource();
 		}
-
-		if ( player == null )
-		{
-			return;
-		}
-
-		handleKillMobsQuest(player, victim);
-	}
-
-	private void handleKillMobsQuest(EntityPlayer player, EntityLivingBase victim)
-	{
-		if (victim == null)
+		else
 		{
 			return;
 		}
 		
-		if ( !(victim instanceof EntityMob) && !(victim instanceof IMob) )
+		if ( !(event.getEntity() instanceof EntityLivingBase) )
 		{
-			return;	
+			return;
 		}
+		
+		EntityLivingBase victim = (EntityLivingBase) event.getEntity();
 		
 		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
 
 		DataWrapper quest = new DataWrapper();
+		
 		for (QuestData data : quests)
 		{
 			try
-			{
+			{				
 				quest.setData(data);
-				quest.huntedMob = EntityList.getKey(victim).getResourcePath();
-				//quest.provinceHuntedIn = provinceHuntedIn;
-				if ( perform(quest) )
+				
+				if ( data.getsData().get("mobString") == null )
 				{
-					return;
+					if ( victim instanceof EntityMob || victim instanceof IMob )
+					{
+						perform(quest);
+					}
+				}
+				else
+				{
+					String km = data.getsData().get("mobString");
+					
+					if ( victim.getClass().getSimpleName().equals(km) )
+					{
+						perform(quest);
+					}
+					else if ( victim.getClass().getSuperclass().getSimpleName().equals(km) )
+					{
+						perform(quest);
+					}
+					else if ( victim.getClass().getSuperclass().getSuperclass().getSimpleName().equals(km) )
+					{
+						perform(quest);
+					}
 				}
 			}
 			catch (Exception e)
 			{
-				e.printStackTrace();
+				
 			}
 		}
 	}
@@ -108,12 +123,12 @@ public class QuestKillMobs extends QuestBase implements Quest
 			return false;
 		}
 
-		if (!quest.isApplicable())
+		if ( !(quest.data.getQuestType() == ID) )
 		{
 			return false;
 		}
-
-		quest.setCurrentAmount(quest.getCurrentAmount() + 1);
+		
+		quest.setCurrentAmount(quest.getCurrentAmount()+1);
 		quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 
 		if ( !quest.data.getCompleted() && quest.getCurrentAmount() >= quest.getTargetAmount() )
@@ -128,37 +143,60 @@ public class QuestKillMobs extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
-		if ( !quest.getCompleted() )
-		{
-			if ( !quest.getChatStack().equals("") )
-			{
-				quest.setChatStack("You haven't slain enough monsters!");
-				this.setData(quest);
-			}
-			// quest.getPlayer().closeScreen();
-			return null;
-		}
-
 		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
 
-		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId())) {
+		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
+		{
+			return null;
+		}
+		
+		if ( !quest.getCompleted() )
+		{
+			if ( quest.getChatStack().equals("") )
+			{
+				String s = TextComponentHelper.createComponentTranslation(quest.getPlayer(), "quests.killmobs.monsters", new Object[0]).getFormattedText();
+				if ( quest.getsData().get("mobString") != null )
+				{
+					s = quest.getsData().get("mobDisplay")+"s";
+				}
+				quest.setChatStack("killmobs.incomplete", quest.getPlayer(), s);
+				this.setData(quest);
+			}
 			return null;
 		}
 
-		// PlayerCivilizationCapability playerCiv = PlayerCivilizationCapabilityImpl.get(quest.getPlayer());
+		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
+		
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(quest.getCiv()) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
 
-		// int amount = new DataWrapper().setData(quest).getRewardRep();
-		// CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), playerCiv.getInCivilization().civilization, amount);
-		//playerCiv.adjustReputation(quest.getCiv(), new DataWrapper().setData(quest).getRewardRep());
-
-		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
 
 		List<ItemStack> rewards = getRewardItems(quest);
+		
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
-		// quest.setChatStack( "You have my gratitude, " + quest.getPlayer().getName() + "." );
+		
+		String s = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.killmobs.monsters", new Object[0]).getFormattedText();
+		
+		if ( quest.getsData().get("mobString") != null )
+		{
+			s = quest.getsData().get("mobDisplay")+"s";
+		}
+		quest.setChatStack("killmobs.complete", quest.getPlayer(), s);
+		
 		this.setData(quest);
 		return items;
 	}
@@ -166,66 +204,50 @@ public class QuestKillMobs extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "Very well. I can only hope we survive the harsh nights to come..." );
-		this.setData(data);
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		if ( data.getsData().get("mobString") == null )
+		{
+			data.setChatStack("killmobs.reject", data.getPlayer(), TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.killmobs.monsters", new Object[0]).getFormattedText());
+		}
+		else
+		{
+			data.setChatStack("killmobs.reject", data.getPlayer(), data.getsData().get("mobDisplay")+"s");
+		}
 		data.getPlayer().closeScreen();
+		this.setData(data);
 		return in;
 	}
 
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		// if (!data.getPlayer().world.isRemote)
+		if ( data.getsData().get("mobString") == null )
 		{
-			switch (data.getPlayer().world.rand.nextInt(7))
-			{
-				case 0:
-				{
-					data.setChatStack( "The city has been rampaged enough by creatures of the night for too long! Kill them, " + data.getPlayer().getName() + ". Kill them all!" );
-					break;
-				}
-				case 1:
-				{
-					data.setChatStack( "We cannot afford another raid on the city, " + data.getPlayer().getName() + ". You must help us. Kill the vile creatures of night which fighten our people!");
-					break;
-				}
-				case 2:
-				{
-					data.setChatStack( "Looking to wet your blade, " + data.getPlayer().getName() + "? Slay these vile creatures that attack our city and I will reward you handsomly." );                                                                  
-					break;
-				}
-				case 3:
-				{
-					data.setChatStack( "Put an end to the attacks on the city. Slay as many of those vicious creatures as you can... you will be rewarded, of course." );
-					break;
-				}
-				case 4:
-				{
-					data.setChatStack( "The guard have been struggling to deal with raids on the city. " + data.getPlayer().getName() + ", come to their aid and help them fight off these attackers." );
-					break;
-				}
-				case 5:
-				{
-					data.setChatStack( "The villagers are fearful. Bandits... wolves... undead... it just wont stop. We need your expertise in combat, " + data.getPlayer().getName() + ". Help protect the city and it's people!" );
-					break;
-				}
-				case 6:
-				{
-					data.setChatStack( "We have lost too many villagers to these creatures of the night. I need you to put a stop to their rampage, and kill these monsters." );
-					break;
-				}
-			}
+			data.setChatStack("killmobs.accept", data.getPlayer(), null);
+		}
+		else
+		{
+			data.setChatStackString(data.getsData().get("mobAccept"), data.getPlayer(), data.getsData().get("mobString"));
 		}
 		this.setData(data);
 		return in;
 	}
 
 	@Override
-	public String getTitle(QuestData data) {
-		return "quests.kill_mobs.title";
-		// return "Kill " + q.getTargetAmount() + " " + mobName(q.getMobType(),
-		// data.getPlayer()) + " in " + getProvinceName(data.getPlayer(),
-		// data.getProvinceId());
+	public String getTitle(QuestData data)
+	{
+		if ( data.getsData().get("mobString") == null )
+		{
+			return "quests.killmobs.title";
+		}
+		else
+		{
+			return data.getsData().get("mobTitle");
+		}
 	}
 
 	@Override
@@ -235,23 +257,64 @@ public class QuestKillMobs extends QuestBase implements Quest
 		{
 			return "";
 		}
+		
 		DataWrapper q = new DataWrapper().setData(data);
 		StringBuilder s = new StringBuilder();
-		s.append("quests.kill_mobs.description");
+		s.append("quests.killmobs.description");
 		s.append("|").append(q.getTargetAmount());
-		// s.append("|").append("of these vile");
-		s.append("|").append(getProvinceName(data.getPlayer(), data.getProvinceId()));
-		s.append("|").append(q.getCurrentAmount()  + "\n\n" );
-		s.append("|").append(listItems(getRewardItems(q.data))  + ",\n" );
+		
+		if ( data.getsData().get("mobString") == null )
+		{
+			s.append("|").append("monsters");
+		}
+		else
+		{
+			String km = data.getsData().get("mobDisplay");
+			if ( q.getTargetAmount() == 1 )
+			{
+				s.append("|").append(km);
+			}
+			else
+			{
+				s.append("|").append(km+"s");
+			}	
+		}
+
+		s.append("|").append(q.getCurrentAmount() + "\n\n" );
+		s.append("|").append(listKillMobItems(getRewardItems(q.data)) + ",\n" );
 		s.append("|").append(getRewardRep(data));
+		
 		return s.toString();
 	}
 
-//	private String mobName(Integer mobType, EntityPlayer player) {
-//		Entity mob = EntityList.createEntityByIDFromName(new ResourceLocation(MOB_TYPES[mobType]), player.world);
+//	private String mobName()
+//	{
+//		Entity mob = EntityList.createEntityByIDFromName(  new ResourceLocation(  ToroQuestConfiguration.mobs.get( rand.nextInt(ToroQuestConfiguration.mobs.size()) ).mobName  ), player.world ); // MOB_TYPES[mobType]
+//		System.out.println(mob); // XXX
+//		mob.getClass();
 //		return mob.getName();
+//	Entity mob = EntityList.createEntityByIDFromName( new ResourceLocation(), player.world ); // MOB_TYPES[mobType]
+//	System.out.println(mob); // XXX
+//	mob.getClass();
+//	return mob.getName();
+	
+//	Entity mob = EntityList.createEntityByIDFromName(  new ResourceLocation(  ToroQuestConfiguration.mobs.get( rand.nextInt(ToroQuestConfiguration.mobs.size()) ).mobName  ), player.world   ); // MOB_TYPES[mobType]
+	
+	//else if ( quest.getHuntedMob() != victim.toString() )
+	//e.printStackTrace();
+	// quest.huntedMob = EntityList.getKey(victim).getResourcePath(); EntityZombie > minecraft:zombie
+	//quest.provinceHuntedIn = provinceHuntedIn;
+	
+	//
+	// q.setHuntedMob("");
+	// q.setMobType(rand.nextInt(MOB_TYPES.size()));
+	// EntityList.getClassFromName("");
+	//
+	
+	// EntitySkeleton,5,8,0.5,kill x beasts
+	
 //	}
-
+	
 	@Override
 	public QuestData generateQuestFor(EntityPlayer player, Province province)
 	{
@@ -265,24 +328,81 @@ public class QuestKillMobs extends QuestBase implements Quest
 		q.data.setQuestId(UUID.randomUUID());
 		q.data.setQuestType(ID);
 		q.data.setCompleted(false);
-
-
-		//q.setMobType(rand.nextInt(MOB_TYPES.length));
-		q.setCurrentAmount(0);
 		
-		int roll = rand.nextInt(7)*4+12;
-		int em = (int)Math.round((double)roll/3)+2;
-		int rep = em*2;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		int roll = rand.nextInt(8)*4+12;
+		int em = (int)Math.round((double)roll/3)+4;
+		
+		q.setMobString(null);
+		q.setMobDisplay(null);
+		q.setMobAccept(null);
+		q.setMobTitle(null);
+		
+		int custom = ToroQuestConfiguration.mobs.isEmpty() ? -1 : rand.nextInt(ToroQuestConfiguration.mobs.size());
+		
+		if ( custom >= 0 )
+		{
+			KillMob km = ToroQuestConfiguration.mobs.get(custom);
+			
+			if ( km.minRepRequired <= PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) && ( km.provinceAllowed.equals("x") || km.provinceAllowed.equals(CivilizationType.biomeName(province.toString())) ) )
+			{
+				roll = km.minKills+rand.nextInt(1+km.maxKills-km.minKills);
+				if ( roll % 2 == 1 && roll != km.maxKills && roll != km.minKills )
+				{
+					roll++;
+				}
+				em = (int)Math.round(km.emeraldsPerKill*roll);
+				q.setMobString(km.mobName);
+				q.setMobDisplay(km.mobDisplayName);
+				q.setMobAccept(km.acceptChat);
+				q.setMobTitle(km.title);
+			}
+			else
+			{
+				ArrayList<KillMob> list = new ArrayList<KillMob>(ToroQuestConfiguration.mobs);
+				Collections.shuffle(list);
+								
+				for ( KillMob c : list )
+				{
+					if ( c.minRepRequired <= PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) && ( c.provinceAllowed.equals("x") || c.provinceAllowed.equals(CivilizationType.biomeName(province.toString())) ) )
+					{
+						roll = c.minKills+rand.nextInt(1+c.maxKills-c.minKills);
+						if ( roll % 2 == 1 && roll != c.maxKills && roll != c.minKills )
+						{
+							roll++;
+						}
+						em = (int)Math.round(c.emeraldsPerKill*roll);
+						q.setMobString(c.mobName);
+						q.setMobDisplay(c.mobDisplayName);
+						q.setMobAccept(c.acceptChat);
+						q.setMobTitle(c.title);
+						break;
+					}
+				}
+			}
+		}
+		
+		q.setCurrentAmount(0);
+		q.setRewardRep(em*2);
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
-		q.setRewardRep(rep);
 		q.setTargetAmount(roll);
-		ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward
-		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
-		rewardItems.add(emeralds);
-		setRewardItems(q.data, rewardItems);
+		
+		if ( em > 64 )
+		{
+			em = em/9;
+			List<ItemStack> rewardItems = new ArrayList<ItemStack>(1);
+			rewardItems.add(new ItemStack(Blocks.EMERALD_BLOCK, em));
+			setRewardItems(q.data, rewardItems);
+		}
+		else
+		{
+			ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward
+			List<ItemStack> rewardItems = new ArrayList<ItemStack>();
+			rewardItems.add(emeralds);
+			setRewardItems(q.data, rewardItems);
+		}
 		this.setData(q.data);
 		return q.data;
 	}
@@ -290,8 +410,9 @@ public class QuestKillMobs extends QuestBase implements Quest
 	public static class DataWrapper
 	{
 		private QuestData data = new QuestData();
-		private Province provinceHuntedIn;
-		private String huntedMob;
+		// private Province provinceHuntedIn;
+		// private String huntedMob = null;
+		// private boolean custom;
 
 		public QuestData getData()
 		{
@@ -304,34 +425,81 @@ public class QuestKillMobs extends QuestBase implements Quest
 			return this;
 		}
 
-		public Province getProvinceHuntedIn()
+//		public Province getProvinceHuntedIn()
+//		{
+//			return provinceHuntedIn;
+//		}
+//
+//		public void setProvinceHuntedIn(Province provinceHuntedIn)
+//		{
+//			this.provinceHuntedIn = provinceHuntedIn;
+//		}
+
+//		public boolean getCustom()
+//		{
+//			return custom;
+//		}
+//		
+//		public void setCustom( boolean b )
+//		{
+//			this.custom = b;
+//		}
+		
+//		public String getHuntedMob()
+//		{
+//			return this.huntedMob;
+//		}
+//		
+//		public void setHuntedMob( @Nullable String m ) 
+//		{
+//			this.huntedMob = m;
+//		}
+		
+//		public KillMob killMobData()
+//		{
+//			return i(data.getiData().get("type"));
+//		}
+
+		// mobAccept
+		
+		public String getMobAccept()
 		{
-			return provinceHuntedIn;
+			return data.getsData().get("mobAccept");
 		}
 
-		public void setProvinceHuntedIn(Province provinceHuntedIn)
+		public void setMobAccept(String c)
 		{
-			this.provinceHuntedIn = provinceHuntedIn;
+			data.getsData().put("mobAccept", c);
+		}
+		
+		public String getMobTitle()
+		{
+			return data.getsData().get("mobTitle");
 		}
 
-		public String getHuntedMob()
+		public void setMobTitle(String c)
 		{
-			return huntedMob;
+			data.getsData().put("mobTitle", c);
+		}
+		
+		public String getMobString()
+		{
+			return data.getsData().get("mobString");
 		}
 
-		public void setHuntedMob(String huntedMob) 
+		public void setMobString(String c)
 		{
-			this.huntedMob = huntedMob;
+			data.getsData().put("mobString", c);
+		}
+		
+		public String getMobDisplay()
+		{
+			return data.getsData().get("mobDisplay");
 		}
 
-		public Integer getMobType()
+		public void setMobDisplay(String c)
 		{
-			return i(data.getiData().get("type"));
-		}
-
-		public void setMobType(Integer mobType)
-		{
-			data.getiData().put("type", mobType);
+			data.getsData().put("mobDisplay", c);
 		}
 
 		public Integer getTargetAmount()
@@ -374,16 +542,6 @@ public class QuestKillMobs extends QuestBase implements Quest
 			{
 				return 0;
 			}
-		}
-
-		private boolean isApplicable()
-		{
-			return isKillMobsQuest(); // && isInCorrectProvince();
-		}
-
-		private boolean isKillMobsQuest()
-		{
-			return data.getQuestType() == ID;
 		}
 
 //		private boolean isInCorrectProvince()

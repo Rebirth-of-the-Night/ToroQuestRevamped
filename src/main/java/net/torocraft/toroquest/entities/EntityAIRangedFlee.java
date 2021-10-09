@@ -37,10 +37,22 @@ public class EntityAIRangedFlee extends EntityAIBase
 		if ( this.creature.getHeldItemMainhand().getItem() instanceof ItemBow )
 		{
     		EntityLivingBase attacker = this.creature.getAttackTarget();
-    		if ( attacker != null && !this.creature.isHandActive() && this.creature.getDistanceSq( attacker ) < 9 )
+    		if ( attacker != null && !this.creature.isHandActive() && this.creature.getDistanceSq( attacker ) <= 40 )
     		{
-	            return this.findRandomPosition( attacker );
+    			this.creature.resetActiveHand();
+	            boolean flag = this.findRandomPosition(attacker);
+	            
+	        	int i = 0;
+	            while ( !flag || i < 8 )
+	            {
+	            	flag = this.findRandomPosition(attacker);
+	            	i++;
+	            }
+	            
+	            this.creature.setSprinting(flag);
+	            return flag;
     		}
+            this.creature.setSprinting(false);
 		}
     	return false;
     }
@@ -51,6 +63,7 @@ public class EntityAIRangedFlee extends EntityAIBase
     public void startExecuting()
     {
         this.creature.getNavigator().tryMoveToXYZ(this.randPosX, this.randPosY, this.randPosZ, this.speed);
+        // this.creature.getLookHelper().setLookPosition(this.creature.posX, this.creature.posY + (double)this.creature.getEyeHeight(), this.creature.posZ, (float)this.creature.getHorizontalFaceSpeed(), (float)this.creature.getVerticalFaceSpeed());
     }
 
     protected boolean findRandomPosition( EntityLivingBase attacker )
@@ -60,7 +73,7 @@ public class EntityAIRangedFlee extends EntityAIBase
     	{
     		return false;
     	}
-        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 24, 12, enemyPos);
+        Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, enemyPos);
         if ( vec3d == null )
         {
             return false;
@@ -115,7 +128,6 @@ public class EntityAIRangedFlee extends EntityAIBase
                 }
             }
         }
-
         return blockpos1;
     }
 }

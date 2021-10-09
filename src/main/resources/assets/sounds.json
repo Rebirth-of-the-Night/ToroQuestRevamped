@@ -1,0 +1,23 @@
+{
+	"entity.steam_0": {
+		"category": "entity",
+		"subtitle": "entity.steam_0",
+		"sounds": [{ "name": "toroquest:entity/steam_0", "stream": true}]
+	},
+	"steam_0a": {
+		"category": "neutral",
+		"sounds": ["toroquest:steam_0a"]
+	},
+	"steam_1": {
+		"category": "neutral",
+		"sounds": ["toroquest:steam_1"]
+	},
+	"steam_2": {
+		"category": "neutral",
+		"sounds": ["toroquest:steam_2"]
+	},
+	"steam_3": {
+		"category": "neutral",
+		"sounds": ["toroquest:steam_3"]
+	}
+}

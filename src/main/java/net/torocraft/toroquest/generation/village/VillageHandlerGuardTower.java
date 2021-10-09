@@ -69,13 +69,13 @@ public class VillageHandlerGuardTower implements IVillageCreationHandler
 		{
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
-			if ( i >= 0 && Math.abs(x) < i && Math.abs(z) < i )
+			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )
 			{
 				 nameType += "_destroyed";
 			}
 			
 			BlockPos size = new BlockMapMeasurer(nameType).measure();
-			StructureBoundingBox bounds = StructureBoundingBox.getComponentToAddBoundingBox(x, y, z, 0, 0, 0, size.getX(), size.getY(), size.getZ(), facing);
+			StructureBoundingBox bounds = StructureBoundingBox.getComponentToAddBoundingBox(x, y, z, 1, 0, 1, size.getX(), size.getY(), size.getZ(), facing);
 			return canVillageGoDeeper(bounds) && StructureComponent.findIntersecting(structures, bounds) == null ? new VillagePieceGuardTower( nameType, start, p_175850_7_, rand, bounds, facing) : null;
 		}
 
@@ -109,8 +109,14 @@ public class VillageHandlerGuardTower implements IVillageCreationHandler
 
 		@Override
 		protected void alterPalette(Map<String, IBlockState> palette) {
-			palette.put("Td", Blocks.TRAPDOOR.getDefaultState());
+			// TODO Auto-generated method stub
+			
 		}
+
+//		@Override
+//		protected void alterPalette(Map<String, IBlockState> palette) {
+//			palette.put("Td", Blocks.TRAPDOOR.getDefaultState());
+//		}
 
 	}
 

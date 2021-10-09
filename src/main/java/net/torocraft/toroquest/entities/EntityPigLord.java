@@ -35,7 +35,6 @@ import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathNavigateGround;
 import net.minecraft.pathfinding.PathPoint;
@@ -48,7 +47,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BossInfo;
 import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.DifficultyInstance;
@@ -59,7 +57,6 @@ import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
-import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 import net.torocraft.toroquest.entities.ai.EntityAIThrow;
@@ -70,7 +67,6 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 {
 
 	public static String NAME = "pig_lord";
-	private int combatTimer = 0;
 
 	static
 	{
@@ -91,6 +87,23 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 		EntityRegistry.registerModEntity(new ResourceLocation(ToroQuest.MODID, NAME), EntityPigLord.class, NAME, entityId, ToroQuest.INSTANCE, 80, 3,
 				true, 0xffffff, 0x909090);
 	}
+	
+    public boolean isNonBoss()
+    {
+        return false;
+    }
+	
+	@Override
+	public int getHorizontalFaceSpeed()
+	{
+		return 5;
+	}
+	
+	@Override
+    protected float getWaterSlowDown()
+    {
+        return 0.9F;
+    }
 
 	public static void registerRenders()
 	{
@@ -107,9 +120,10 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 	{
 		super(world);
 		this.setChild(false);
-		this.setSize(1.2F, 5.9F);
+		this.setSize(1.9F, 5.9F);
 		this.setRealSize(1.9F, 5.9F);
 		this.experienceValue = 280;
+		this.stepHeight = 4.05F;
 	}
 	
 	// INCREASE RENDER DISTNACE
@@ -136,11 +150,11 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 		super.applyEntityAttributes();
 		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.75D);
 		this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
-		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(275D * ToroQuestConfiguration.bossHealthMultiplier);
+		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(200D * ToroQuestConfiguration.bossHealthMultiplier);
 		this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(5D * ToroQuestConfiguration.bossAttackDamageMultiplier);
-		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
 		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(10.0D);
-		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(2.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(10.0D);
 	}
 
 	/**
@@ -154,6 +168,7 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 	{
 		WorldGenPlacer.clearTrees(this.world, new BlockPos((int)this.posX, (int)this.posY, (int)this.posZ), 32);
 		livingdata = super.onInitialSpawn(difficulty, livingdata);
+		this.setRaidLocation( (int)this.posX, (int)this.posZ, (int)this.posY );
 		return livingdata;
 	}
 
@@ -190,18 +205,27 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 		{
 			return;
 		}
-		List<EntityPigZombie> pigZombieCount = world.getEntitiesWithinAABB(EntityPigZombie.class, new AxisAlignedBB(this.getPosition()).grow(40, 20, 40));
 		
-		for ( EntityPigZombie p : pigZombieCount )
+		if ( rand.nextBoolean() )
 		{
-			p.setAttackTarget(this.getAttackTarget());
+			this.spawnLightning( 16 );
+
+			List<EntityPigZombie> pigZombieCount = world.getEntitiesWithinAABB(EntityPigZombie.class, new AxisAlignedBB(this.getPosition()).grow(16, 8, 16));
+			
+			for ( EntityPigZombie p : pigZombieCount )
+			{
+				p.setAttackTarget(this.getAttackTarget());
+			}
 		}
-		
-		if ( rand.nextBoolean() ) spawnLightning( 16 );
 	}
 
 	private void spawnLightning( int range )
 	{
+		if ( !this.isEntityAlive() || this.getHealth() <= 0 )
+		{
+			return;
+		}
+		
 		this.addPotionEffect(new PotionEffect(MobEffects.GLOWING, 16, 2));
 		if ( this.world.isRemote )
 		{
@@ -291,7 +315,17 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 
 	public void onLivingUpdate()
 	{
-		super.onLivingUpdate();
+		if ( this.getAttackTarget() != null )
+    	{
+    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
+    	super.onLivingUpdate();
+    	if ( this.getAttackTarget() != null )
+    	{
+    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
 		
 		if ( this.world.isRemote )
 		{
@@ -299,74 +333,54 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 		}
 		
 		float health = this.getHealth()/this.getMaxHealth();
-        this.bossInfo.setPercent(health);
+        
+        if ( this.ticksExisted % 25 == 0 )
+		{
+			this.triggerBossAbility();
+			this.heal(ToroQuestConfiguration.bossHealthMultiplier);
+	        this.bossInfo.setPercent(health);
+	        
+	        if ( this.collidedHorizontally )
+	        {			
+	            PathNavigateGround pathnavigateground = (PathNavigateGround)this.getNavigator();
+	            Path path = pathnavigateground.getPath();
+	            if (path != null && !path.isFinished() )
+	            {
+	                for (int i = 0; i < Math.min(path.getCurrentPathIndex() + 2, path.getCurrentPathLength()); ++i)
+	                {
+	                    PathPoint pathpoint = path.getPathPointFromIndex(i);
+	                    for ( int j = 8; j >= 0; j-- )
+	                    {
+		                    BlockPos doorPosition = new BlockPos( pathpoint.x + rand.nextInt(4)-3, pathpoint.y + j, pathpoint.z + rand.nextInt(4)-3 );
+		                    Block doorBlock = this.getBlockDoor( doorPosition );
+		
+	                        if ( doorBlock != null && doorBlock != Blocks.AIR && doorBlock.getBlockHardness(doorBlock.getDefaultState(), this.world, doorPosition) <= 3.0F )
+	                        {
+	                        	this.world.setBlockState( doorPosition, Blocks.AIR.getDefaultState());
+	            	            if ( rand.nextBoolean() )
+	            	            {
+	            	            	if ( rand.nextBoolean() ) this.world.playEvent(1021, doorPosition, 0);
+	            	            	else this.playSound(SoundEvents.BLOCK_STONE_BREAK, 1.0F, 1.0F);
 
-		if ( this.collidedHorizontally )
-        {			
-            PathNavigateGround pathnavigateground = (PathNavigateGround)this.getNavigator();
-            Path path = pathnavigateground.getPath();
-            if (path != null && !path.isFinished() )
-            {
-                for (int i = 0; i < Math.min(path.getCurrentPathIndex() + 2, path.getCurrentPathLength()); ++i)
-                {
-                    PathPoint pathpoint = path.getPathPointFromIndex(i);
-                    for ( int j = 8; j >= 0; j-- )
-                    {
-	                    BlockPos doorPosition = new BlockPos( pathpoint.x + rand.nextInt(4)-3, pathpoint.y + j, pathpoint.z + rand.nextInt(4)-3 );
-	                    Block doorBlock = this.getBlockDoor( doorPosition );
-	
-                        if ( doorBlock != null && doorBlock != Blocks.AIR )
-                        {
-                        	this.world.setBlockState( doorPosition, Blocks.AIR.getDefaultState());
-            	            if ( rand.nextBoolean() )
-            	            {
-            	            	if ( rand.nextBoolean() ) this.world.playEvent(1021, doorPosition, 0);
-            	            	else this.playSound(SoundEvents.BLOCK_STONE_BREAK, 1.0F, 1.0F);
-
-            	            }
-            	            this.world.playEvent(2001, doorPosition, Block.getIdFromBlock( doorBlock ));
-                        }
+	            	            }
+	            	            this.world.playEvent(2001, doorPosition, Block.getIdFromBlock( doorBlock ));
+	                        }
+		                }
 	                }
-                }
-            }
-        }
-		
-        EntityLivingBase attacker = this.getAttackTarget();
-    	
-		if ( attacker != null && attacker.isEntityAlive() )
-		{
-	        this.combatTimer = 12;
-	        double dist = this.getDistanceSq(attacker);
-			float push = (float)((2+dist)*2);
-			Vec3d velocityVector = new Vec3d(attacker.posX - this.posX, 0, attacker.posZ - this.posZ);
-	        this.addVelocity((velocityVector.x)/push,0.01,(velocityVector.z)/push);
+	            }
+	        }
 		}
-		
-		boolean flag = health <= 0.2 && this.combatTimer > 0;
-				
-		if (this.ticksExisted % (int)(((health*32))+8) == 0)
+        
+		if ( health <= 0.2 && this.ticksExisted % 11 == 0 )
 		{
-			this.combatTimer--;
-			if ( this.combatTimer > 0 )
-			{
-				this.triggerBossAbility();
-			}
-			if ( !flag ) this.heal(ToroQuestConfiguration.bossHealthMultiplier);
-    		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(2/(health+3));
-		}
-		
-		if ( flag )
-		{
-			if ( this.ticksExisted % 10 == 0 )
-			{
-				this.spawnLightning( 16 );
-				// this.spawnLightning( 32 );
-				this.spawnLightning( 64 );
-	    		this.addPotionEffect(new PotionEffect(MobEffects.GLOWING, 25, 2, true, false));
-	        	if ( rand.nextInt(6) == 0 ) this.playSound(SoundEvents.ENTITY_ZOMBIE_PIG_HURT, this.getSoundVolume() * 2.0F, ((this.rand.nextInt(5)/10) + 0.4F));
-			}
+			this.spawnLightning( 16 );
+			this.spawnLightning( 48 );
+    		this.addPotionEffect(new PotionEffect(MobEffects.GLOWING, 25, 2, true, false));
+        	if ( rand.nextInt(6) == 0 ) this.playSound(SoundEvents.ENTITY_ZOMBIE_PIG_HURT, this.getSoundVolume() * 2.0F, ((this.rand.nextInt(5)/10) + 0.4F));
 		}
 	}
+	
+	// private boolean bossTriggered;
 	
 	public boolean attackEntityFrom(DamageSource source, float amount)
 	{
@@ -426,34 +440,33 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 	public Integer raidZ = null;
 	public Integer raidY = null;
 	protected Random rand = new Random();
-	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 0.7D, 48);
+	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 0.7D, 16, 32);
 	
 	@Override
 	public void readEntityFromNBT(NBTTagCompound compound)
 	{
-	    super.readEntityFromNBT(compound);
 	    if ( compound.hasKey("raidX") && compound.hasKey("raidZ") && compound.hasKey("raidY") )
 	    {
 	    	this.raidX = compound.getInteger("raidX");
 	    	this.raidZ = compound.getInteger("raidZ");
-	    	this.raidZ = compound.getInteger("raidY");
+	    	this.raidY = compound.getInteger("raidY");
 	    	this.setRaidLocation( compound.getInteger("raidX"), compound.getInteger("raidZ"), compound.getInteger("raidY") );
 	    }
+	    super.readEntityFromNBT(compound);
 	}
 	
 	@Override
 	public void writeEntityToNBT(NBTTagCompound compound)
 	{
-		super.writeEntityToNBT(compound);
 		if ( this.raidX != null && this.raidZ != null && this.raidY != null )
 		{
 			compound.setInteger("raidX", this.raidX);
 			compound.setInteger("raidZ", this.raidZ);
 			compound.setInteger("raidY", this.raidY);
 		}
+		super.writeEntityToNBT(compound);
 	}
 	
-	/* Set the direction for bandits to move to */
 	public void setRaidLocation(Integer x, Integer z, Integer y)
 	{
 		this.tasks.removeTask(this.areaAI);
@@ -475,7 +488,7 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 		super.onDeath(cause);
 		if (!this.world.isRemote)
 		{
-			dropLoot();
+			dropBossLoot();
 			// quest
 			
 			if ( this.raidX == null || this.raidZ == null || this.raidY == null )
@@ -487,7 +500,7 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 			int z = this.raidZ;
 			int y = this.raidY;
 			
-			int range = 64;
+			int range = 96;
 			for ( int xx = -range/2; xx < range; xx++ )
 			{
 				for ( int yy = -range/2; yy < range; yy++ )
@@ -511,26 +524,6 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 				}
 			}
 		}
-	}
-	
-	private void dropLoot()
-	{
-//		ItemStack stack = new ItemStack(Item.getByNameOrId("toroquest:trophy_pig"));
-//    	EntityItem dropItem = new EntityItem(world, posX, posY, posZ, stack.copy());
-//    	dropItem.setNoPickupDelay();
-//    	this.world.spawnEntity(dropItem);
-    	
-//		dropLootItem(Items.ROTTEN_FLESH, rand.nextInt(100)+20);
-//		dropLootItem(Items.PORKCHOP, rand.nextInt(75)+15);
-//		dropLootItem(Items.COOKED_PORKCHOP, rand.nextInt(50)+10);
-//		dropLootItem(Items.BONE, rand.nextInt(20)+5);
-//		dropLootItem(Items.GOLD_INGOT, rand.nextInt(10) + 10);
-//		dropLootItem(Items.GOLD_NUGGET, rand.nextInt(30) + 30);
-//		dropLootItem(Items.GOLDEN_CARROT, rand.nextInt(5) + 5);
-    	
-		placeChest( this.world, this.getPosition() );
-		
-		
 	}
 	
 	protected void placeChest(World world, BlockPos placementPos)
@@ -579,21 +572,93 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 			}
 
 			itemstack = new ItemStack(Item.getByNameOrId("toroquest:trophy_pig"));
-			((TileEntityChest) tileentity).setInventorySlotContents(13, itemstack);
 			
 			ItemStack sword = new ItemStack(Items.GOLDEN_SWORD,1);
-			sword.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:knockback"),13);
-			//sword.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:smite"),6);
-			//sword.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:fire_aspect"),6);
-			//sword.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:bane_of_arthropods"),6);
+			sword.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:knockback"),10);
 			sword.setStackDisplayName("Sword of Nago");
-			((TileEntityChest) tileentity).setInventorySlotContents(11, sword);
-			
-			
 		}
 		// world.setBlockState(placementPos.down(), Blocks.STONE.getDefaultState());
 	}
 	
+	
+	
+	private void dropBossLoot()
+	{
+    	if (!this.world.isRemote)
+		{
+			// quest
+			int x = this.getPosition().getX();
+			int y = this.getPosition().getY();
+			int z = this.getPosition().getZ();
+			int range = 128;
+			for ( int xx = -range/2; xx < range; xx++ )
+			{
+				for ( int yy = -range/4; yy < range/2; yy++ )
+				{
+					for ( int zz = -range/2; zz < range; zz++ )
+					{
+						BlockPos pos = new BlockPos(x+xx-16,y+yy-4,z+zz-16);
+						world.extinguishFire(null, pos, EnumFacing.UP);
+						IBlockState block = world.getBlockState(pos);
+						if ( block != null && block == Blocks.OBSIDIAN )
+						{
+							world.setBlockToAir(pos);
+						}
+					}
+				}
+			}
+
+	    	dropTrophy();
+	    	dropSword();
+	    	
+			this.dropLootItem(Items.BONE, rand.nextInt(3)+3);
+			this.dropLootItem(Items.BONE, rand.nextInt(3)+3);
+			this.dropLootItem(Items.BONE, rand.nextInt(3)+3);
+			
+			this.dropLootItem(Items.ROTTEN_FLESH, rand.nextInt(3)+3);
+			this.dropLootItem(Items.ROTTEN_FLESH, rand.nextInt(3)+3);
+			this.dropLootItem(Items.ROTTEN_FLESH, rand.nextInt(3)+3);
+
+			this.dropLootItem(Items.PORKCHOP, rand.nextInt(3)+3);
+			this.dropLootItem(Items.PORKCHOP, rand.nextInt(3)+3);
+			this.dropLootItem(Items.PORKCHOP, rand.nextInt(3)+3);
+			
+			this.dropLootItem(Items.COOKED_PORKCHOP, rand.nextInt(3)+3);
+			this.dropLootItem(Items.COOKED_PORKCHOP, rand.nextInt(3)+3);
+			this.dropLootItem(Items.COOKED_PORKCHOP, rand.nextInt(3)+3);
+			
+			this.dropLootItem(Items.GOLD_NUGGET, rand.nextInt(3)+3);
+			this.dropLootItem(Items.GOLD_INGOT, rand.nextInt(3)+3);
+			this.dropLootItem(Items.GOLDEN_CARROT, 1);
+			
+		}
+	}
+    
+    private void dropTrophy()
+	{
+		ItemStack stack = new ItemStack(Item.getByNameOrId("toroquest:trophy_pig"));
+		EntityItem dropItem = new EntityItem(world, posX, posY+1, posZ, stack.copy());
+		dropItem.setNoPickupDelay();
+		dropItem.motionY = 0.5;
+		dropItem.motionZ = 0.0;
+		dropItem.motionX = 0.0;
+		this.world.spawnEntity(dropItem);
+		dropItem.setGlowing(true);
+	}
+    
+    private void dropSword()
+	{
+		ItemStack stack = new ItemStack(Items.GOLDEN_SWORD,1);
+		stack.addEnchantment(Enchantment.getEnchantmentByLocation("minecraft:knockback"),13);
+		stack.setStackDisplayName("Sword of Nago");
+		EntityItem dropItem = new EntityItem(world, posX, posY+1, posZ, stack.copy());
+		dropItem.setNoPickupDelay();
+		dropItem.motionY = 0.5;
+		dropItem.motionZ = 0.0;
+		dropItem.motionX = 0.0;
+		this.world.spawnEntity(dropItem);
+	}
+
 	private void dropLootItem(Item item, int amount)
 	{
 		if (amount == 0)
@@ -606,21 +671,12 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 			ItemStack stack = new ItemStack(item);
 			EntityItem dropItem = new EntityItem(world, posX, posY, posZ, stack.copy());
 			dropItem.setNoPickupDelay();
-			dropItem.motionY = rand.nextDouble();
-			dropItem.motionZ = rand.nextDouble() - 0.5d;
-			dropItem.motionX = rand.nextDouble() - 0.5d;
-			world.spawnEntity(dropItem);
+			dropItem.motionY = rand.nextDouble() + 0.1;
+			dropItem.motionZ = 2 * rand.nextGaussian();
+			dropItem.motionX = 2 * rand.nextGaussian();
+			this.world.spawnEntity(dropItem);
 		}
-	}
 
-	private void dropLootItem(ItemStack item)
-	{
-		EntityItem dropItem = new EntityItem(world, posX, posY, posZ, item.copy());
-		dropItem.setNoPickupDelay();
-		dropItem.motionY = rand.nextDouble();
-		dropItem.motionZ = rand.nextDouble() - 0.5d;
-		dropItem.motionX = rand.nextDouble() - 0.5d;
-		world.spawnEntity(dropItem);
 	}
 	
 	@Override
@@ -697,5 +753,4 @@ public class EntityPigLord extends EntityPigZombie implements IMob
             }
         }
     }
-
 }

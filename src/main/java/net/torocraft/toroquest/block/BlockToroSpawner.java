@@ -34,22 +34,23 @@ public class BlockToroSpawner extends BlockContainer
 
 	public static final String NAME = "toroSpawnerBlock";
 	public static BlockToroSpawner INSTANCE;
-	public static Item ITEM_INSTANCE;
+	//public static Item ITEM_INSTANCE;
 	private static ResourceLocation REGISTRY_NAME = new ResourceLocation(ToroQuest.MODID, NAME);
 
+	@SuppressWarnings("deprecation")
 	@SubscribeEvent
 	public static void initBlock(final RegistryEvent.Register<Block> event)
 	{
-		GameRegistry.registerTileEntity(TileEntityToroSpawner.class, NAME);
+		GameRegistry.registerTileEntity(TileEntityToroSpawner.class, ToroQuest.MODID + ":" + NAME);
 		INSTANCE = (BlockToroSpawner) new BlockToroSpawner().setUnlocalizedName(NAME);
 		INSTANCE.setRegistryName(REGISTRY_NAME);
 		event.getRegistry().register(INSTANCE);
-		ITEM_INSTANCE = Item.REGISTRY.getObject(new ResourceLocation(ToroQuest.MODID, NAME));
+		//ITEM_INSTANCE = Item.REGISTRY.getObject(new ResourceLocation(ToroQuest.MODID, NAME));
 	}
 
 	public static void registerRenders() {
-		ModelResourceLocation model = new ModelResourceLocation(ToroQuest.MODID + ":" + NAME, "inventory");
-		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(ITEM_INSTANCE, 0, model);
+		//ModelResourceLocation model = new ModelResourceLocation(ToroQuest.MODID + ":" + NAME, "inventory");
+		//Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(ITEM_INSTANCE, 0, model);
 	}
 
 	protected BlockToroSpawner() {
@@ -77,7 +78,8 @@ public class BlockToroSpawner extends BlockContainer
 	/**
 	 * Spawns this Block's drops into the World as EntityItems.
 	 */
-	public void dropBlockAsItemWithChance(World worldIn, BlockPos pos, IBlockState state, float chance, int fortune) {
+	public void dropBlockAsItemWithChance(World worldIn, BlockPos pos, IBlockState state, float chance, int fortune)
+	{
 	}
 
 	/**
@@ -108,8 +110,9 @@ public class BlockToroSpawner extends BlockContainer
 	}
 
 	@Override
-	public int getExpDrop(IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos, int fortune) {
-		return 15 + RANDOM.nextInt(15) + RANDOM.nextInt(15);
+	public int getExpDrop(IBlockState state, net.minecraft.world.IBlockAccess world, BlockPos pos, int fortune)
+	{
+		return 0;
 	}
 
 	@Nullable
@@ -118,7 +121,8 @@ public class BlockToroSpawner extends BlockContainer
 	}
 
 	@SideOnly(Side.CLIENT)
-	public BlockRenderLayer getBlockLayer() {
+	public BlockRenderLayer getBlockLayer()
+	{
 		return BlockRenderLayer.CUTOUT;
 	}
 }

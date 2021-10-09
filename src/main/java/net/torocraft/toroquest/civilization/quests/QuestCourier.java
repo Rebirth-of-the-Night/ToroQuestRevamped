@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import net.minecraft.client.resources.I18n;
+import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.math.BlockPos;
@@ -21,6 +25,8 @@ import net.torocraft.toroquest.civilization.quests.util.Quests;
 
 public class QuestCourier extends QuestBase implements Quest
 {
+	private static final ITooltipFlag ITooltipFlag = null;
+
 	public static QuestCourier INSTANCE;
 
 	public static int ID;
@@ -36,23 +42,53 @@ public class QuestCourier extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
-		ItemStack note = getNoteFromItems(data, in);
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
 
-		if (note == null)
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
 		{
-			if ( data.getChatStack() == "" )
-			{
-				data.setChatStack( "I need the reply note, " + data.getPlayer().getName() + "." );
-				this.setData(data);
-			}
-			// data.getPlayer().closeScreen();
 			return null;
 		}
 		
-		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
-
-		if (province == null || province.id == null || !province.id.equals(data.getProvinceId())) 
+		ItemStack note = null;
+		boolean flag = false;
+		
+		for ( ItemStack item : in )
 		{
+			if ( !item.hasTagCompound() )
+			{
+				continue;
+			}
+
+			String noteQuestId = item.getTagCompound().getString("questId");
+			Boolean isReply = item.getTagCompound().getBoolean("reply");
+
+			if ( noteQuestId != null && isReply )
+			{
+				if ( noteQuestId.equals(data.getQuestId().toString()) )
+				{
+					note = item;
+					break;
+				}
+				else
+				{
+					flag = true;
+				}
+			}
+		}
+		
+		Province deliverToProvince = getDeliverToProvince(data);
+
+		if ( note == null )
+		{
+			if ( flag )
+			{
+				data.setChatStack("courier.wrong", data.getPlayer(), deliverToProvince.name);
+			}
+			else
+			{
+				data.setChatStack("courier.incomlete", data.getPlayer(), deliverToProvince.name);
+			}
+			this.setData(data);
 			return null;
 		}
 
@@ -63,67 +99,39 @@ public class QuestCourier extends QuestBase implements Quest
 		
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
 
-		// data.setChatStack( "I knew I could count on you, " + data.getPlayer().getName() + "." );
-		this.setData(data);
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(province.civilization) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
 		
 		if (rewards != null)
 		{
 			in.addAll(rewards);
 		}
+		data.setChatStack("courier.comlete", data.getPlayer(), deliverToProvince.name);
+		this.setData(data);
 		return in;
-	}
-
-	protected ItemStack getNoteFromItems(QuestData data, List<ItemStack> in)
-	{
-		for (ItemStack s : in)
-		{
-			if (isReplyNoteForQuest(data, s))
-			{
-				return s;
-			}
-		}
-		return null;
-	}
-
-	protected boolean isReplyNoteForQuest(QuestData data, ItemStack item)
-	{
-		if (!item.hasTagCompound() || !item.hasTagCompound())
-		{
-			return false;
-		}
-
-		String noteQuestId = item.getTagCompound().getString("questId");
-		Boolean isReply = item.getTagCompound().getBoolean("reply");
-
-		if (noteQuestId == null)
-		{
-			return false;
-		}
-
-		if (!isReply)
-		{
-			data.getPlayer().sendStatusMessage( new TextComponentString("This reply is not for your current quest!"), true);
-			// data.getPlayer().closeScreen();
-			return false;
-		}
-
-		/*
-		 * quest ID must match
-		 */
-		if (!noteQuestId.equals(data.getQuestId().toString()))
-		{
-			data.getPlayer().sendStatusMessage( new TextComponentString("This reply is not for your current quest!"), true);
-			// data.getPlayer().closeScreen();
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "Ah, I understand. A task too difficult for you then?" );
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		Province deliverToProvince = getDeliverToProvince(data);
+		data.setChatStack("courier.reject", data.getPlayer(), deliverToProvince.name);
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -133,28 +141,25 @@ public class QuestCourier extends QuestBase implements Quest
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
 		Province deliverToProvince = getDeliverToProvince(data);
-		ItemStack note = new ItemStack(Items.PAPER);
+		
+		Item paper = Items.PAPER;
+		
+		ItemStack note = new ItemStack(paper);
+		
+		ArrayList<String> list = new ArrayList<String>();
+		
+		list.add(I18n.format("quests.courier.notetooltip"));
+		
+		paper.addInformation( note, data.getPlayer().world, list, ITooltipFlag );
+		
 		BlockPos pos = new BlockPos(deliverToProvince.chunkX * 16, 0, deliverToProvince.chunkZ * 16);
-		note.setStackDisplayName( "Deliver to the Lord of " + deliverToProvince.name + " at " + getDirections( pos ) );
+		note.setStackDisplayName( (I18n.format("quests.courier.notename")) + deliverToProvince.name + " at " + getDirections( pos ) );
+		
 		note.setTagInfo("toProvince", new NBTTagString(deliverToProvince.id.toString()));
 		note.setTagInfo("questId", new NBTTagString(data.getQuestId().toString()));
+		
 		in.add(note);
-		// if (!data.getPlayer().world.isRemote)
-		{
-			switch (data.getPlayer().world.rand.nextInt(2))
-			{
-				case 0:
-				{
-					data.setChatStack( "The lord of " + deliverToProvince.name + " and I have much to discuss. Make sure this letter gets to him.");
-					break;
-				}
-				case 1:
-				{
-					data.setChatStack( "I need this letter sent to the lord of " + deliverToProvince.name + " immediately. Be swift, " + data.getPlayer().getName() + "." );
-					break;
-				}
-			}
-		}
+		data.setChatStack("courier.accept", data.getPlayer(), deliverToProvince.name);
 		this.setData(data);
 		return in;
 	}
@@ -204,10 +209,10 @@ public class QuestCourier extends QuestBase implements Quest
 		setDeliverToProvinceId(data, deliverToProvince.id);
 		setDistance(data, (int) Math.round(player.getPosition().getDistance(deliverToProvince.chunkX * 16, (int) player.posY, deliverToProvince.chunkZ * 16)));
 		
-		int roll = (getDistance(data) / 160);
-		int em = MathHelper.clamp(roll, 4, 32);
+		int roll = Math.round(getDistance(data)/60)+4;
+		int em = MathHelper.clamp(roll, 8, 32);
 		int rep = em*2;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(questProvince.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(questProvince.civilization) >= 2000 )
 		{
 			em *= 2;
 		}

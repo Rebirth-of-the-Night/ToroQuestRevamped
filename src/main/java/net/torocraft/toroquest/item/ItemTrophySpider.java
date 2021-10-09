@@ -54,7 +54,7 @@ public class ItemTrophySpider extends ItemTrophy
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: You gain the speed and agility of the spider leg while in your province.\n\n§oThe giant spider leg wreaks of sulfur and twitches every few seconds or so.");
+		tooltip.add("Give this trophy to a Village Lord: Inherit the agility of the Spider Queen, increasing speed and jump height while in that province.\n\n§oThe giant spider leg wreaks of sulfur and twitches every few seconds with a loud hissing sound.");
     }
 
 }

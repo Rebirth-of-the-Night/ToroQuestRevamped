@@ -7,11 +7,16 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.EnumActionResult;
+import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
@@ -41,7 +46,7 @@ public class ItemLegendaryBanditArmor extends ItemArmor {
 	@SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: Gain the strength of the bandit lord while in that province.\n\n§oYou can sense the powerful, yet dark energy resonating from the mask. It calls out and begs for a suitable host... you feel compelled to put the mask on...\n\n");
+		tooltip.add("Give this trophy to a Village Lord: You gain the power of the Bandit Lord; vastly increasing strength while in that province.\n\n§oYou can sense the powerful, yet dark energy resonating from the mask. It calls out and begs for a suitable host... you feel compelled to put the mask on...\n\n");
     	// tooltip.add("Donate this trophy to a village lord: You gain the strength of the bandit lord while in your province. OR you could look hella fresh and wear it. Go ahead, put on the mask...");
     }
 

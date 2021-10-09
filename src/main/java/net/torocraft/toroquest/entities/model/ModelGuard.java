@@ -1,10 +1,12 @@
 package net.torocraft.toroquest.entities.model;
 
-import java.util.Random;
-
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.model.ModelRenderer;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
+import net.minecraft.init.Blocks;
+import net.minecraft.item.Item;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.civilization.CivilizationType;
@@ -31,7 +33,8 @@ public class ModelGuard extends ModelBiped
 		this.modelSize = modelSize;
 		//for (CivilizationType civ : CivilizationType.values())
 		//{
-			if ( ToroQuestConfiguration.renderGuardCape ) buildCape(civ);
+		// if ( ToroQuestConfiguration.renderGuardCape )
+		this.buildCape(civ);
 		//}
 	}
 
@@ -51,7 +54,6 @@ public class ModelGuard extends ModelBiped
 	{
 		ModelRenderer cape = new ModelRenderer(this, 0, 32);
 		cape.setTextureSize(64, 64);
-		
 		cape.setTextureOffset(0, 32);
 //		switch (civ)
 //		{
@@ -91,10 +93,15 @@ public class ModelGuard extends ModelBiped
 	private static final float MAX_CAPE_ANI = 0.07f;
 
 
-	public void setRotationAngles(float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor, Entity entityIn)
+	public void setRotationAngles(float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor, EntityToroNpc entityIn)
 	{
 		super.setRotationAngles(limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor, entityIn);
-		capeAnimation((EntityToroNpc) entityIn);
+		//if ( entityIn.getHeldItemMainhand().getItem() == Item.getItemFromBlock(Blocks.TORCH) )
+//		{
+//            this.bipedRightArm.rotationPointZ = MathHelper.sin(this.bipedBody.rotateAngleY) * 15.0F;
+//            this.bipedRightArm.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F + (float)Math.PI) * 2.0F * limbSwingAmount * 0.5F;
+//		}
+		this.capeAnimation(entityIn);
 	}
 
 	protected void capeAnimation(EntityToroNpc entityIn)

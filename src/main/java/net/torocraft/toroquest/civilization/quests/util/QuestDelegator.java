@@ -4,7 +4,8 @@ import java.util.List;
 
 import net.minecraft.item.ItemStack;
 
-public class QuestDelegator {
+public class QuestDelegator
+{
 
 	private QuestData data;
 
@@ -13,8 +14,10 @@ public class QuestDelegator {
 		setData(data);
 	}
 
-	public Quest getTypedQuest(QuestData data) {
-		if (data == null) {
+	public Quest getTypedQuest(QuestData data)
+	{
+		if (data == null)
+		{
 			throw new NullPointerException("quest data is null");
 		}
 		return Quests.getQuestForId(data.getQuestType());
@@ -25,11 +28,13 @@ public class QuestDelegator {
 		return getTypedQuest(data).complete(data, in);
 	}
 
-	public String getTitle() {
+	public String getTitle()
+	{
 		return getTypedQuest(data).getTitle(data);
 	}
 
-	public String getDescription() {
+	public String getDescription()
+	{
 		return getTypedQuest(data).getDescription(data);
 	}
 
@@ -47,11 +52,13 @@ public class QuestDelegator {
 		this.data = data;
 	}
 
-	public List<ItemStack> reject(List<ItemStack> in) {
+	public List<ItemStack> reject(List<ItemStack> in)
+	{
 		return getTypedQuest(data).reject(data, in);
 	}
 
-	public List<ItemStack> accept(List<ItemStack> in) {
+	public List<ItemStack> accept(List<ItemStack> in)
+	{
 		return getTypedQuest(data).accept(data, in);
 	}
 

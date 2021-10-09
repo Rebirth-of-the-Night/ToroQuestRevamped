@@ -90,7 +90,6 @@ public class VillageLordContainer extends Container
 		updateDonationInfo();
 
 		int guiSlotIndex = 0;
-
 		
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Vanilla Inventory =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 		for (int x = 0; x < HOTBAR_SLOT_COUNT; x++)
@@ -111,13 +110,6 @@ public class VillageLordContainer extends Container
 			}
 		}
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-
-		
-		
-		
-		
-		
-		
 		
 		// Index = 0,1,2,3
 		for (int x = 0; x < QUEST_INPUT_ITEM_ROW_COUNT; x++)
@@ -185,7 +177,7 @@ public class VillageLordContainer extends Container
 			@Override
 			public void sendAllContents(Container containerToSend, NonNullList<ItemStack> itemsList)
 			{
-
+				// XXX
 			}
 
 			@Override
@@ -208,7 +200,7 @@ public class VillageLordContainer extends Container
 			}
 		});
 	}
-
+	
 	private void donationItemUpdated(ItemStack stack)
 	{
 		updateDonationInfo();
@@ -344,6 +336,19 @@ public class VillageLordContainer extends Container
 			{
 				return;
 			}
+
+			// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Reputation Perks =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+			
+			// harvest crops
+			// cull livestock
+			// grief
+			// rename province
+			// legendary quests
+			// teleport scroll not consumed
+			// additional quest rewards
+			
+			// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+			
 			CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(this.player.world);
 			if ( worldData == null )
 			{
@@ -359,7 +364,7 @@ public class VillageLordContainer extends Container
 				province.titanTrophy = true;
 				worldData.setTrophyTitan(province.id, true);
 			}
-			if ( this.inventory.hasTrophy("item.royal_helmet") )
+			if ( this.inventory.hasTrophy("item.dwarven_artifact") )
 			{
 				province.lordTrophy = true;
 				worldData.setTrophyLord(province.id, true);

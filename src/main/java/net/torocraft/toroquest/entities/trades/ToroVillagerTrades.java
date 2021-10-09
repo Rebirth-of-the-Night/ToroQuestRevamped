@@ -14,10 +14,10 @@ import net.minecraft.potion.PotionType;
 import net.minecraft.potion.PotionUtils;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraft.village.MerchantRecipeList;
+import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.MapDecoration;
@@ -26,10 +26,11 @@ import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.config.ToroQuestConfiguration.Trade;
+import net.torocraft.toroquest.entities.EntityToroVillager;
 
 public class ToroVillagerTrades
 {
-	public static MerchantRecipeList trades( EntityPlayer player, int rep, CivilizationType civ, String jobName, String varient )
+	public static MerchantRecipeList trades( EntityToroVillager villager, EntityPlayer player, int rep, CivilizationType civ, String jobName, String varient )
 	{
 		
 		MerchantRecipeList recipeList = new MerchantRecipeList();
@@ -184,47 +185,99 @@ public class ToroVillagerTrades
 		}
 		
 		// MAPS FOR EMERALDS
-		if ( jobName.equals("cartographer") )
+		if ( ToroQuestConfiguration.cartographerMapTrade && jobName.equals("cartographer") )
 		{
-			ItemStack treasureMap = null;
 			if ( varient.equals("0") )
 			{
-				treasureMap = TreasureMapForEmeralds(player, "Mansion", MapDecoration.Type.MANSION);
-				if ( treasureMap != null )
+				if ( villager.treasureMap != null )
 				{
-					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 8), new ItemStack(Items.COMPASS, 1), treasureMap, 0, 99999 ) );
+					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 8), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+				}
+				else villager.treasureMap = TreasureMapForEmeralds(villager, player, "Mansion", MapDecoration.Type.MANSION);
+				if ( villager.treasureMap != null )
+				{
+					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 8), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
 				}
 			}
 			else if ( varient.equals("1") )
 			{
-				treasureMap = TreasureMapForEmeralds(player, "Monument", MapDecoration.Type.MONUMENT);
-				if ( treasureMap != null )
+				if ( villager.treasureMap != null )
 				{
-					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), treasureMap, 0, 99999 ) );
+					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+				}
+				else villager.treasureMap = TreasureMapForEmeralds(villager, player, "Monument", MapDecoration.Type.MONUMENT);
+				if ( villager.treasureMap != null )
+				{
+					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
 				}
 			}
 			else
 			{
-				//BlockPos blockpos = player.world.findNearestStructure("Village", player.getPosition(), true);
-				treasureMap = ToroVillagerTrades.TreasureMapForEmeralds(player, "Village", MapDecoration.Type.MANSION);
-				if ( treasureMap != null )
+				if ( villager.treasureMap != null )
 				{
-					//Province province = CivilizationUtil.getProvinceAt(player.world, blockpos.getX()/16, blockpos.getZ()/16);
-					//if ( province == null || province.name == null )
-					{
-						treasureMap.setTranslatableName("Map to Village");
-					}
-					//else
-					{
-					//	treasureMap.setTranslatableName("Map to " + province.name.substring(0,1).toUpperCase() + province.name.substring(1));
-					}
-					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 4), new ItemStack(Items.COMPASS, 1), treasureMap, 0, 99999 ) );
+					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+				}
+				//BlockPos blockpos = player.world.findNearestStructure("Village", player.getPosition(), true);
+				else villager.treasureMap = CivMapForEmeralds(villager, player, "Village", MapDecoration.Type.MANSION);
+				if ( villager.treasureMap != null )
+				{
+					villager.treasureMap.setTranslatableName("Map to Village");
+					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 4), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
 				}
 			}
 		}
 		return recipeList;
 	}
+		
+    public static ItemStack TreasureMapForEmeralds( EntityToroVillager villager, EntityPlayer player, String destination, MapDecoration.Type destinationType )
+	{
+    	World world = player.world;
+        BlockPos blockpos = world.findNearestStructure(destination, player.getPosition(), true);
+
+        if (blockpos != null)
+        {
+            ItemStack itemstack = ItemMap.setupNewMap(world, (double)blockpos.getX(), (double)blockpos.getZ(), (byte)4, true, true);
+            ItemMap.renderBiomePreviewMap(world, itemstack);
+            MapData.addTargetDecoration(itemstack, blockpos, "+", destinationType);
+            itemstack.setTranslatableName("filled_map." + destination.toLowerCase(Locale.ROOT));
+            return itemstack;
+        }
+		return null; // TODO
+    }
 	
+    public static ItemStack CivMapForEmeralds( EntityToroVillager villager, EntityPlayer player, String destination, MapDecoration.Type destinationType )
+	{
+        if ( villager.treasureMap != null )
+        {
+            return villager.treasureMap;
+        }
+        else
+        {
+
+        	World world = player.world;
+            Village village = world.villageCollection.getNearestVillage(player.getPosition(), 704);
+            if ( village == null )
+            {
+            	return null;
+            }
+        	ItemStack itemstack = ItemMap.setupNewMap(world, (double)village.getCenter().getX(), (double)village.getCenter().getZ(), (byte)4, true, true);
+            ItemMap.renderBiomePreviewMap(world, itemstack);
+            MapData.addTargetDecoration(itemstack, village.getCenter(), "+", destinationType);
+            //itemstack.setTranslatableName("filled_map." + destination.toLowerCase(Locale.ROOT));
+            Province province = CivilizationUtil.getProvinceAt(world, village.getCenter().getX()/16, village.getCenter().getZ()/16);
+            if ( province != null )
+			{
+				itemstack.setTranslatableName("Map to " + province.name);
+			}
+			else
+			{
+				itemstack.setTranslatableName("Map to Village");
+			}
+            villager.treasureMap = itemstack;
+            return itemstack;
+        }
+    }
+		
 	// LEFT >
 	public static int getSellPrice(int price, int rep) // sell price is reduced the higher reputation
 	{
@@ -258,27 +311,6 @@ public class ToroVillagerTrades
 			return (int)(Math.round(MathHelper.clamp(((double)price * MathHelper.clamp( ( 0.5D + rep/6000.0D ), 0.5D, 1.0D)), 1, 128)));
 		}
 	}
-	
-    public static ItemStack TreasureMapForEmeralds( EntityPlayer player, String destination, MapDecoration.Type destinationType )
-	{
-    	World world = player.world;
-        BlockPos blockpos = world.findNearestStructure(destination, player.getPosition(), true);
-
-        if (blockpos != null)
-        {
-            ItemStack itemstack = ItemMap.setupNewMap(world, (double)blockpos.getX(), (double)blockpos.getZ(), (byte)4, true, true);
-            ItemMap.renderBiomePreviewMap(world, itemstack);
-            MapData.addTargetDecoration(itemstack, blockpos, "+", destinationType);
-            itemstack.setTranslatableName("filled_map." + destination.toLowerCase(Locale.ROOT));
-            return itemstack;
-        }
-		return null;
-    }
-	
-	
-	
-	
-	
 	
     public static int count(String str, char c)
     {

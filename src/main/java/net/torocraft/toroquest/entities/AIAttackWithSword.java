@@ -1,19 +1,16 @@
 package net.torocraft.toroquest.entities;
 
+import java.util.Random;
+
 import net.minecraft.entity.EntityCreature;
-import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIBase;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemAxe;
 import net.minecraft.item.ItemBow;
 import net.minecraft.item.ItemPotion;
 import net.minecraft.item.ItemShield;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -26,7 +23,7 @@ public class AIAttackWithSword extends EntityAIBase
     /** The speed with which the mob will approach the target */
     double speedTowardsTarget;
     /** When true, the mob will continue chasing its target, even if it can't find a path to them right now. */
-    boolean longMemory;
+    boolean longMemory = true;
     /** The PathEntity of our entity. */
     Path path;
     //private int delayCounter = 2;
@@ -40,16 +37,27 @@ public class AIAttackWithSword extends EntityAIBase
     
 	protected float range = 3.0F;
 
-    public AIAttackWithSword(EntityCreature creature, double speedIn, boolean useLongMemory)
+    public AIAttackWithSword(EntityCreature creature, double speedIn)
     {
         this.attacker = creature;
         this.world = creature.world;
         this.speedTowardsTarget = speedIn;
-        this.longMemory = true;
+        //this.longMemory = true;
         this.setMutexBits(3);
-        
-        ItemStack iStack = this.attacker.getHeldItemMainhand();
-		
+    }
+
+    /**
+     * Returns whether the EntityAIBase should begin execution.
+     */
+    public boolean shouldExecute()
+    {
+    	ItemStack iStack = this.attacker.getHeldItemMainhand();
+    	
+		if (iStack != null && iStack.getItem() instanceof ItemBow)
+		{
+    		return false;
+    	}
+        		
         if ( iStack != null )
     	{
         	String s = iStack.getItem().getRegistryName().toString();
@@ -60,58 +68,26 @@ public class AIAttackWithSword extends EntityAIBase
         	else if ( s.contains("greatsword") ) 	{range = 4.0F;}
         	else if ( s.contains("spear") ) 		{range = 4.0F;}
     	}
-        
-    }
-
-    /**
-     * Returns whether the EntityAIBase should begin execution.
-     */
-    public boolean shouldExecute()
-    {
-    	ItemStack iStack = this.attacker.getHeldItemMainhand();
-		if (iStack != null && iStack.getItem() instanceof ItemBow)
-		{
-    		return false;
-    	}
-		
-		
-		
-        EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
-        
-        if (entitylivingbase == null)
+		        
+        if ( !shouldContinueExecuting() )
         {
-            return false;
+        	return false;
         }
-        else if (!entitylivingbase.isEntityAlive())
+        
+        if ( this.attacker instanceof EntitySentry )
         {
-            return false;
+        	
         }
         else
         {
-//            if (canPenalize)
-//            {
-//                if (--this.delayCounter < 0)
-//                {
-//                    this.path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
-//                    this.delayCounter = 2;
-//                    return this.path != null;
-//                }
-//                else
-//                {
-//                    return true;
-//                }
-//            }
-            this.path = this.attacker.getNavigator().getPathToEntityLiving(entitylivingbase);
-
-            if (this.path != null)
-            {
-                return true;
-            }
-            else
-            {
-                return this.getAttackReachSqr(entitylivingbase) >= this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
-            }
+	        this.path = this.attacker.getNavigator().getPathToEntityLiving(this.attacker.getAttackTarget());
+	
+	        if ( this.path != null )
+	        {
+	            return true;
+	        }
         }
+        return this.getAttackReachSqr(this.attacker.getAttackTarget()) >= this.attacker.getDistanceSq(this.attacker.getAttackTarget().posX, this.attacker.getAttackTarget().getEntityBoundingBox().minY, this.attacker.getAttackTarget().posZ);
     }
 
     /**
@@ -120,33 +96,23 @@ public class AIAttackWithSword extends EntityAIBase
     public boolean shouldContinueExecuting()
     {
     	ItemStack iStack = this.attacker.getHeldItemMainhand();
-		if (iStack != null && iStack.getItem() instanceof ItemBow)
+    	
+		if ( iStack != null && iStack.getItem() instanceof ItemBow )
 		{
     		return false;
     	}
 		
-        EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
+        if (this.attacker.getAttackTarget() == null)
+        {
+            return false;
+        }
+        
+        if (!this.attacker.getAttackTarget().isEntityAlive())
+        {
+            return false;
+        }
 
-        if (entitylivingbase == null)
-        {
-            return false;
-        }
-        else if (!entitylivingbase.isEntityAlive())
-        {
-            return false;
-        }
-        else if (!this.longMemory)
-        {
-            return !this.attacker.getNavigator().noPath();
-        }
-        else if (!this.attacker.isWithinHomeDistanceFromPosition(new BlockPos(entitylivingbase)))
-        {
-            return false;
-        }
-        else
-        {
-            return !(entitylivingbase instanceof EntityPlayer) || !((EntityPlayer)entitylivingbase).isSpectator() && !((EntityPlayer)entitylivingbase).isCreative();
-        }
+        return true; // !(this.attacker.getAttackTarget() instanceof EntityPlayer) || !((EntityPlayer)this.attacker.getAttackTarget()).isSpectator() && !((EntityPlayer)this.attacker.getAttackTarget()).isCreative();
     }
 
     /**
@@ -154,39 +120,25 @@ public class AIAttackWithSword extends EntityAIBase
      */
     public void startExecuting()
     {
-    	ItemStack iStack = this.attacker.getHeldItemMainhand();
-		if ( iStack == null || iStack.getItem() instanceof ItemBow )
-		{
-    		return;
-    	}
-		if ( this.attacker.isRiding() )
-		{
-			this.attacker.getRidingEntity().setSprinting(true);
-			//this.attacker.setSprinting(true);
-		}
-		else
-		{
-			this.attacker.getNavigator().setPath( this.path, this.speedTowardsTarget );
-		}
+//    	ItemStack iStack = this.attacker.getHeldItemMainhand();
+//    	
+//		if ( iStack == null || iStack.getItem() instanceof ItemBow )
+//		{
+//    		return;
+//    	}
+
+		this.attacker.getNavigator().setPath( this.path, this.speedTowardsTarget );
+
         //this.delayCounter = 2;
     }
 
     /**
      * Reset the task's internal state. Called when this task is interrupted by another one
      */
+    @Override
     public void resetTask()
     {
-        EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
-
-        if (entitylivingbase instanceof EntityPlayer && (((EntityPlayer)entitylivingbase).isSpectator() || ((EntityPlayer)entitylivingbase).isCreative()))
-        {
-            this.attacker.setAttackTarget((EntityLivingBase)null);
-        }
-        if ( this.attacker.isRiding() )
-		{
-			this.attacker.getRidingEntity().setSprinting(false);
-			//this.attacker.setSprinting(true);
-		}
+        //if ( this.attacker.getAttackTarget() != null && ( this.attacker.getAttackTarget().isDead || this.attacker.getAttackTarget().getHealth() <= 0 ) ) this.attacker.setAttackTarget(null);
         this.attacker.getNavigator().clearPath();
     }
 
@@ -195,163 +147,129 @@ public class AIAttackWithSword extends EntityAIBase
      */
     public void updateTask()
     {
-    	ItemStack iStack = this.attacker.getHeldItemMainhand();
-		if (iStack != null && iStack.getItem() instanceof ItemBow)
-		{
+    	if ( !shouldContinueExecuting() )
+    	{
     		return;
     	}
-        EntityLivingBase entitylivingbase = this.attacker.getAttackTarget();
-        if ( entitylivingbase == null || !entitylivingbase.isEntityAlive() )
-        {
-        	return;
-        }
-        // this.attacker.faceEntity(attacker, 30.0F, 30.0F);
-        this.attacker.getLookHelper().setLookPositionWithEntity(entitylivingbase, 30.0F, 30.0F);
-        double d0 = this.attacker.getDistanceSq(entitylivingbase.posX, entitylivingbase.getEntityBoundingBox().minY, entitylivingbase.posZ);
-        //--this.delayCounter;
-
-        //if ((this.longMemory || this.attacker.getEntitySenses().canSee(entitylivingbase)) && (this.targetX == 0.0D && this.targetY == 0.0D && this.targetZ == 0.0D || entitylivingbase.getDistanceSq(this.targetX, this.targetY, this.targetZ) > 2.0D || this.attacker.getRNG().nextFloat() < 0.05F))
-        if ((this.longMemory || this.attacker.getEntitySenses().canSee(entitylivingbase)));
-        {
-//            this.targetX = entitylivingbase.posX;
-//            this.targetY = entitylivingbase.getEntityBoundingBox().minY;
-//            this.targetZ = entitylivingbase.posZ;
-            
-            if ( this.attacker.getRidingEntity() instanceof EntityLiving )
-    		{
-				EntityLiving e = (EntityLiving)(this.attacker.getRidingEntity());
-				this.attacker.faceEntity(entitylivingbase, 30.0F, 30.0F);
-				e.faceEntity(entitylivingbase, 30.0F, 30.0F);
-				e.getLookHelper().setLookPositionWithEntity(entitylivingbase, 30.0F, 30.0F);
-            	if ( d0 >= 5 )
-            	{
-	            	if ( Math.abs(this.attacker.getRidingEntity().motionX) + Math.abs(this.attacker.getRidingEntity().motionZ) < 0.3 )
-	            	{
-	            		this.attacker.getNavigator().clearPath();
-	    				if ( !world.isRemote )
-	    				{
-	        				//Vec3d velocityVector = new Vec3d(entitylivingbase.posX - this.attacker.posX, 0, entitylivingbase.posZ - this.attacker.posZ);
-		    				this.attacker.getRidingEntity().motionX += (double)(entitylivingbase.posX - this.attacker.posX)/(d0*3);
-		    				//if ( this.attacker.getRidingEntity().motionY < 0.1 && !this.attacker.isAirBorne ) { this.attacker.isAirBorne = true; this.attacker.getRidingEntity().motionY += 0.1; }
-		            		this.attacker.getRidingEntity().motionZ += (double)(entitylivingbase.posZ - this.attacker.posZ)/(d0*3);
-		            		
-//		            		if ( this.world.rand.nextInt(32) == 0 )
-//		            		{
-//		            			this.attacker.getRidingEntity().motionX += (this.attacker.world.rand.nextFloat()-0.5)/20;
-//		            		}
-//		            		if ( this.world.rand.nextInt(32) == 0 )
-//		            		{
-//		            			this.attacker.getRidingEntity().motionZ += (this.attacker.world.rand.nextFloat()-0.5)/20;
-//		            		}
-	    				}
-	            	}
-            	}
-            	else
-            	{
-            		this.attacker.getNavigator().clearPath();
-            		if ( !world.isRemote )
-    				{
-	            		this.attacker.getRidingEntity().motionX = 0;
-	            		this.attacker.getRidingEntity().motionZ = 0;
-    				}
-            	}
-    		}
-            else if ( (entitylivingbase.onGround && !entitylivingbase.isAirBorne && this.attacker.getNavigator().noPath()) || this.attacker.world.rand.nextInt(100) == 0 )
-    		{
-    			if ( this.attacker.motionY == 0 && this.attacker.onGround && !this.attacker.isInWater() && !this.attacker.isAirBorne && d0 > 3 && d0 <= 25 )
-    			{
-					if ( !world.isRemote )
-					{
-	    				Vec3d velocityVector = new Vec3d(entitylivingbase.posX - this.attacker.posX, 0, entitylivingbase.posZ - this.attacker.posZ);
-						this.attacker.addVelocity( velocityVector.x/d0, 0.4, velocityVector.z/d0 );
-					}
-					this.attacker.isAirBorne = true;
-					this.attacker.onGround = false;
-    			}
-    		}
-            //this.delayCounter = 2;
-
-//            if (this.canPenalize)
-//            {
-//                this.delayCounter += failedPathFindingPenalty;
-//                if (this.attacker.getNavigator().getPath() != null)
-//                {
-//                    net.minecraft.pathfinding.PathPoint finalPathPoint = this.attacker.getNavigator().getPath().getFinalPathPoint();
-//                    if (finalPathPoint != null && entitylivingbase.getDistanceSq(finalPathPoint.x, finalPathPoint.y, finalPathPoint.z) < 1)
-//                        failedPathFindingPenalty = 0;
-//                    else
-//                        failedPathFindingPenalty += 2;
-//                }
-//                else
-//                {
-//                    failedPathFindingPenalty += 2;
-//                }
-//            }
-
-//            if (d0 > 1024.0D)
-//            {
-//                this.delayCounter += 2;
-//            }
-//            else if (d0 > 256.0D)
-//            {
-//                this.delayCounter += 1;
-//            }
-//
-//            if (!this.attacker.getNavigator().tryMoveToEntityLiving(entitylivingbase, this.speedTowardsTarget))
-//            {
-//                this.delayCounter += 3;
-//            }
-            
-              //if (iStack != null && !(iStack.getItem() instanceof ItemBow) ) this.attacker.getNavigator().tryMoveToEntityLiving(entitylivingbase, this.speedTowardsTarget);
-
-        }
-
-        this.attackTick = Math.max(this.attackTick - 1, 0);
-        this.checkAndPerformAttack(entitylivingbase, d0);
+        
+        this.attacker.faceEntity(this.attacker.getAttackTarget(), 20.0F, 20.0F);
+        this.attacker.getLookHelper().setLookPositionWithEntity(this.attacker.getAttackTarget(), 20.0F, 20.0F);
+        
+        double d0 = this.attacker.getDistanceSq(this.attacker.getAttackTarget().posX, this.attacker.getAttackTarget().getEntityBoundingBox().minY, this.attacker.getAttackTarget().posZ);
+        //this.attackTick = Math.max(this.attackTick - 1, 0);
+        this.attackTick--;
+        this.checkAndPerformAttack(this.attacker.getAttackTarget(), d0);
     }
 
-    protected void checkAndPerformAttack(EntityLivingBase p_190102_1_, double p_190102_2_)
-    {
-        double d0 = this.getAttackReachSqr(p_190102_1_);
+    protected void checkAndPerformAttack(EntityLivingBase victim, double distanceSq)
+    {        
+        boolean backPeddaling = false;
         
-        if ( d0 <= 3 && this.attackTick <= 3 )
+        if ( this.attacker instanceof EntitySentry )
         {
-	        Vec3d veloctiyVector = new Vec3d(p_190102_1_.posX - this.attacker.posX, 0, p_190102_1_.posZ - this.attacker.posZ);
-	        this.attacker.addVelocity((veloctiyVector.x),0,(veloctiyVector.z));
-	        // this.attacker.velocityChanged = true;
+        	EntitySentry e = (EntitySentry)this.attacker;
+        	if ( e.isDrinkingPotion() )
+			{
+            	this.attackTick = 10;
+    	        this.attacker.setSprinting(false);
+        		backPeddaling = true;
+				return;
+			}
+        	if ( e.stance < 5 )
+        	{
+    	        this.attacker.setSprinting(false);
+        		backPeddaling = true;
+        	}
+        }
+        else if ( this.attacker instanceof EntityGuard )
+        {
+    		EntityGuard e = (EntityGuard)this.attacker;
+    		if ( e.stance < 5 )
+         	{
+    	        this.attacker.setSprinting(false);
+         		backPeddaling = true;
+         	}
         }
         
+        if ( !this.attacker.collidedHorizontally && !backPeddaling && !this.attacker.isHandActive() && distanceSq <= 20 && distanceSq >= 2 && this.attacker.getNavigator().getPathToEntityLiving(victim) != null )
+        {
+        	if ( this.attacker instanceof EntitySentry )
+          	{
+        		EntitySentry e = (EntitySentry)this.attacker;
+          		if ( !e.flanking )
+          		{
+          			int tt = Math.abs(this.attackTick-4) % 40;
+                	
+                	if ( tt <= 4 )
+                	{
+                    	this.attacker.setSprinting(true);
+                    	if ( tt == 0 )
+                    	{
+            		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
+            		        if ( !this.world.isRemote ) this.attacker.addVelocity((velocityVector.x)/14.0,0.0D,(velocityVector.z)/14.0);
+                    	}
+                	}
+          		}
+          	}
+        	else
+        	{
+	        	int tt = Math.abs(this.attackTick-5) % 40;
+	        	
+	        	if ( tt <= 5 )
+	        	{
+	            	this.attacker.setSprinting(true);
+	            	if ( tt == 0 )
+	            	{
+	    		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
+	    		        if ( !this.world.isRemote ) this.attacker.addVelocity((velocityVector.x)/14.0,0.0D,(velocityVector.z)/14.0);
+	            	}
+	        	}
+        	}
+        }
+        
+        double attackDistance = this.getAttackReachSqr(victim);
+
         if ( this.attacker.getActiveHand().equals(EnumHand.OFF_HAND) )
         {
-        	this.attackTick = 2;
+        	this.attackTick = 7; // for adding an attack delay after blocking
         }
-        else if (p_190102_2_ <= d0 && this.attackTick <= 0)
+        else if ( distanceSq <= attackDistance )
         {
-        	
-            if ( !offhandAttack )
-            {
-            	this.attacker.swingArm(EnumHand.MAIN_HAND);
-            	this.attackTick = 22;
-            	this.attacker.attackEntityAsMob(p_190102_1_);
-            }
-            else
-            {
-            	this.attacker.swingArm(EnumHand.OFF_HAND);
-            	this.attackTick = 11;
-            	offhandAttack = false;
-            	this.attacker.attackEntityAsMob(p_190102_1_);
-            	return;
-            }
-        	
-            ItemStack iStack = this.attacker.getHeldItem(EnumHand.OFF_HAND);
-            if ( iStack != null && !( iStack.isEmpty() ) && !( iStack.getItem() instanceof ItemBow ) && !( iStack.getItem() instanceof ItemPotion ) && !( iStack.getItem() instanceof ItemShield ) )
-            {
-            	offhandAttack = true;
-            	this.attackTick = 11;
-            }
+        	if ( this.attackTick <= 0 )
+        	{
+	            if ( !offhandAttack )
+	            {
+	            	this.attacker.swingArm(EnumHand.MAIN_HAND);
+	            	this.attackTick = 20+rand.nextInt(11);
+	            	this.attacker.attackEntityAsMob(victim);
+	            }
+	            else
+	            {
+	            	this.attacker.swingArm(EnumHand.OFF_HAND);
+	            	this.attackTick = 12+rand.nextInt(9);
+	            	offhandAttack = false;
+	            	this.attacker.attackEntityAsMob(victim);
+	            	return;
+	            }
+	        	
+	            ItemStack iStack = this.attacker.getHeldItem(EnumHand.OFF_HAND);
+	            
+	            if ( iStack != null && !( iStack.isEmpty() ) && !( iStack.getItem() instanceof ItemBow ) && !( iStack.getItem() instanceof ItemPotion ) && !( iStack.getItem() instanceof ItemShield ) )
+	            {
+	            	offhandAttack = true;
+	            	this.attackTick = 12+rand.nextInt(9);
+	            }
+        	}
         }
     }
-
+    
+//    private int getOffHandAttackTimer()
+//    {
+//    	
+//    }
+    
+    Random rand = new Random();
+    
     protected double getAttackReachSqr(EntityLivingBase attackTarget)
     {
         return (double)(this.attacker.width * range * this.attacker.width * range + attackTarget.width);
@@ -361,4 +279,6 @@ public class AIAttackWithSword extends EntityAIBase
 	{
 		return !creature.getNavigator().noPath();
 	}
+	
+	
 }

@@ -3,6 +3,7 @@ package net.torocraft.toroquest.entities.ai;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 
 import javax.annotation.Nullable;
 
@@ -10,7 +11,6 @@ import com.google.common.base.Predicate;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITarget;
@@ -20,9 +20,9 @@ import net.minecraft.entity.passive.EntityTameable;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.EntityGuard;
-import net.torocraft.toroquest.entities.EntityToro;
+import net.torocraft.toroquest.entities.EntityOrc;
+import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityToroMob;
 import net.torocraft.toroquest.entities.EntityToroNpc;
 
@@ -31,7 +31,7 @@ public class EntityAINearestAttackableBanditTarget extends EntityAITarget
 	
     protected final EntityAINearestAttackableTarget.Sorter sorter;
 	protected final Predicate<EntityLiving> targetEntitySelector;
-	protected EntityLivingBase targetEntity;
+	protected EntityLiving targetEntity;
 
 	protected EntityGuard taskOwner;
 	
@@ -57,9 +57,57 @@ public class EntityAINearestAttackableBanditTarget extends EntityAITarget
 					return true;
 				}
 				
-				if ( target instanceof IMob || target instanceof EntityMob )
+				if ( !taskOwner.playerGuard.equals("") )
 				{
-					 return true;
+					if ( target.getAttackTarget() instanceof EntityPlayer )
+					{
+						if ( target.getAttackTarget().getName().equals(taskOwner.playerGuard) )
+						{
+							return true;
+						}
+					}
+					
+					if ( target.getRevengeTarget() instanceof EntityPlayer )
+					{
+						if ( target.getRevengeTarget().getName().equals(taskOwner.playerGuard) )
+						{
+							return true;
+						}
+					}
+					
+					if ( target instanceof IMob || target instanceof EntityMob )
+					{
+						if ( target instanceof EntitySentry && !(target instanceof EntityOrc) )
+						{
+							EntitySentry t = (EntitySentry)(target);
+							if ( t.getTame() || t.passiveTimer > 0 )
+							{
+								return false;
+							}
+							else
+							{
+								return true;
+							}
+						}
+						else if ( taskOwner.getDistance(target) <= 16 || (taskOwner.raidX != null && taskOwner.raidZ != null && taskOwner.getDistance(taskOwner.raidX, taskOwner.posY, taskOwner.raidZ) <= 24) )
+						{
+							return true;
+						}
+					}
+				}
+				else
+				{
+					if ( target instanceof IMob || target instanceof EntityMob )
+					{
+						if ( target instanceof EntitySentry )
+						{
+							return true;
+						}
+						if ( taskOwner.getDistance(target) <= 12 || (taskOwner.raidX != null && taskOwner.raidZ != null && taskOwner.getDistance(taskOwner.raidX, taskOwner.posY, taskOwner.raidZ) <= 24) )
+						{
+							return true;
+						}
+					}
 				}
 				
 				if ( target instanceof EntityTameable )
@@ -68,29 +116,36 @@ public class EntityAINearestAttackableBanditTarget extends EntityAITarget
 										
 					if ( !tameable.isTamed() && target.getHealth() > 0 )
 					{
-						if ( target.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE) != null && target.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue() > 0 )
+						if ( target.getEntityData().hasKey("ModelDead") )
+						{
+							return !target.getEntityData().getBoolean("ModelDead");
+						}
+						if ( target.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE) != null && target.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getAttributeValue() >= 1 )
 						{
 						    return true;
 						}
 					}
 				}
-				
 				return false;
 			}
 		};
 	}
 
+	Random rand = new Random();
+	
 	@Override
 	public boolean shouldExecute()
 	{
-		if ( this.taskOwner.getRNG().nextBoolean() )
+		if ( !this.taskOwner.searchNextEnemy && rand.nextInt(16) != 0 )
         {
 			return false;
 	    }
 		
-		List<EntityLiving> list = this.taskOwner.world.<EntityLiving>getEntitiesWithinAABB(EntityLiving.class, new AxisAlignedBB(this.taskOwner.getPosition()).grow(48, 32, 48), targetEntitySelector);
+		this.taskOwner.searchNextEnemy = false;
+		
+		List<EntityLiving> list = this.taskOwner.world.<EntityLiving>getEntitiesWithinAABB(EntityLiving.class, new AxisAlignedBB(this.taskOwner.getPosition()).grow(32, 16, 32), this.targetEntitySelector);
 	
-		if (list.isEmpty())
+		if ( list.isEmpty() )
 		{
 			return false;
 		}
@@ -100,7 +155,7 @@ public class EntityAINearestAttackableBanditTarget extends EntityAITarget
 
 			for ( EntityLiving npc : list )
 			{
-				if ( this.taskOwner.canEntityBeSeen(npc) )
+				if ( npc instanceof EntityToroMob || npc.getAttackTarget() instanceof EntityVillager || npc.getAttackTarget() instanceof EntityToroNpc || this.taskOwner.getDistance(npc) <= 5.0D )
 				{
 					this.targetEntity = npc;
 					return true;
@@ -108,8 +163,11 @@ public class EntityAINearestAttackableBanditTarget extends EntityAITarget
 			}
 			for ( EntityLiving npc : list )
 			{
-				this.targetEntity = npc;
-				return true;
+				if ( this.taskOwner.canEntityBeSeen(npc) && !npc.isInvisible() )
+				{
+					this.targetEntity = npc;
+					return true;
+				}
 			}
 			return false;
 		}

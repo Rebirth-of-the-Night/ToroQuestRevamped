@@ -1,4 +1,4 @@
-        Pw
+        Pw     
   CsCsCsCsCsCsCs
   CsDrDrDrDrDrCs
   CsDrDrDrDrDrCs
@@ -10,16 +10,18 @@ PwCsDrDrDrDrDrCsPw
   CsDrDrDrDrDrCs
   CsDrDrDrDrDrCs
   CsDrDrDrDrDrCs
+  CsDrDrDrDrDrCs
   CsCsCsCsCsCsCs
         Pw
 ######################################
-        Sv
+        Sv      
   SbCsCsCsCsCsSb
   CsCsCsCsCsCsCs
   CsCsCsCsCsCsCs
 S>CsCsCsCsCsCsCsS<
   CsCsCsCsCsCsCs
   CsCsCsCsCsCsCs
+  SbCsCsCsCsCsSb
   CsCsCsCsCsCsCs
   CsCsCsCsCsCsCs
   CsCsCsCsCsCsCs
@@ -28,63 +30,71 @@ S>CsCsCsCsCsCsCsS<
   SbCsCsCsCsCsSb
         S^
 ######################################
-  
+                
   SbPwPwdvPwPwSb
   PwXXXX--XXXXPw
-  Pwxxxx--xxxxPw
-  d>----------d<
-  Pwl<------l>Pw
+  Pw--*c*c*c--Pw
+  d>--*c*c*c--d<
+  Pwl<*c*c*cl>Pw
   Pwc^c^--c^c^Pw
-  PwPwPwx1PwPwPw
-  Pw  b<x1b>  Pw
-  Pw  b<x1b>  Pw
-  Pw  b<x1b>  Pw
-  Pw  b<x1b>  Pw
+  SbPwPw--PwPwSb
+  Pw  b<--b>  Pw
+  Pw  b<--b>  Pw
+  PwFw------FwPw
+  Pw  b<--b>  Pw
+  Pw  b<--b>  Pw
   SbPwPwd^PwPwSb
+                
 ######################################
-  
-  *R*R*R  *R*R*R
-  *R----------*R
-  *R----------*R
-    ----------  
-  *Rl<------l>*R
-  *R----------*R
-  *R*R*R--*R*R*R
-  *R----------*R
-  *R----------*R
-  *R----------*R
-  *R----------*R
-  *R*R*R  *R*R*R
+  @v          @v
+@>An*C*C  *C*CAn@<
+  *C----------*C
+  *C----------*C
+    ----xx----  
+  *Cl<------l>*C
+  *C----------*C
+@>An*C*C--*C*CAn@<
+  *C----------*C
+  Gp----------Gp
+  GpWp------WpGp
+  Gp----------Gp
+  *C----------*C
+@>An*C*C  *C*CAn@<
+  @^          @^
 ######################################
-  
+        LA      
   SbPwPwPwPwPwSb
-  Pw----t^----Pw
   Pw----------Pw
-  Pwt<------t>Pw
+  Pw----------Pw
+  Pw----LA----Pw
   Pwl<------l>Pw
   Pw----------Pw
-  PwPwPw--PwPwPw
+LASbPwPw*CPwPwSbLA
   Pw----------Pw
-  Pwt<------t>Pw
-  Pwt<------t>Pw
+  Pw----------Pw
+  Pw----LA----Pw
+  Pw----------Pw
   Pw----------Pw
   SbPwPwPwPwPwSb
+        LA      
 #######################################
-  
-  LgLgLgLgLgLgLg
+        Fw      
+  LgLgLgLzLgLgLg
   LgPwPwPwPwPwLg
   LgPwPwPwPwPwLg
   LgPwPwPwPwPwLg
   Lgl<PwPwPwl>Lg
   LgPwPwPwPwPwLg
+FwLxPwPwPwPwPwLxFw
   LgPwPwPwPwPwLg
   LgPwPwPwPwPwLg
   LgPwPwPwPwPwLg
   LgPwPwPwPwPwLg
   LgPwPwPwPwPwLg
-  LgLgLgLgLgLgLg
+  LgLgLgLzLgLgLg
+        Fw      
 ######################################
-  
+                
   FwFwFwFwFwFwFw
   Fw----Fw--xxFw
   Fw----Fw----Fw
@@ -95,10 +105,12 @@ S>CsCsCsCsCsCsCsS<
   Fw----Fw----Fw
   Fw----Fw----Fw
   Fw----Fw----Fw
+  Fw----Fw----Fw
   Fwxx--Fw----Fw
   FwFwFwFwFwFwFw
+                
 ######################################
-  
+                
   --------------
   --------------
   ------Fw------
@@ -111,12 +123,12 @@ S>CsCsCsCsCsCsCsS<
   --------------
   --------------
   --------------
+                
 ######################################
-  
+                
   --------------
   --------------
   ------Fw------
-  ----------*R--
   --------------
   --------------
   --------------
@@ -125,12 +137,29 @@ S>CsCsCsCsCsCsCsS<
   --------------
   --------------
   --------------
+  --------------
+                
 ######################################
-  
+                
+  --------------
+  --------------
+  ------Fw------
+  ----------*C--
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+  --------------
+                
+######################################
+                
   --------------
   --------------
   ------Fc------
-  --------*R----
+  --------*C----
   --------------
   --------------
   --------------
@@ -139,31 +168,34 @@ S>CsCsCsCsCsCsCsS<
   --------------
   --------------
   --------------
+                
 ######################################
-  
+                
   --------------
   --------------
-  ------*R*R----
-  --------------
-  --------------
-  --------------
+  ------*C*C----
   --------------
   --------------
   --------------
   --------------
   --------------
   --------------
+  --------------
+  --------------
+  --------------
+                
 ######################################
-
+                
   --------------
   --------------
-  ------*R------
-  --------------
-  --------------
-  --------------
+  ------*C------
   --------------
   --------------
   --------------
   --------------
   --------------
   --------------
+  --------------
+  --------------
+  --------------
+                

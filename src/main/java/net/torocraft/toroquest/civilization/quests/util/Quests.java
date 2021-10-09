@@ -9,6 +9,7 @@ import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity;
 import net.torocraft.toroquest.civilization.quests.QuestCaptureFugitives;
 import net.torocraft.toroquest.civilization.quests.QuestCourier;
 import net.torocraft.toroquest.civilization.quests.QuestEnemyEncampment;
+import net.torocraft.toroquest.civilization.quests.QuestEnemyGolem;
 import net.torocraft.toroquest.civilization.quests.QuestEnemySpiderPit;
 import net.torocraft.toroquest.civilization.quests.QuestFarm;
 import net.torocraft.toroquest.civilization.quests.QuestGather;
@@ -70,6 +71,7 @@ public class Quests {
 		QuestKillBossSpiderLord.init(++id);
 		QuestKillBossMonolithEye.init(++id);
 		QuestBuild.init(++id);
+		QuestEnemyGolem.init(++id);
 	}
 
 }

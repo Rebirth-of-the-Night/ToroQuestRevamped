@@ -9,6 +9,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.pathfinding.PathNavigateGround;
+import net.torocraft.toroquest.entities.EntityGuard;
 
 public class EntityAISmartTempt extends EntityAIBase
 {
@@ -66,15 +67,25 @@ public class EntityAISmartTempt extends EntityAIBase
         }
         else
         {
-            this.temptingPlayer = this.temptedEntity.world.getClosestPlayerToEntity(this.temptedEntity, 20.0D);
-
+            this.temptingPlayer = this.temptedEntity.world.getClosestPlayerToEntity(this.temptedEntity, 25.0D);
+        	
             if (this.temptingPlayer == null)
             {
                 return false;
             }
             else
             {
-                return this.temptItem == Items.AIR || this.isTempting(this.temptingPlayer.getHeldItemMainhand()) || this.isTempting(this.temptingPlayer.getHeldItemOffhand());
+            	if ( this.temptItem == Items.AIR )
+            	{
+            		if ( this.temptedEntity instanceof EntityGuard )
+            		{
+            			//EntityGuard.guardSpeak((EntityGuard)this.temptedEntity, this.temptingPlayer);
+            			return true;
+            		}
+            		return true;
+            	}
+            	
+                return this.isTempting(this.temptingPlayer.getHeldItemMainhand()) || this.isTempting(this.temptingPlayer.getHeldItemOffhand());
             }
         }
     }
@@ -135,7 +146,7 @@ public class EntityAISmartTempt extends EntityAIBase
     {
         this.temptingPlayer = null;
         this.temptedEntity.getNavigator().clearPath();
-        this.delayTemptCounter = 50;
+        this.delayTemptCounter = 40;
         this.isRunning = false;
     }
 

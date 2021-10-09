@@ -39,6 +39,7 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundEvent;
 import net.minecraft.util.datafix.DataFixer;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -49,7 +50,6 @@ import net.minecraft.world.BossInfoServer;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.loot.LootTableList;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
@@ -73,6 +73,41 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 			NAME = ToroQuestEntities.ENTITY_PREFIX + NAME;
 		}
 	}
+	
+	@Override
+	public boolean getAlwaysRenderNameTag()
+    {
+        return false;
+    }
+	
+	@Override
+    protected float getWaterSlowDown()
+    {
+        return 0.9F;
+    }
+	
+    public boolean isNonBoss()
+    {
+        return false;
+    }
+    
+    public boolean startRiding(Entity entityIn, boolean force)
+    {
+    	return false;
+    }
+    
+	@Override
+	protected void updateLeashedState()
+    {
+	   this.clearLeashed(true, true);
+       return;
+    }
+	
+	@Override
+	public boolean canBeLeashedTo(EntityPlayer player)
+    {
+		return false;
+    }
 
 	public static void init(int entityId)
 	{
@@ -92,8 +127,8 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 		});
 	}
 
-	private float xsize = 1.7F;
-	private float ysize = 9.0F;
+	private float xsize = 4.5F;
+	private float ysize = 12.5F;
 	public EntityGraveTitan(World world)
 	{
 		super(world);
@@ -102,6 +137,7 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 		//this.adjustSize();
 		this.setRealSize( xsize, ysize);
 		this.setSize( xsize, ysize );
+		this.stepHeight = 4.05F;
 
 		//this.setRealSize(10, 26);
 		//AxisAlignedBB axisalignedbb = this.getEntityBoundingBox();
@@ -149,11 +185,11 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 	{
 		super.applyEntityAttributes();
 		this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.5D);
-		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(200D * ToroQuestConfiguration.bossHealthMultiplier);
+		this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(250D * ToroQuestConfiguration.bossHealthMultiplier);
 		this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(7D * ToroQuestConfiguration.bossAttackDamageMultiplier);
-		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
 		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(10.0D);
-		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(2.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(10.0D);
 	}
 
 	/**
@@ -169,6 +205,8 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 		this.setCanPickUpLoot(false);
 		this.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY );
 		this.setHeldItem(EnumHand.OFF_HAND, ItemStack.EMPTY );
+		//this.getEntityAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(200D * ToroQuestConfiguration.bossHealthMultiplier);
+		this.setHealth(this.getMaxHealth());
 		return super.onInitialSpawn(difficulty, livingdata);
 	}
 
@@ -201,11 +239,12 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 		ai();
 	}
 
+	@SuppressWarnings("unchecked")
 	protected void ai()
 	{
 		tasks.addTask(1, new EntityAISwimming(this));
 //		tasks.addTask(2, new EntityAIThrow(this, 0.6D, true, 0.5, -4, 40));
-		tasks.addTask(2, new EntityAIThrow(this, 0.5D, true, 0.2, -4, 60));
+		tasks.addTask(2, new EntityAIThrow(this, 0.5D, true, 0.2, -12, 60));
 		//tasks.addTask(2, new EntityAIAttackMelee(this, 0.5D, false));
 		tasks.addTask(3, new EntityAILookIdle(this));
 		targetTasks.addTask(1, new EntityAIHurtByTarget(this, false, new Class[0]));
@@ -227,6 +266,12 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 				this.spawnZombie();
 			}
 		}
+	}
+	
+	@Override
+	public int getHorizontalFaceSpeed()
+	{
+		return 5;
 	}
 	
 	protected void spawnZombie()
@@ -272,90 +317,101 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 	
 	public void onLivingUpdate()
 	{
-		super.onLivingUpdate();
+		if ( this.getAttackTarget() != null )
+    	{
+    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
+    	super.onLivingUpdate();
+    	if ( this.getAttackTarget() != null )
+    	{
+    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
 		
 		if ( this.world.isRemote )
 		{
 			return;
 		}
 		
-		if ( this.collidedHorizontally && this.getHealth() >= 10.0F )
-        {
-			
-            PathNavigateGround pathnavigateground = (PathNavigateGround)this.getNavigator();
-            Path path = pathnavigateground.getPath();
-
-            if (path != null && !path.isFinished() )
-            {
-                for (int i = 0; i < Math.min(path.getCurrentPathIndex() + 2, path.getCurrentPathLength()); ++i)
-                {
-                    PathPoint pathpoint = path.getPathPointFromIndex(i);
-                    for ( int j = 8; j >= 0; j-- )
-                    {
-	                    BlockPos doorPosition = new BlockPos( pathpoint.x + rand.nextInt(4)-3, pathpoint.y + j, pathpoint.z + rand.nextInt(4)-3 );
-	                    Block doorBlock = this.getBlockDoor( doorPosition );
-	
-                        if ( doorBlock != null && doorBlock != Blocks.AIR )
-                        {
-                        	this.world.setBlockState( doorPosition, Blocks.AIR.getDefaultState());
-            	            if ( rand.nextBoolean() )
-            	            {
-            	            	if ( rand.nextBoolean() )
-            	            	{
-            	            		this.world.playEvent(1021, doorPosition, 0);
-            	            	}
-            	            	else this.playSound(SoundEvents.BLOCK_STONE_BREAK, 1.0F, 1.0F);
-
-            	            }
-            	            this.world.playEvent(2001, doorPosition, Block.getIdFromBlock( doorBlock ));
-                        }
-	                }
-                }
-            }
-        }
-		
 		if (this.ticksExisted % 25 == 0)
 		{
 			this.heal(ToroQuestConfiguration.bossHealthMultiplier);
 	        this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
 			this.adjustSize( );
-		}
-		
-		EntityLivingBase attacker = this.getAttackTarget();
-    	if ( attacker == null || !(attacker.isEntityAlive()) )
-    	{
-    		attacker = this.getRevengeTarget();
-    		if ( attacker != null && !(attacker.isEntityAlive()) )
-    		{
-    			this.setAttackTarget( attacker );
-    		}
-    	}
-    	
-		if ( attacker != null && attacker.isEntityAlive() )
-		{
-	        double dist = this.getDistanceSq(attacker);
-	        if ( dist < 8 )
+			
+			if ( this.getAttackTarget() != null && this.collidedHorizontally && this.getHealth() >= 10.0F )
 	        {
-	        	this.getNavigator().clearPath();
+		        this.playSound(SoundEvents.ENTITY_ENDERDRAGON_FLAP, 2.0F, 0.25F + rand.nextFloat()/10.0F);
+		        this.playSound(SoundEvents.BLOCK_NOTE_BASEDRUM, 1.5F, 0.5F + rand.nextFloat()/10.0F);
+		        
+	            PathNavigateGround pathnavigateground = (PathNavigateGround)this.getNavigator();
+	            Path path = pathnavigateground.getPath();
+
+	            if (path != null && !path.isFinished() )
+	            {
+	                for (int i = 0; i < Math.min(path.getCurrentPathIndex() + 2, path.getCurrentPathLength()); ++i)
+	                {
+	                    PathPoint pathpoint = path.getPathPointFromIndex(i);
+	                    for ( int j = 8; j >= 0; j-- )
+	                    {
+		                    BlockPos doorPosition = new BlockPos( pathpoint.x + rand.nextInt(4)-3, pathpoint.y + j, pathpoint.z + rand.nextInt(4)-3 );
+		                    Block doorBlock = this.getBlockDoor( doorPosition );
+		
+	                        if ( doorBlock != null && doorBlock != Blocks.AIR && doorBlock.getBlockHardness(doorBlock.getDefaultState(), this.world, doorPosition) <= 3.0F )
+	                        {
+	                        	this.world.setBlockState( doorPosition, Blocks.AIR.getDefaultState());
+	            	            if ( rand.nextBoolean() )
+	            	            {
+	            	            	if ( rand.nextBoolean() )
+	            	            	{
+	            	            		this.world.playEvent(1021, doorPosition, 0);
+	            	            	}
+	            	            	else this.playSound(SoundEvents.BLOCK_STONE_BREAK, 1.0F, 1.0F);
+
+	            	            }
+	            	            this.world.playEvent(2001, doorPosition, Block.getIdFromBlock( doorBlock ));
+	                        }
+		                }
+	                }
+	            }
 	        }
-	        this.getLookHelper().setLookPosition(attacker.posX, attacker.posY, attacker.posZ, 30.0F, 30.0F);
 		}
 	}
 	
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount)
 	{
-		if (!net.minecraftforge.common.ForgeHooks.onLivingAttack(this, source, amount)) return false;
-        if (this.isEntityInvulnerable(source))
-        {
-            return false;
-        }
-        else if (this.world.isRemote)
-        {
-            return false;
-        }
-        else
-        {	
+		this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(this.getHealth()/this.getMaxHealth()*10.0D);
+    	
+		if (this.world.isRemote)
+		{
+			return false;
+		}
+		
+        this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
+		
+		if ( this.isEntityInvulnerable(source) || source == DamageSource.FALL || source == null || source.getTrueSource() == null || !(this.isEntityAlive()) )
+		{
+			return false;
+		}
+		
+		if ( source.getTrueSource() instanceof EntityLivingBase )
+		{
+			double dist = source.getTrueSource().getDistanceSq(this.getPosition());
+			
+			if ( dist > 256 )
+			{
+				amount = (float)(amount*(256.0f/dist));
+			}
+			
+			if ( !(source.getTrueSource() instanceof EntityPlayer) )
+			{
+				amount = amount/16.0f;
+			}
+		}
+
+		{	
             this.idleTime = 0;
 
             if (this.getHealth() <= 0.0F)
@@ -374,7 +430,6 @@ public class EntityGraveTitan extends EntityZombie implements IMob
                     {
                         return false;
                     }
-
                     this.damageEntity(source, amount - this.lastDamage);
                     if ( rand.nextBoolean() ) this.spawnZombie();
                     this.lastDamage = amount;
@@ -388,7 +443,7 @@ public class EntityGraveTitan extends EntityZombie implements IMob
                     this.hurtResistantTime = this.maxHurtResistantTime;
                     this.damageEntity(source, amount);
                     this.spawnZombies();
-                    if ( amount >= 1 )
+                    if ( amount >= 3.0 )
                     {
 	                    // int flesh = rand.nextInt((int)amount);
 	            		this.dropLootItem(Items.ROTTEN_FLESH, 1 );
@@ -511,7 +566,7 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 			dropItem.motionZ = 0.0;
 			dropItem.motionX = 0.0;
 			this.world.spawnEntity(dropItem);
-			
+			dropItem.setGlowing(true);
 			this.dropLootItem(Items.ROTTEN_FLESH, rand.nextInt(100)+100);
 			this.dropLootItem(Items.BONE, rand.nextInt(100)+100);
 		}
@@ -587,7 +642,8 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 	
 	private void adjustSize( )
 	{
-		float percent = this.getHealth()/this.getMaxHealth();
+		if ( this.getHealth() == 0 ) return;
+		float percent = (this.getHealth())/this.getMaxHealth();
 		float healthPercentage = MathHelper.clamp( percent, 0.1F, 1F );
         this.bossInfo.setPercent(percent);
 		float hsize = xsize * healthPercentage;
@@ -620,5 +676,30 @@ public class EntityGraveTitan extends EntityZombie implements IMob
             }
         }
     }
+	
+	protected void playStepSound(BlockPos pos, Block blockIn)
+    {
+    	this.playSound(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 1.5F, 0.5F + rand.nextFloat()/2.0F);
+        this.playSound(SoundEvents.ENTITY_ENDERDRAGON_FLAP, 2.0F, 0.25F + rand.nextFloat()/10.0F);
+        this.playSound(SoundEvents.BLOCK_NOTE_BASEDRUM, 1.5F, 0.5F + rand.nextFloat()/10.0F);
+    }
     
+	protected SoundEvent getHurtSound(DamageSource damageSourceIn)
+    {
+        this.playSound(SoundEvents.ENTITY_ZOMBIE_VILLAGER_AMBIENT, 1.0F, 0.5F + rand.nextFloat()/5.0F);
+        return SoundEvents.ENTITY_ZOMBIE_VILLAGER_HURT;
+    }
+
+    protected SoundEvent getDeathSound()
+    {
+    	this.playSound(SoundEvents.ENTITY_ZOMBIE_VILLAGER_DEATH, 1.0F, 0.5F + rand.nextFloat()/5.0F);
+        return SoundEvents.ENTITY_ZOMBIE_VILLAGER_DEATH;
+    }
+    
+    @Override
+    protected SoundEvent getAmbientSound()
+    {
+    	this.playSound(SoundEvents.ENTITY_ZOMBIE_AMBIENT, 3.0F, 0.3F);
+        return SoundEvents.ENTITY_ZOMBIE_VILLAGER_AMBIENT;
+    }
 }

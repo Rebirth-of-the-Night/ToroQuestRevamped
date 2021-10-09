@@ -7,33 +7,23 @@ import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockCrops;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.BlockEvent.BreakEvent;
-import net.minecraftforge.event.world.BlockEvent.PlaceEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.Province;
-import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapability;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
-import net.torocraft.toroquest.civilization.quests.QuestCaptureFugitives.DataWrapper;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
 
 public class QuestFarm extends QuestBase implements Quest
 {
-
-	//private static final Block[] CROP_TYPES = { Blocks.CARROTS, Blocks.POTATOES, Blocks.WHEAT, Blocks.MELON_STEM, Blocks.PUMPKIN_STEM, Blocks.BEETROOTS };
-
 	public static QuestFarm INSTANCE;
-
 	public static int ID;
 
 	public static void init(int id)
@@ -43,59 +33,58 @@ public class QuestFarm extends QuestBase implements Quest
 		MinecraftForge.EVENT_BUS.register(INSTANCE);
 		ID = id;
 	}
-
-	@SubscribeEvent
-	public void onFarm(PlaceEvent event)
+	
+	public void onFarm( EntityPlayer player )
 	{
-		if (event.getPlayer() == null) {
-			return;
-		}
-
-		Province provinceFarmedIn = loadProvince(event.getPlayer().world, event.getBlockSnapshot().getPos());
-
-		if (provinceFarmedIn == null || provinceFarmedIn.civilization == null) {
-			return;
-		}
-
-		handleFarmQuest(event.getPlayer(), provinceFarmedIn, event.getPlacedBlock().getBlock(), true);
-	}
-
-	@SubscribeEvent
-	public void onHarvest(BreakEvent event)
-	{
-		if (event.getPlayer() == null) {
-			return;
-		}
-
-		Province provinceFarmedIn = loadProvince(event.getPlayer().world, event.getPos());
-
-		if (provinceFarmedIn == null || provinceFarmedIn.civilization == null)
+		if ( player == null ) // || player.world.isRemote )
 		{
 			return;
 		}
+			
+		Province province = PlayerCivilizationCapabilityImpl.get(player).getInCivilization();
 
-		handleFarmQuest(event.getPlayer(), provinceFarmedIn, event.getState().getBlock(), false);
-	}
-
-	private void handleFarmQuest(EntityPlayer player, Province provinceFarmedIn, Block crop, boolean plant)
-	{
+		if (province == null || province.civilization == null)
+		{
+			return;
+		}
+		
 		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
+
 		DataWrapper quest = new DataWrapper();
+		
 		for (QuestData data : quests)
 		{
-			quest.setData(data);
-			quest.farmedCrop = crop;
-			quest.provinceFarmedIn = provinceFarmedIn;
-			if (perform(quest, plant, crop))
+			try
 			{
-				return;
+				quest.setData(data);
+				
+				if ( !quest.isFarmQuest() )
+				{
+					continue;
+				}
+				
+				if ( !quest.getData().getCompleted() )
+				{
+					quest.setCurrentAmount(quest.getCurrentAmount() + 1);
+					
+					quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+					if ( quest.getCurrentAmount() >= quest.getTargetAmount() )
+					{
+						quest.getData().setCompleted(true);
+						chatCompletedQuest(quest.getData());
+					}
+				}
+			}
+			catch (Exception e)
+			{
+
 			}
 		}
 	}
-
+	
 	public void destroyedCrop( EntityPlayer player )
 	{
-		if ( player == null )
+		if ( player == null ) // || player.world.isRemote )
 		{
 			return;
 		}
@@ -110,25 +99,26 @@ public class QuestFarm extends QuestBase implements Quest
 		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
 
 		DataWrapper quest = new DataWrapper();
+		
 		for (QuestData data : quests)
 		{
 			try
 			{
 				quest.setData(data);
-				if ( quest.getData().getPlayer().world.isRemote || quest.isFarmQuest() )
+				
+				if ( !quest.isFarmQuest() )
 				{
-					return;
+					continue;
 				}
-				if ( !quest.data.getCompleted() )
+				
+				if ( !quest.getData().getCompleted() )
 				{
 					quest.setCurrentAmount(quest.getCurrentAmount() - 1);
 					if ( quest.getCurrentAmount() < 0 )
 					{
 						quest.setCurrentAmount(0);
 					}
-					
-					quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
-
+					quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 				}
 			}
 			catch (Exception e)
@@ -138,18 +128,8 @@ public class QuestFarm extends QuestBase implements Quest
 		}
 	}
 	
-	public boolean perform(DataWrapper quest, boolean plant, Block crop)
+	public boolean perform(DataWrapper quest, boolean plant)
 	{
-		if (quest.getData().getPlayer().world.isRemote)
-		{
-			return false;
-		}
-
-		if (!quest.isApplicable(crop))
-		{
-			return false;
-		}
-
 		if ( !quest.data.getCompleted() )
 		{
 			if (plant)
@@ -173,8 +153,9 @@ public class QuestFarm extends QuestBase implements Quest
 				quest.data.setCompleted(true);
 				chatCompletedQuest(quest.data);
 			}
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	@Override
@@ -182,18 +163,6 @@ public class QuestFarm extends QuestBase implements Quest
 	{
 		return "quests.farm.title";
 	}
-
-//	private String cropName(Integer i) {
-//		if (i == null) {
-//			return "Crop";
-//		}
-//		Block crop = CROP_TYPES[i];
-//		if (crop == null) {
-//			System.out.println("invalid crop ID [" + i + "]");
-//			return "Crop";
-//		}
-//		return crop.getLocalizedName();
-//	}
 
 	@Override
 	public String getDescription(QuestData data)
@@ -227,17 +196,18 @@ public class QuestFarm extends QuestBase implements Quest
 
 		int roll = rand.nextInt(5)*16+32;
 		int em = (int)Math.round((double)roll/16)+2;
-		int rep = em*2;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+
+		q.setRewardRep(em*2);
+		
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
-		//q.setCropType(rand.nextInt(CROP_TYPES.length));
+
 		q.setCurrentAmount(0);
 		
 		q.setTargetAmount(roll);
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em);
-		q.setRewardRep(rep);
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
 		setRewardItems(q.data, rewardItems);
@@ -247,28 +217,22 @@ public class QuestFarm extends QuestBase implements Quest
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
-	{	
-		data.setChatStack("But " + data.getPlayer().getName() + ", our people will starve!");
+	{
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack( "farm.reject", data.getPlayer(), null );
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
 	}
 	
-	
-
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		//if (!data.getPlayer().world.isRemote)
-		{
-			switch (data.getPlayer().world.rand.nextInt(4))
-			{
-				case 0:{data.setChatStack("Our granary is a bit low on food, we need you to plant " + data.getiData().get("target") + " crops or the villagers will starve.");break;}
-				case 1:{data.setChatStack("Our granary stocks are nearly empty, " + data.getPlayer().getName() + ". Plant " + data.getiData().get("target") + " crops to prepare for the seasons ahead.");break;}
-				case 2:{data.setChatStack("Our food stocks are dwindling. We need you to plant " + data.getiData().get("target") + " crops before the planting season is over.");break;}
-				case 3:{data.setChatStack("Plant " + data.getiData().get("target") + " crops in preparation for the seasons ahead.");break;}
-			}
-		}
+		data.setChatStack( "farm.accept", data.getPlayer(), ""+(data.getiData().get("target")) );
 		this.setData(data);
 		return in;
 	}
@@ -276,33 +240,47 @@ public class QuestFarm extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData quest, List<ItemStack> items)
 	{
-		if ( !quest.getCompleted() )
-		{
-			if ( quest.getChatStack().equals("")  )
-			{
-			    quest.setChatStack( "You haven't planted enough crops, " + quest.getPlayer().getName() + "." );
-			    this.setData(quest);
-			}
-		    // // quest.getPlayer().closeScreen();
-			return null;
-		}
-
 		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
 
 		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
 		{
 			return null;
 		}
+		
+		if ( !quest.getCompleted() )
+		{
+			if ( quest.getChatStack().equals("")  )
+			{
+				quest.setChatStack( "farm.incomplete", quest.getPlayer(), ""+(quest.getiData().get("target")-quest.getiData().get("amount")) );
+			    this.setData(quest);
+			}
+			return null;
+		}
 
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
 
+		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(province.civilization) >= 3000 )
+		{
+			if (!quest.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(quest)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                quest.getPlayer().world.spawnEntity(new EntityXPOrb(quest.getPlayer().world, quest.getPlayer().posX+((rand.nextInt(2)*2-1)*2), quest.getPlayer().posY, quest.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		
 		List<ItemStack> rewards = getRewardItems(quest);
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
 
-		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
+		quest.setChatStack( "farm.complete", quest.getPlayer(), null );
 		this.setData(quest);
 		
 		return items;
@@ -379,25 +357,14 @@ public class QuestFarm extends QuestBase implements Quest
 			}
 		}
 
-		private boolean isApplicable(Block crop)
-		{
-			return isFarmQuest() && isInCorrectProvince() && isCorrectCrop(crop);
-		}
-
 		private boolean isFarmQuest()
 		{
 			return data.getQuestType() == ID;
 		}
 
-		private boolean isInCorrectProvince()
+		private boolean isInCorrectProvince( Province province)
 		{
-			return data.getProvinceId().equals(getProvinceFarmedIn().id);
+			return data.getProvinceId().equals(province.id);
 		}
-
-		private boolean isCorrectCrop(Block crop)
-		{
-			return (crop instanceof BlockCrops);
-		}
-
 	}
 }

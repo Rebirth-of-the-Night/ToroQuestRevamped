@@ -25,11 +25,13 @@ public class MessageSetItemReputationAmount implements IMessage {
 	public int reputation = 0;
 	public MessageCode messageCode = MessageCode.EMPTY;
 
-	public MessageSetItemReputationAmount() {
+	public MessageSetItemReputationAmount()
+	{
 
 	}
 
-	public MessageSetItemReputationAmount(IVillageLordInventory inventory) {
+	public MessageSetItemReputationAmount(IVillageLordInventory inventory)
+	{	
 		ItemStack item = inventory.getDonationItem();
 		if (item.isEmpty()) {
 			reputation = 0;
@@ -114,7 +116,7 @@ public class MessageSetItemReputationAmount implements IMessage {
 			return false;
 		}
 
-		if ( stack.getItem() instanceof ItemTrophy || stack.getItem() == Item.getByNameOrId("toroquest:royal_helmet") || stack.getItem() == Item.getByNameOrId("toroquest:legendary_bandit_helmet") )
+		if ( stack.getItem() instanceof ItemTrophy || stack.getItem() == Item.getByNameOrId("toroquest:legendary_bandit_helmet") ) // || stack.getItem() == Item.getByNameOrId("toroquest:royal_helmet") )
 		{
 			return true;
 		}
@@ -164,12 +166,15 @@ public class MessageSetItemReputationAmount implements IMessage {
 		buf.writeInt(messageCode.ordinal());
 	}
 
-	public static class Worker {
-		public void work(MessageSetItemReputationAmount message) {
+	public static class Worker
+	{
+		public void work(MessageSetItemReputationAmount message)
+		{
 			Minecraft minecraft = Minecraft.getMinecraft();
 			final EntityPlayer player = minecraft.player;
 
-			if (player == null) {
+			if ( player == null )
+			{
 				return;
 			}
 

@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
@@ -23,16 +23,14 @@ import net.minecraft.world.storage.MapDecoration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
-import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.ItemMapCentered;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
-import net.torocraft.toroquest.entities.EntityBanditLord;
 import net.torocraft.toroquest.entities.EntitySpiderLord;
 import net.torocraft.toroquest.generation.WorldGenPlacer;
 
@@ -42,11 +40,7 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 	public static QuestKillBossSpiderLord INSTANCE;
 	
 	protected final String entityName = "toroquest:toroquest_spider_lord";
-	protected final String tag = "legendary_spider";
-	protected final String location = "The Spider Queen's Lair";
-	protected final int emeraldAmount = 8;
-	
-
+	protected final int emeraldAmount = 5;
 
 	public static void init(int id)
 	{
@@ -59,29 +53,56 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
+
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		{
+			return null;
+		}
+		
 		if ( !data.getCompleted() )
 		{
 			if ( data.getChatStack().equals("") )
 			{
-				data.setChatStack( "My scouts report the spider queen still lives!" );
+				data.setChatStack( "legendary_spider.incomplete", data.getPlayer(), null );
 				this.setData(data);
 			}
 			// data.getPlayer().closeScreen();
 			return null;
 		}
+		
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
-		data.setChatStack( "You are a hero, " + data.getPlayer().getName() + "! You have slain the monstrosity! I am truly grateful for your bravery." );
-		this.setData(data);
+		
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		data.setChatStack( "legendary_spider.complete", data.getPlayer(), null );
 		in.addAll(getRewardItems(data));
+		this.setData(data);
 		return in;
 	}
 
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "I understand your unease. I can only hope this monstrosity will not be the end of us in a few weeks' time." );
-		this.setData(data);
-		data.getPlayer().closeScreen();
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack( "legendary_spider.reject", data.getPlayer(), null );
+		data.getPlayer().closeScreen();this.setData(data);
 		return in;
 	}
 
@@ -90,7 +111,7 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 	{
 		try
 		{
-			BlockPos pos = searchForSuitableLocation(data, 1150, 40);
+			BlockPos pos = searchForSuitableLocation(data, 1150, 80);
 			this.setSpawnPosition(data, pos);
 			// =-=-=-=-=-=-=-=-=-=-=-=-=-=-= World Generation =-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 			WorldGenPlacer.genSpiderLair(data.getPlayer().world, pos.getX(), pos.getZ());
@@ -98,10 +119,10 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)4, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to " + location + "§r");
-			itemstack.setStackDisplayName("§lMap to " + location + "§r");
+			itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_spider.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_spider.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
-			data.setChatStack( "A spider queen and her nest have been spotted near our province! Slay this creature before it spawns more young and becomes a danger to us. Be careful, " + data.getPlayer().getName() + ", the mercanaries I hired were all found dead... splattered across the ground. Take this map, my scouts have marked its location for you." );
+			data.setChatStack( "legendary_spider.accept", data.getPlayer(), null );
 			this.setData(data);
 		}
 		catch (Exception e)
@@ -118,7 +139,7 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 		{
 			return "";
 		}
-		return "quests." + tag + ".title";
+		return "quests.legendary_spider.title";
 	}
 
 	@Override
@@ -129,7 +150,7 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 			return "";
 		}
 		StringBuilder s = new StringBuilder();
-		s.append("quests." + tag + ".description");
+		s.append("quests.legendary_spider.description");
 		if (getSpawnPosition(data) != null)
 		{
 			s.append("|").append( " at §lLocation:§r [" + getDirections(getProvincePosition(getQuestProvince(data)), getSpawnPosition(data)) + "]\n\n" );
@@ -153,10 +174,9 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 		data.setQuestId(UUID.randomUUID());
 		data.setQuestType(ID);
 		data.setCompleted(false);
-		
 		setRewardRep(data, emeraldAmount*18);
 		int em = emeraldAmount;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
@@ -175,7 +195,7 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 
 		Entity victim = event.getEntity();
 		
-		if ( victim == null || !(victim instanceof EntitySpiderLord) )
+		if (!(victim instanceof EntitySpiderLord) )
 		{
 			return;
 		}
@@ -203,7 +223,7 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 			}
 		}
 		
-		CivilizationType civ = null;
+		//CivilizationType civ = null;
 		for ( EntityPlayer player : playerList )
 		{
 			Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(player).getCurrentQuests();
@@ -213,11 +233,11 @@ public class QuestKillBossSpiderLord extends QuestBase implements Quest
 				{
 					data.setCompleted(true);
 					chatCompletedQuest(data);
-					civ = data.getCiv();
+					//civ = data.getCiv();
 					//this.setData(data);
 				}
 			}
-			if ( !player.world.isRemote ) player.sendMessage(new TextComponentString( "§lThe Spider Queen has been slain!§r"));
+			player.sendMessage(new TextComponentString(TextComponentHelper.createComponentTranslation(player, "quests.legendary_spider.slain", new Object[0]).getFormattedText()));
 		}
 	}
 }

@@ -55,7 +55,7 @@ public class ItemTrophyMage extends ItemTrophy
     @SideOnly(Side.CLIENT)
 	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-		tooltip.add("Donate this trophy to a village lord: The ghost of the slain archmage is forever doomed to cast haste on you while in your province.\n\n§oHe kinda deserves it though, right? He must have tossed you off that tower at least five times...");
+		tooltip.add("Give this trophy to a Village Lord: The ghost of the slain archmage is forever doomed to cast Haste on you while in that province.\n\n§oHe kinda deserved to die though, right? He must have tossed you off that tower at least a dozen times...");
     }
 	
 //	public ActionResult<ItemStack> onItemRightClick(World worldIn, EntityPlayer playerIn, EnumHand handIn)

@@ -6,6 +6,7 @@ import java.util.Random;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockBush;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
@@ -14,8 +15,10 @@ import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.EntityEquipmentSlot;
+import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -27,25 +30,27 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.entities.EntityGuard;
+import net.torocraft.toroquest.entities.EntitySentry;
 
 public class TileEntityToroSpawner extends TileEntity implements ITickable
 {
 
-	private int triggerDistance = 60;
-	private List<String> entityIds = new ArrayList<String>();
-	private int spawnRadius = 0;
-	private ItemStack helmet;
-	private ItemStack chestplate;
-	private ItemStack leggings;
-	private ItemStack boots;
-	private List<String> entityTags = new ArrayList<String>();
+	protected int triggerDistance = 60;
+	protected List<String> entityIds = new ArrayList<String>();
+	protected int spawnRadius = 0;
+	protected Integer color = 0;
+	protected List<String> entityTags = new ArrayList<String>();
 
-	public TileEntityToroSpawner() {
+	public TileEntityToroSpawner()
+	{
 
 	}
 
-	public int getSpawnRadius() {
+	public int getSpawnRadius()
+	{
 		return spawnRadius;
 	}
 
@@ -61,6 +66,12 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 	{
 		this.entityIds = entityIds;
 	}
+	
+	public void setColor(Integer c)
+	{
+		color = c;
+		writeToNBT(new NBTTagCompound());
+	}
 
 	public void readFromNBT(NBTTagCompound compound)
 	{
@@ -69,10 +80,7 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 		spawnRadius = compound.getInteger("spawn_radius");
 		
 		// extra //
-		helmet = readItemStack("helment", compound);
-		boots = readItemStack("boots", compound);
-		chestplate = readItemStack("chestplate", compound);
-		leggings = readItemStack("leggings", compound);
+		color = compound.getInteger("color");
 
 		entityIds = new ArrayList<String>();
 		entityTags = new ArrayList<String>();
@@ -113,10 +121,7 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 		compound.setInteger("trigger_distance", triggerDistance);
 		compound.setInteger("spawn_radius", spawnRadius);
 
-		storeItemStack("helment", helmet, compound);
-		storeItemStack("boots", boots, compound);
-		storeItemStack("chestplate", chestplate, compound);
-		storeItemStack("leggings", leggings, compound);
+		compound.setInteger("color", color);
 
 		NBTTagList list = new NBTTagList();
 		for (String id : entityIds) {
@@ -172,11 +177,16 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 	{
 		Entity entity = getEntityForId(getWorld(), entityID);
 
-		if (!(entity instanceof EntityLivingBase)) {
+		if ( !(entity instanceof EntityLivingBase) )
+		{
 			System.out.println("entity not EntityLivingBase: " + entityID);
 			return;
 		}
-
+		else if ( entity instanceof EntitySentry )
+		{
+			((EntitySentry)(entity)).setRaidLocation((int)entity.posX, (int)entity.posZ);
+		}
+		
 		spawnEntityLiving((EntityLiving) entity, findSuitableSpawnLocation());
 	}
 
@@ -193,7 +203,7 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 
 		BlockPos pos;
 
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			distance = rand.nextInt(spawnRadius);
 			degrees = rand.nextInt(360);
@@ -247,14 +257,8 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 		}
 		return null;
 	}
-	
-	
-//	private boolean isLiquid(IBlockState blockState)
-//	{
-//		return blockState.getBlock() == Blocks.WATER || blockState.getBlock() == Blocks.LAVA;
-//	}
 
-	private boolean isGroundBlock(IBlockState blockState)
+	protected boolean isGroundBlock(IBlockState blockState)
 	{
 		if (blockState.getBlock() == Blocks.LEAVES || blockState.getBlock() == Blocks.LEAVES2 || blockState.getBlock() == Blocks.LOG || blockState.getBlock() instanceof BlockBush || blockState.getBlock() == Blocks.WOOL )
 		{
@@ -298,127 +302,136 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 				entity.addTag(tag);
 			}
 		}
-
-		if (helmet != null) {
-			try {
-		    	entity.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(6.0D);
-		    	entity.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(4.0D);
-			} catch (Exception e) {
-				System.out.println("failed to add helment: " + e.getMessage());
+		
+		if ( color != null && color != 0 && entity instanceof EntitySheep )
+		{
+			EntitySheep sheep = (EntitySheep)entity;
+			
+			switch ( color )
+			{
+				case 0:
+				{
+					sheep.setFleeceColor(EnumDyeColor.WHITE);
+					break;
+				}
+				case 1:
+				{
+					sheep.setFleeceColor(EnumDyeColor.RED);
+					break;
+				}
+				case 2:
+				{
+					sheep.setFleeceColor(EnumDyeColor.GREEN);
+					break;
+				}
+				case 3:
+				{
+					sheep.setFleeceColor(EnumDyeColor.BLUE);
+					break;
+				}
+				case 4:
+				{
+					sheep.setFleeceColor(EnumDyeColor.BLACK);
+					break;
+				}
+				case 5:
+				{
+					sheep.setFleeceColor(EnumDyeColor.YELLOW);
+					break;
+				}
+				case 6:
+				{
+					sheep.setFleeceColor(EnumDyeColor.BROWN);
+					break;
+				}
+				default:
+				{
+					sheep.setFleeceColor(EnumDyeColor.WHITE);
+					break;
+				}
 			}
+			sheep.setCustomNameTag("§e§l!");
+			sheep.setAlwaysRenderNameTag(true);
+			sheep.setGlowing(true);
+			world.spawnEntity(sheep);
+			entity.playLivingSound();
 		}
-
-		if (boots != null) {
-			try {
-				entity.setItemStackToSlot(EntityEquipmentSlot.FEET, boots);
-			} catch (Exception e) {
-				System.out.println("failed to add boots: " + e.getMessage());
-			}
+		else
+		{
+			world.spawnEntity(entity);
+			entity.playLivingSound();
 		}
-
-		if (chestplate != null) {
-			try {
-				entity.setItemStackToSlot(EntityEquipmentSlot.CHEST, chestplate);
-			} catch (Exception e) {
-				System.out.println("failed to add chestplate: " + e.getMessage());
-			}
-		}
-
-		if (leggings != null) {
-			try {
-				entity.setItemStackToSlot(EntityEquipmentSlot.LEGS, leggings);
-			} catch (Exception e) {
-				System.out.println("failed to add leggings: " + e.getMessage());
-			}
-		}
-
-		world.spawnEntity(entity);
-		entity.playLivingSound();
 		return true;
 	}
 
-//	private void spawnCreature() {
-//		EntityGuard entity = new EntityGuard(world);
-//		EntityLiving entityliving = (EntityLiving) entity;
-//		entity.setLocationAndAngles((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D, MathHelper.wrapDegrees(world.rand.nextFloat() * 360.0F), 0.0F);
-//		entityliving.rotationYawHead = entityliving.rotationYaw;
-//		entityliving.renderYawOffset = entityliving.rotationYaw;
-//		entityliving.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(entityliving)), (IEntityLivingData) null);
-//		world.spawnEntity(entity);
-//	}
-
-	private boolean withinRange() {
+	protected boolean withinRange()
+	{
 		return world.isAnyPlayerWithinRangeAt((double) pos.getX() + 0.5D, (double) pos.getY() + 0.5D, (double) pos.getZ() + 0.5D, (double) this.triggerDistance);
 	}
 
-	private boolean isRunTick() {
-		return world.getWorldTime() % 30 == 0;
+	protected boolean isRunTick()
+	{
+		return world.getWorldTime() % 75 == 0;
 	}
 
 	@Nullable
-	public SPacketUpdateTileEntity getUpdatePacket() {
+	public SPacketUpdateTileEntity getUpdatePacket()
+	{
 		return new SPacketUpdateTileEntity(pos, 1, getUpdateTag());
 	}
 
-	public NBTTagCompound getUpdateTag() {
+	public NBTTagCompound getUpdateTag()
+	{
 		NBTTagCompound nbttagcompound = this.writeToNBT(new NBTTagCompound());
 		nbttagcompound.removeTag("SpawnPotentials");
 		return nbttagcompound;
 	}
 
-	public boolean onlyOpsCanSetNbt() {
+	public boolean onlyOpsCanSetNbt()
+	{
 		return true;
 	}
 
-	public ItemStack getHelmet() {
-		return helmet;
-	}
-
-	public void setHelmet(ItemStack helmet) {
-		this.helmet = helmet;
-	}
-
-	public int getTriggerDistance() {
+	public int getTriggerDistance()
+	{
 		return triggerDistance;
 	}
 
-	public ItemStack getChestplate() {
-		return chestplate;
-	}
-
-	public void setChestplate(ItemStack chestplate) {
-		this.chestplate = chestplate;
-	}
-
-	public ItemStack getLeggings() {
-		return leggings;
-	}
-
-	public void setLeggings(ItemStack leggings) {
-		this.leggings = leggings;
-	}
-
-	public ItemStack getBoots() {
-		return boots;
-	}
-
-	public void setBoots(ItemStack boots) {
-		this.boots = boots;
-	}
-
-	public List<String> getEntityTags() {
+	public List<String> getEntityTags()
+	{
 		return entityTags;
 	}
 
-	public void setEntityTags(List<String> entityTags) {
+	public void setEntityTags(List<String> entityTags)
+	{
 		this.entityTags = entityTags;
 	}
 
-	public void addEntityTag(String tag) {
-		if (entityTags == null) {
+	public void addEntityTag(String tag)
+	{
+		if (entityTags == null) 
+		{
 			entityTags = new ArrayList<String>();
 		}
 		entityTags.add(tag);
 	}
+		
+	@SideOnly(Side.CLIENT)
+    public double getMaxRenderDistanceSquared()
+    {
+        return 0.0D;
+    }
+	
+	@Override
+	public boolean hasFastRenderer()
+    {
+        return true;
+    }
+	
+	@Override
+	public Block getBlockType()
+    {
+		return Blocks.AIR.getDefaultState().getBlock();
+    }
 
 }

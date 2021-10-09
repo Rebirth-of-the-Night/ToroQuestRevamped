@@ -42,7 +42,7 @@ public class SpiderLairGenerator extends WorldGenerator
 		}
 		this.createWebs(world, rand, pos);
 		//this.addToroSpawner( world, pos, getDefaultEnemies() );
-		this.spawnSpiderLord(world, rand, pos);
+		this.addToroSpawner(world, pos);
 		return true;
 	}
 	
@@ -161,18 +161,18 @@ public class SpiderLairGenerator extends WorldGenerator
 		return blockState.getBlock() == Blocks.WATER || blockState.getBlock() == Blocks.LAVA;
 	}
 
-	private boolean isGroundBlock(IBlockState blockState) {
-		Block b = blockState.getBlock();
-		if ( b == null )
-		{
-			return false;
-		}
-		if ( b instanceof BlockGrass ||  b instanceof BlockDirt ||  b == Blocks.STONE ||  b instanceof BlockSand || b instanceof BlockSnow || b instanceof BlockClay || b instanceof BlockGravel || b instanceof BlockMycelium || b instanceof BlockSand || b instanceof BlockSandStone )
-		{
-			return blockState.isOpaqueCube();
-		}
-		return false;
-	}
+//	private boolean isGroundBlock(IBlockState blockState) {
+//		Block b = blockState.getBlock();
+//		if ( b == null )
+//		{
+//			return false;
+//		}
+//		if ( b instanceof BlockGrass ||  b instanceof BlockDirt ||  b == Blocks.STONE ||  b instanceof BlockSand || b instanceof BlockSnow || b instanceof BlockClay || b instanceof BlockGravel || b instanceof BlockMycelium || b instanceof BlockSand || b instanceof BlockSandStone )
+//		{
+//			return blockState.isOpaqueCube();
+//		}
+//		return false;
+//	}
 
 
 //	private IBlockState randomChest()
@@ -219,17 +219,8 @@ public class SpiderLairGenerator extends WorldGenerator
 //		}
 //		setBlockAndNotifyAdequately(world, origin.add(x, y, z), block);
 //	}
-
-	private void spawnSpiderLord(World world, Random rand, BlockPos origin)
-	{
-		EntitySpiderLord e = new EntitySpiderLord(world);
-		e.setPosition(origin.getX() + 0.5, origin.getY() + 1, origin.getZ() + 0.5);
-		e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
-		e.setRaidLocation(origin.getX(), origin.getZ(), origin.getY());
-		world.spawnEntity(e);
-	}
 	
-	private void addToroSpawner( World world, BlockPos blockpos, List<String> entities)
+	private void addToroSpawner( World world, BlockPos blockpos)
 	{
 		world.setBlockState(blockpos, BlockToroSpawner.INSTANCE.getDefaultState());
 		TileEntity tileentity = world.getTileEntity(blockpos);
@@ -237,13 +228,16 @@ public class SpiderLairGenerator extends WorldGenerator
 		{
 			TileEntityToroSpawner spawner = (TileEntityToroSpawner) tileentity;
 			spawner.setTriggerDistance(80);
-			spawner.setEntityIds(entities);
-			spawner.setSpawnRadius(16);
-			// spawner.addEntityTag(data.getQuestId().toString());
-			// spawner.addEntityTag("capture_fugitives");
+			spawner.setEntityIds(getDefaultEnemies());
+			spawner.setSpawnRadius(8);
 		}
 		else
 		{
+			EntitySpiderLord e = new EntitySpiderLord(world);
+			e.setPosition(blockpos.getX() + 0.5, blockpos.getY() + 1, blockpos.getZ() + 0.5);
+			e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
+			e.setRaidLocation(blockpos.getX(), blockpos.getY(), blockpos.getZ());
+			world.spawnEntity(e);
 			System.out.println("tile entity is missing");
 		}
 	}

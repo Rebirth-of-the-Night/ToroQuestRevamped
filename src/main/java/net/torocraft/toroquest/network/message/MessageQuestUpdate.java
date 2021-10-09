@@ -4,7 +4,6 @@ package net.torocraft.toroquest.network.message;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.block.Block;
@@ -15,14 +14,8 @@ import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemFood;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
-import net.minecraft.item.ItemTool;
-import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.SoundCategory;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -35,6 +28,7 @@ import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.config.ToroQuestConfiguration.Donate;
 import net.torocraft.toroquest.entities.EntityVillageLord;
 import net.torocraft.toroquest.inventory.IVillageLordInventory;
 //import net.torocraft.toroquest.item.ItemFireSword;
@@ -90,7 +84,7 @@ public class MessageQuestUpdate implements IMessage {
 			
 			EntityVillageLord lord = (EntityVillageLord) player.world.getEntityByID(message.lordEntityId);
 			
-			if ( lord == null )
+			if ( lord == null || lord.ticksExisted < 500 || lord.getCivilization() == null || lord.getProvince() == null )
 			{
 				player.closeScreen();
 				return;
@@ -104,49 +98,45 @@ public class MessageQuestUpdate implements IMessage {
 				return;
 			}
 			
-            if ( !player.world.isRemote ) player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.UI_BUTTON_CLICK, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            //if ( !player.world.isRemote ) 
+            player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.UI_BUTTON_CLICK, SoundCategory.PLAYERS, 1.0F, 1.0F);
 
 			switch (action) // TODO
 			{
 				case ACCEPT:
 				{
-					//this.handleStatusUpdate(player,12);
-					if ( !player.world.isRemote )
-		            {
-		            	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_CHIME, SoundCategory.AMBIENT, 1.0F, 1.0F);					
-		            }
+					player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_CHIME, SoundCategory.AMBIENT, 1.0F, 1.0F);					
 					processAccept(player, province, inventory);
 					break;
 				}
 				case COMPLETE:
 				{
-		            //this.spawnParticles(player, EnumParticleTypes.VILLAGER_HAPPY);
-					processComplete(player, province, inventory);
-		            if ( !player.world.isRemote )
-		            {
-		            	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.AMBIENT, 1.0F, 1.0F);					
-		            }
+					processComplete(player, province, inventory, lord);
+		            //if ( !player.world.isRemote )
 					break;
 				}
 				case REJECT:
 				{
-		            //this.spawnParticles(player, EnumParticleTypes.VILLAGER_ANGRY);
+		            // this.spawnParticles(player, EnumParticleTypes.VILLAGER_ANGRY);
 					processReject(player, province, inventory);
 					if ( !player.world.isRemote )
-		            {
-		            	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 0.9F, 0.9F);					
-		            }					
-					 break;
+					{
+						lord.playTameEffect((byte)7);
+	                    lord.world.setEntityState(lord, (byte)7);
+					}
+		            player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+					break;
 				}
 				case DONATE:
 				{
 		            //this.spawnParticles(player, EnumParticleTypes.VILLAGER_HAPPY);
 					processDonate(player, province, inventory);
 					if ( !player.world.isRemote )
-		            {
-		            	//player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.VINDICATION_ILLAGER_AMBIENT, SoundCategory.VOICE, 0.8F, 1.25F);					
-		            	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.AMBIENT, 1.0F, 1.0F);					
-		            }
+					{
+						lord.playTameEffect((byte)8);
+	                    lord.world.setEntityState(lord, (byte)8);
+					}
+		            player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_CHIME, SoundCategory.AMBIENT, 1.0F, 1.0F);
 					break;
 				}
 				default:
@@ -196,9 +186,9 @@ public class MessageQuestUpdate implements IMessage {
 			if (reward != null)
 			{
 				CivilizationHandlers.adjustPlayerRep(player, province.civilization, reward.rep);
-				//if ( player.world.isRemote )
+				if ( reward.rep > 0 )
 				{
-					player.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+					player.playSound(SoundEvents.BLOCK_NOTE_CHIME, 1.0F, 1.0F);
 				}
 				inventory.setDonationItem(ItemStack.EMPTY);
 				try{player.addItemStackToInventory(inventory.getReturnItems().get(0));} catch ( Exception e ) {}
@@ -215,8 +205,6 @@ public class MessageQuestUpdate implements IMessage {
 //			}
 //			return l;
 //		}
-
-		// TODO -==-=-=-=-=-=-=--=-=-=--1pofjqwphfvhisuidbcuoiasoiba
 		
 		private void handleDonateTrophy(EntityPlayer player, Province province, IVillageLordInventory inventory, ItemStack stack)
 		{
@@ -419,12 +407,12 @@ public class MessageQuestUpdate implements IMessage {
 		
 		}
 
-		protected void processComplete(EntityPlayer player, Province province, IVillageLordInventory inventory) {
+		protected void processComplete(EntityPlayer player, Province province, IVillageLordInventory inventory, EntityVillageLord lord) {
 
-			if ( player.world.isRemote )
-			{
-				return;
-			}
+//			if ( player.world.isRemote )
+//			{
+//				return;
+//			}
 			
 			List<ItemStack> inputItems = inventory.getGivenItems(); // left items
 			List<ItemStack> outputItems = PlayerCivilizationCapabilityImpl.get(player).completeQuest(inputItems); // after items
@@ -433,13 +421,14 @@ public class MessageQuestUpdate implements IMessage {
 
 			//List<ItemStack> other = PlayerCivilizationCapabilityImpl.get(player).rejectQuest(returnItems); // after items right
 
-			if (outputItems == null)
+			if ( outputItems == null )
 			{
 				for ( ItemStack itemstack : inputItems )
 				{
 					ItemHandlerHelper.giveItemToPlayer(player, itemstack);
 				}
 				//inventory.setGivenItems(inputItems);
+	        	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
 				return;
 			}
 
@@ -471,7 +460,13 @@ public class MessageQuestUpdate implements IMessage {
 //			}
 			
 			//if (outputItems == null) return;
-
+        	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_CHIME, SoundCategory.AMBIENT, 1.0F, 1.0F);
+        	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, SoundCategory.AMBIENT, 1.0F, 1.0F);
+			if ( !player.world.isRemote )
+			{
+				lord.playTameEffect((byte)8);
+                lord.world.setEntityState(lord, (byte)8);
+			}
 			QuestData nextQuest = PlayerCivilizationCapabilityImpl.get(player).getNextQuestFor(province);
 			ToroQuestPacketHandler.INSTANCE.sendTo(new MessageSetQuestInfo(province, null, nextQuest), (EntityPlayerMP) player);
 		}
@@ -484,7 +479,6 @@ public class MessageQuestUpdate implements IMessage {
 			if (ctx.side != Side.SERVER) {
 				return null;
 			}
-
 			final EntityPlayerMP player = ctx.getServerHandler().player;
 
 			if (player == null) {
@@ -555,6 +549,14 @@ public class MessageQuestUpdate implements IMessage {
 			if (Blocks.EMERALD_BLOCK == block)
 			{
 				return new DonationReward(ToroQuestConfiguration.donateEmeraldRepGain * 9 * item.getCount(), null);
+			}
+		}
+		
+		for ( Donate d : ToroQuestConfiguration.donate )
+		{
+			if ( item.getItem() == d.item )
+			{
+				return new DonationReward(d.rep*item.getCount(), null);
 			}
 		}
 		
@@ -687,17 +689,4 @@ public class MessageQuestUpdate implements IMessage {
 		return reward;
 	*/
 	}
-
-	private static boolean is(ItemStack stack, Item... items)
-	{
-		for (Item item : items)
-		{
-			if (stack.getItem() == item)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
 }

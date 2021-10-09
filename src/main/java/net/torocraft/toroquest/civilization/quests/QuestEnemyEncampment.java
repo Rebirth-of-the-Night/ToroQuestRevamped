@@ -17,6 +17,7 @@ import net.minecraft.block.BlockSlab.EnumBlockHalf;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -76,7 +77,14 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 	@Override
 	public List<ItemStack> complete(QuestData data, List<ItemStack> in)
 	{
-		
+		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
+		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
+
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		{
+			return null;
+		}
+
 		if ( !data.getCompleted() )
 		{
 			int kills = getKills(data);
@@ -86,44 +94,64 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 				data.setCompleted(true);
 				CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
 
-				// data.setChatStack( "I knew I could count on you, " + data.getPlayer().getName() + "." );
-				this.setData(data);
-				
+				if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+				{
+					if (!data.getPlayer().world.isRemote)
+			        {
+			            int i = getRewardRep(data)*2;
+
+			            while (i > 0)
+			            {
+			                int j = EntityXPOrb.getXPSplit(i);
+			                i -= j;
+			                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+			            }
+			        }
+				}
+				data.setChatStack( "enemy_encampment.complete", data.getPlayer(), null );
 				in.addAll(getRewardItems(data));
+				this.setData(data);
 				return in;
+			}
+			
+			if ( kills < 1 )
+			{
+				data.setChatStack( "enemy_encampment.nokills", data.getPlayer(), null );
+				this.setData(data);
+				return null;
 			}
 			
 			int count = countEntities(data);
 			
-			/*
-			
-			quests.enemy_encampment.wasnt_you=I hired mercenaries to do the job, the task could not wait.
-			quests.enemy_encampment.one_left=My scouts report there is still a bandit remaining!
-			quests.enemy_encampment.some_left=My scouts report there are %i bandits remaining!
-			
-			
-			*/
-			if ( kills > 1 && count > 0 && count + kills < minKillsRequired )
+			if ( kills > 1 && count - kills < minKillsRequired )
 			{
-				data.setChatStack("Well done. It seems you had help, however?");
-				this.setData(data);
+				data.setCompleted(true);
+				CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+
+				if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+				{
+					if (!data.getPlayer().world.isRemote)
+			        {
+			            int i = getRewardRep(data)*2;
+
+			            while (i > 0)
+			            {
+			                int j = EntityXPOrb.getXPSplit(i);
+			                i -= j;
+			                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+			            }
+			        }
+				}
+				data.setChatStack( "enemy_encampment.help", data.getPlayer(), null );
 				in.addAll(getRewardItems(data));
-				return in;
-			}
-			
-			if ( kills < 1)
-			{
-				data.setChatStack( "Do you take me for a fool? You haven't killed any bandits yet!" );
 				this.setData(data);
-				// data.getPlayer().closeScreen();
-				return null;
+				return in;
 			}
 			
 			if ( kills > 0 )
 			{
-				data.setChatStack( "My scouts report the bandits have not yet been done away with!" );
+				data.setChatStack( "enemy_encampment.incomplete", data.getPlayer(), null );
 				this.setData(data);
-				// data.getPlayer().closeScreen();
 				return null;
 			}
 			
@@ -132,9 +160,23 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 		
 		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
 
-		data.setChatStack( "I knew I could count on you, " + data.getPlayer().getName() + "." );
-		this.setData(data);
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+		{
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int i = getRewardRep(data)*2;
+
+	            while (i > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(i);
+	                i -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
+		}
+		data.setChatStack( "enemy_encampment.complete", data.getPlayer(), null );
 		in.addAll(getRewardItems(data));
+		this.setData(data);
 		return in;
 	}
 	
@@ -154,7 +196,34 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 	@Override
 	public List<ItemStack> reject(QuestData data, List<ItemStack> in)
 	{
-		data.setChatStack( "My guards lack your expertise in combat, " + data.getPlayer().getName() + ". But, I understand you have other matters to attend to.");
+//		int count = countEntities(data);
+//		
+//		if ( count < 0 )
+//		{
+//			CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+//			in.addAll(getRewardItems(data));
+//			data.setChatStack( "enemy_encampment.help", data.getPlayer(), null );
+//			this.setData(data);
+//			return in;
+//		}
+//		
+//		int kills = getKills(data);
+//
+//		if ( kills > 1 && count - kills < minKillsRequired )
+//		{
+//			CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+//			in.addAll(getRewardItems(data));
+//			data.setChatStack( "enemy_encampment.help", data.getPlayer(), null );
+//			this.setData(data);
+//			return in;
+//		}
+		
+		if ( data.getCompleted() )
+		{
+			return null;
+		}
+		
+		data.setChatStack("enemy_encampment.reject", data.getPlayer(), null);
 		this.setData(data);
 		data.getPlayer().closeScreen();
 		return in;
@@ -176,20 +245,12 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)3, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to Bandit encampment§r");
-			itemstack.setStackDisplayName("§lMap to Bandit encampment§r");
+			itemstack.setTranslatableName("§lMap to Bandit Encampment§r");
+			itemstack.setStackDisplayName("§lMap to Bandit Encampment§r");
 			addToroSpawner(data, data.getPlayer().getEntityWorld(), getSpawnPosition(data), getEnemyType(data));
 			in.add(itemstack);
-			//if (!data.getPlayer().world.isRemote)
-			{
-				switch (data.getPlayer().world.rand.nextInt(3))
-				{
-					case 0:{data.setChatStack( "Bandits have established a camp not far from here. Wipe them out before they prepare their raid on our village, " + data.getPlayer().getName() + ".");break;}
-					case 1:{data.setChatStack( "My scouts have discovered a bandit encampment nearby. Put an end to them before they reach us!");break;}
-					case 2:{data.setChatStack( "Bandits have set up an outpost and are attacking one of our trade routes. I can trust you to take care of this matter, " + data.getPlayer().getName() + ".");break;}
-				}
-				this.setData(data);
-			}
+			data.setChatStack("enemy_encampment.accept", data.getPlayer(), null);
+			this.setData(data);
 		}
 		catch (Exception e)
 		{
@@ -353,10 +414,6 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 			spawner.setTriggerDistance(64);
 			spawner.setEntityIds(entities);
 			spawner.setSpawnRadius(16);
-//			spawner.setHelmet(new ItemStack(Items.DIAMOND_HELMET));
-//			spawner.setBoots(new ItemStack(Items.DIAMOND_BOOTS));
-//			spawner.setLeggings(new ItemStack(Items.DIAMOND_LEGGINGS));
-//			spawner.setChestplate(new ItemStack(Items.DIAMOND_CHESTPLATE));
 			spawner.addEntityTag(data.getQuestId().toString());
 			spawner.addEntityTag("encampment_quest");
 		}
@@ -421,12 +478,12 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 		data.setCompleted(false);
 		chooseEnemyType(data);
 		
-		int em = 9;
-		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 3000 )
+		int em = 20;
+		int rep = em*2;
+		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
 			em *= 2;
 		}
-		int rep = em*2;
 		
 		List<ItemStack> reward = new ArrayList<ItemStack>(1);
 		reward.add(new ItemStack(Items.EMERALD, em));
