@@ -117,7 +117,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	// EntityPlayer lastHostilePlayer = null;
 	
 	protected CivilizationType c = null;
-	protected final AIArcher<EntityGuard> aiArrowAttack = new AIArcher<EntityGuard>(this, 0.5D, 40, 40.0F);
+	protected final AIArcher<EntityGuard> aiArrowAttack = new AIArcher<EntityGuard>(this, 0.55D, 40, 40.0F);
 	public final EntityAISmartTempt followNoCiv = new EntityAISmartTempt(this, 0.625D, Items.AIR)
 	{
 		@Override
@@ -351,14 +351,14 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	
 	//==================================================== NBT ===========================================================
 
+	EntityPlayer talkingWith = null;
 	
 	@Override
 	public void writeEntityToNBT(NBTTagCompound compound)
 	{
-		if ( this.raidX != null && this.raidZ != null )
+		if ( this.raidX != null && this.raidZ != null && !( this.raidX == 0 && this.raidZ == 0 ) )
 		{
 			compound.setInteger("raidX", this.raidX);
-			//compound.setInteger("raidY", this.raidY);
 			compound.setInteger("raidZ", this.raidZ);
 		}
 		if ( this.playerGuard != "" )
@@ -412,7 +412,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	{
 		this.tasks.addTask(1, new EntityAISwimming(this));
         this.tasks.addTask(2, new EntityAIOpenDoor(this, true));
-        this.tasks.addTask(3, new EntityAISmartTempt(this, 0.65D, Item.getByNameOrId("toroquest:recruitment_papers"))
+        this.tasks.addTask(3, new EntityAISmartTempt(this, 0.6D, Item.getByNameOrId("toroquest:recruitment_papers"))
         {
         	@Override
             public boolean shouldExecute()
@@ -424,12 +424,43 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
             	return super.shouldExecute();
             }
         });
-        this.tasks.addTask(4, new EntityAIPatrolVillage(this, 0.65D));
+        this.tasks.addTask(4, new EntityAIPatrolVillage(this, 0.6D));
         this.tasks.addTask(5, new EntityAIWatchClosest(this, EntityLivingBase.class, 8.0F)
         {
 	        public boolean shouldExecute()
 	        {
-	            if ( !EntityGuard.this.getNavigator().noPath() || EntityGuard.this.getAttackTarget() == null ) // has a path
+	            if ( !EntityGuard.this.getNavigator().noPath() || EntityGuard.this.getAttackTarget() != null ) // has a path
+	            {
+	            	return false;
+	            }
+	            else
+	            {
+	            	if ( EntityGuard.this.actionTimer > 3 && EntityGuard.this.talkingWith != null )
+	            	{
+	            		this.closestEntity = EntityGuard.this.talkingWith;
+	            		return true;
+	            	}
+	            	return super.shouldExecute();
+	            }
+	        }
+	        
+	        public boolean shouldContinueExecuting()
+	        {
+	        	if ( EntityGuard.this.talkingWith == null )
+	        	{
+	        		return false;
+	        	}
+	        	else
+	        	{
+	        		return super.shouldContinueExecuting();
+	        	}
+	        }
+        });
+        this.tasks.addTask(6, new EntityAILookIdle(this)
+        {
+	        public boolean shouldExecute()
+	        {
+	        	if ( !EntityGuard.this.getNavigator().noPath() || EntityGuard.this.getAttackTarget() != null || EntityGuard.this.actionTimer > 3 ) // has a path
 	            {
 	            	return false;
 	            }
@@ -437,13 +468,6 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	            {
 	            	return super.shouldExecute();
 	            }
-	        }
-        });
-        this.tasks.addTask(6, new EntityAILookIdle(this)
-        {
-	        public boolean shouldExecute()
-	        {
-	            return EntityGuard.this.getAttackTarget() == null && EntityGuard.this.getNavigator().noPath() && EntityGuard.this.world.rand.nextFloat() < 0.02F;
 	        }
         });
         
@@ -488,6 +512,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 					this.interactTalkReady = true;
 					this.setCustomNameTag("...");
 					this.setAlwaysRenderNameTag(false);
+					EntityGuard.this.talkingWith = null;
 				}
 			}
 			else
@@ -531,14 +556,14 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			       				if ( !p.isTrading() )
 			       				{
 				       				this.getNavigator().clearPath();
-									this.getNavigator().tryMoveToXYZ(((p.posX - this.posX)/3.0+this.posX),p.posY,((p.posZ - this.posZ)/3.0+this.posZ), 0.5D);
-									this.faceEntity(p, 0.20F, 0.20F);
-									this.getLookHelper().setLookPositionWithEntity(p, 0.20F, 0.20F);
+									this.getNavigator().tryMoveToXYZ(((p.posX - this.posX)/2.0+this.posX),p.posY,((p.posZ - this.posZ)/2.0+this.posZ), 0.5D);
+									this.faceEntity(p, 30.0F, 30.0F);
+									this.getLookHelper().setLookPositionWithEntity(p, 30.0F, 30.0F);
 									
 									p.getNavigator().clearPath();
 									p.getNavigator().tryMoveToXYZ(((this.posX - p.posX)/3.0+p.posX),this.posY,((this.posZ - p.posZ)/3.0+p.posZ), 0.5D);
-									p.faceEntity(this, 0.20F, 0.20F);
-									p.getLookHelper().setLookPositionWithEntity(this, 0.20F, 0.20F);
+									p.faceEntity(this, 30.0F, 30.0F);
+									p.getLookHelper().setLookPositionWithEntity(this, 30.0F, 30.0F);
 			       				}
 								break;
 			       			}
@@ -657,7 +682,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			        	}
 	    			}
     				this.canShieldPush = true;
-    	    		this.avoidNear(this.world.getNearestAttackablePlayer(this, 4, 2));
+    	    		this.avoidNear();
     			}
 	    		if ( this.underAttackTimer < 1 && rand.nextInt(5) == 0 && this.murderTimer <= 0 && !this.isAnnoyed() ) 
 	    		{
@@ -1137,7 +1162,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 
 	public boolean returnToPost()
 	{
-		if ( this.raidX == null || this.raidZ == null )
+		if ( this.raidX == null || this.raidZ == null || ( this.raidX == 0 && this.raidZ == 0 ) )
 		{
 			return false;
 		}
@@ -1601,9 +1626,13 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 		this.setMeleeWeapon();
 		//}
 		
-		if ( this.posY != 0 && this.posX != 0 && this.posZ != 0 )
+		if ( this.posY == 0 || ( this.posX == 0 && this.posZ == 0 ) )
 		{
-	        this.raidX = (int)this.posX;
+	        
+		}
+		else
+		{
+			this.raidX = (int)this.posX;
 			this.raidZ = (int)this.posZ;
 		}
 		
@@ -2817,26 +2846,15 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
         return null;
     }
 	
-	public void avoidNear( EntityPlayer player )
+	public void avoidNear()
 	{
-		if ( player == null )
+    	List<EntityGuard> guards = this.world.getEntitiesWithinAABB(EntityGuard.class, this.getEntityBoundingBox().grow(3, 2, 3), new Predicate<EntityGuard>()
 		{
-//			List<EntityToroNpc> guards = this.world.<EntityToroNpc>getEntitiesWithinAABB(EntityToroNpc.class, this.getEntityBoundingBox().grow(2.0D, 2.0D, 2.0D));
-//	        
-//	        for ( EntityToroNpc guard : guards )
-//	        {
-//	        	Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 6, 4, new Vec3d(guard.posX, guard.posY, guard.posZ));
-//	        	
-//	        	if ( vec3d != null )
-//	            {
-//	            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D);
-//	            	return;
-//	            }
-//	        }
-			return;
-		}
-		
-		List<EntityToroNpc> guards = this.world.<EntityToroNpc>getEntitiesWithinAABB(EntityToroNpc.class, this.getEntityBoundingBox().grow(3.0D, 2.0D, 3.0D));
+			public boolean apply(@Nullable EntityGuard entity)
+			{
+				return EntityGuard.this != entity;
+			}
+		});
         
         for ( EntityToroNpc guard : guards )
         {
@@ -2844,39 +2862,37 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
         	
         	if ( vec3d != null )
             {
-            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D);
+            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D);
             	return;
             }
         }
-		
-		if ( player.getDistance(this) <= 4.0D )
-    	{
-			if ( this.actionReady() )
-	    	{
-	    		if ( this.world.rand.nextFloat() < ToroQuestConfiguration.guardSpeakChance )
-	    		{
-	    			EntityGuard.guardSpeak(this, player);
-	    			return;
-	    		}
-	    		else
-	    		{
-	    			this.actionTimer = 3;
-	    		}
-			}
-//			else if ( player.getDistance(this) <= 1.5D )
-//			{
-//				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 6, 4, new Vec3d(player.posX, player.posY, player.posZ));
-//	        	
-//	            if ( vec3d != null )
-//	            {
-//	            	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.6D);
-//	            	return;
-//	            }
-//			}
-    	}
-		
-		// GUARDS avoid GUARDS
-
+        
+        List<EntityPlayer> players = this.world.<EntityPlayer>getEntitiesWithinAABB(EntityPlayer.class, this.getEntityBoundingBox().grow(4, 2, 4));
+        
+        for ( EntityPlayer player : players )
+        {
+        	if ( this.canEntityBeSeen(player) )
+        	{
+    			if ( this.actionReady() )
+    	    	{
+    	    		if ( this.world.rand.nextFloat() < ToroQuestConfiguration.guardSpeakChance )
+    	    		{
+    	    			this.getNavigator().clearPath();
+    	    			EntityGuard.guardSpeak(this, player);
+						this.getNavigator().tryMoveToXYZ(((player.posX - this.posX)/2.0+this.posX),player.posY,((player.posZ - this.posZ)/2.0+this.posZ), 0.5D);
+						this.faceEntitySmart(player);
+						this.faceEntity(player, 30.0F, 30.0F);
+						this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
+    	    			return;
+    	    		}
+    	    		else
+    	    		{
+    	    			this.actionTimer = 3;
+    	    			return;
+    	    		}
+    			}
+        	}
+        }
 	}
 	
 	//==================================================== Guard Speak ===========================================================
@@ -2909,6 +2925,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			entity.getNavigator().clearPath();
 			entity.faceEntity(player, 20.0F, 20.0F);
 			entity.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
+			entity.talkingWith = player;
 		}
 		
 		CivilizationType civ = entity.getCivilization();

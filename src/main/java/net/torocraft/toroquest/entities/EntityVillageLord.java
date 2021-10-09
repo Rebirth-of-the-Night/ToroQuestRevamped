@@ -11,16 +11,12 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
-import net.minecraft.entity.ai.EntityAILookAtTradePlayer;
 import net.minecraft.entity.ai.EntityAILookIdle;
 import net.minecraft.entity.ai.EntityAIPanic;
 import net.minecraft.entity.ai.EntityAISwimming;
@@ -28,7 +24,6 @@ import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.EntityEquipmentSlot;
@@ -50,7 +45,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.village.Village;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
@@ -68,7 +62,6 @@ import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
-import net.torocraft.toroquest.entities.ai.EntityAILookQuestingPlayer;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 import net.torocraft.toroquest.entities.render.RenderVillageLord;
 import net.torocraft.toroquest.gui.VillageLordGuiHandler;
@@ -302,8 +295,8 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
     		
 			if ( this.ticksExisted % 500 == 0 && isEntityAlive() )
 			{
+				this.currentPlayer = null;
 				Province province = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
-
 				this.setHasLord(true, province);
 				this.pledgeAllegianceIfUnaffiliated(province);
 			}
@@ -313,7 +306,7 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 	
 	public boolean returnToPost()
 	{
-		if ( this.raidX == null || this.raidZ == null )
+		if ( this.raidX == null || this.raidZ == null || ( this.raidX == 0 && this.raidZ == 0 ) )
 		{
 			return false;
 		}
@@ -466,6 +459,7 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		
 		this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
 		this.faceEntity(player, 30.0F, 30.0F);
+		this.currentPlayer = player;
 		
 		if ( player.world.isRemote )
 		{
@@ -743,8 +737,35 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		this.setHasLord(true, CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ) );
 		this.tasks.addTask(0, new EntityAISwimming(this));
 		this.tasks.addTask(1, new EntityAIPanic(this, 0.485D));
-        this.tasks.addTask(6, new EntityAILookQuestingPlayer(this));
-		this.tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
+		this.tasks.addTask(7, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F)
+		{
+			@Override
+			public boolean shouldExecute()
+		    {
+		        if ( EntityVillageLord.this.currentPlayer != null )
+		        {
+		        	this.closestEntity = EntityVillageLord.this.currentPlayer;
+		        	return true;
+		        }
+		        else
+		        {
+		            return false;
+		        }
+		    }
+			
+			@Override
+			public boolean shouldContinueExecuting()
+	        {
+	        	if ( EntityVillageLord.this.currentPlayer == null )
+	        	{
+	        		return false;
+	        	}
+	        	else
+	        	{
+	        		return super.shouldContinueExecuting();
+	        	}
+	        }
+		});
 		this.tasks.addTask(8, new EntityAILookIdle(this));
 	}
 	
@@ -1100,6 +1121,11 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 	
 	public void setRaidLocation(Integer x, Integer z)
 	{
+		if ( x == 0 && z == 0 )
+		{
+			return;
+		}
+		
 		if ( x != null && z != null )
 		{
 			this.raidX = x;
@@ -1117,7 +1143,7 @@ public void writeEntityToNBT(NBTTagCompound compound)
 		c.setTag(e.getKey().toString(), e.getValue().saveAllItems());
 	}
 	compound.setTag("Items", c);
-	if ( this.raidX != null && this.raidZ != null )
+	if ( this.raidX != null && this.raidZ != null && !( this.raidX == 0 && this.raidZ == 0 ) )
 	{
 		compound.setInteger("raidX", this.raidX);
 		compound.setInteger("raidZ", this.raidZ);

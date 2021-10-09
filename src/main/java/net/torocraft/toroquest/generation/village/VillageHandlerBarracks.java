@@ -174,34 +174,34 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 						
 						if ( worldIn.rand.nextBoolean() )
 						{
-							if ( worldIn.rand.nextInt(3) == 0 )
+//							if ( worldIn.rand.nextInt(3) == 0 )
+//							{
+//								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOWL, 1));
+//							}
+//							if ( worldIn.rand.nextInt(3) == 0 )
+//							{
+//								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.MUSHROOM_STEW, 1));
+//							}
+							if ( worldIn.rand.nextInt(4) == 0 )
 							{
-								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOWL, 1));
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BREAD, 1));
 							}
-							if ( worldIn.rand.nextInt(3) == 0 )
-							{
-								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.MUSHROOM_STEW, 1));
-							}
-							if ( worldIn.rand.nextInt(3) == 0 )
-							{
-								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BEETROOT_SOUP, 1));
-							}
-							for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+							for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
 							{
 								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.APPLE, worldIn.rand.nextInt(3)+1));
 							}
-							for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+							for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
 							{
 								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BREAD, worldIn.rand.nextInt(3)+1));
 							}
 						}
 						else
 						{
-							for ( int i = worldIn.rand.nextInt(4)+2; i > 0; i-- )
+							for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
 							{
-								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.ARROW, 16));
+								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.ARROW, 8));
 							}
-							for ( int i = worldIn.rand.nextInt(2)+1; i > 0; i-- )
+							for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
 							{
 								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.BOW, 1));
 							}
@@ -209,7 +209,7 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 							{
 								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.IRON_SWORD, 1));
 							}
-							for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
+							for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
 							{
 								Item shield = Item.getByNameOrId("spartanshields:shield_basic_wood");
 								if ( shield == null )

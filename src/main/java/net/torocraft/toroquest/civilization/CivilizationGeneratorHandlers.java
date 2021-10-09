@@ -116,7 +116,7 @@ public class CivilizationGeneratorHandlers
 				
 				if ( destroyedVillage )
 				{
-					List<EntityVillager> villagers = event.getWorld().getEntitiesWithinAABB(EntityVillager.class, new AxisAlignedBB(x,y,z,x+16,CivilizationHandlers.SPAWN_HEIGHT,z+16));
+					List<EntityVillager> villagers = event.getWorld().getEntitiesWithinAABB(EntityVillager.class, new AxisAlignedBB(x-16,y,z-16,x+16,CivilizationHandlers.SPAWN_HEIGHT,z+16));
 					
 					for ( EntityVillager villager : villagers )
 					{
@@ -328,7 +328,7 @@ public class CivilizationGeneratorHandlers
 										event.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
 									}
 								}
-								else if ( event.getWorld().rand.nextInt(7) == 0 )
+								else if ( event.getWorld().rand.nextInt(5) == 0 )
 								{
 									if ( b instanceof BlockGrassPath )
 									{
@@ -340,7 +340,7 @@ public class CivilizationGeneratorHandlers
 										else if ( event.getWorld().rand.nextBoolean() ) event.getWorld().setBlockState(pos, Blocks.STONE_STAIRS.getDefaultState().withProperty(BlockStairs.FACING, EnumFacing.EAST));
 										else event.getWorld().setBlockState(pos, Blocks.AIR.getDefaultState());
 									}
-									else if ( b instanceof BlockStairs && event.getWorld().rand.nextInt(5) == 0 )
+									else if ( b instanceof BlockStairs && event.getWorld().rand.nextInt(7) == 0 )
 									{
 										event.getWorld().setBlockState(pos, Blocks.FIRE.getDefaultState());
 									}
