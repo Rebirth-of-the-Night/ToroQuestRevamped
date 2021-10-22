@@ -14,10 +14,8 @@ import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
-import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.init.Blocks;
-import net.minecraft.inventory.EntityEquipmentSlot;
 import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -32,7 +30,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntitySentry;
 
 public class TileEntityToroSpawner extends TileEntity implements ITickable
@@ -171,6 +168,7 @@ public class TileEntityToroSpawner extends TileEntity implements ITickable
 			spawnCreature(entityId);
 		}
 		world.setBlockToAir(pos);
+		this.markDirty();
 	}
 
 	public void spawnCreature(String entityID)

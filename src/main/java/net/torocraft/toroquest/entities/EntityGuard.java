@@ -83,6 +83,7 @@ import net.torocraft.toroquest.civilization.quests.QuestCaptureEntity;
 import net.torocraft.toroquest.civilization.quests.QuestCaptureFugitives;
 import net.torocraft.toroquest.civilization.quests.QuestRecruit;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.ai.EntityAINearestAttackableBanditTarget;
 import net.torocraft.toroquest.entities.ai.EntityAINearestAttackableCivTarget;
 import net.torocraft.toroquest.entities.ai.EntityAIPatrolVillage;
@@ -104,7 +105,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
     protected int stance = rand.nextInt(8)+3;
 	protected int blockingTimer = 0;
 	protected int lastTargetY = 0;
-	public boolean isCaravan = false;
+	//public boolean isCaravan = false;
 	public boolean canShieldPush = true;
 	protected boolean postReady = true;
 	protected boolean blocking = false;
@@ -180,7 +181,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	@Override
 	public void setSprinting( boolean b )
 	{
-		if ( this.getAttackTarget() != null ) this.faceEntitySmart(this.getAttackTarget());
+		if ( this.getAttackTarget() != null ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
 		super.setSprinting(b);
 	}
 	
@@ -374,7 +375,6 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	    if ( compound.hasKey("raidX") && compound.hasKey("raidZ") )
 	    {
 	    	this.raidX = compound.getInteger("raidX");
-	    	//this.raidY = compound.getInteger("raidY");
 	    	this.raidZ = compound.getInteger("raidZ");
 	    }
 	    if ( compound.hasKey("playerGuard") )
@@ -481,16 +481,6 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	@Override
 	public void onLivingUpdate()
 	{
-		if ( this.getAttackTarget() != null )
-    	{
-			this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    	}
-    	else
-    	{
-        	// this.faceMovingDirection();
-    	}
-				
 		super.onLivingUpdate();
         
 		if ( this.world.isRemote )
@@ -698,14 +688,21 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	    		this.inCombat = false;
     		}
     	}
+       	
+        if ( this.isRiding() )
+        {
+        	this.dismountRidingEntity();
+        }
+
        	// =======================================
        	//				ATTACK TARGET
        	// =======================================
-		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() && !(this.getAttackTarget() instanceof EntityToroNpc) && !(this.getAttackTarget() instanceof EntityVillager) && ( !(this.getAttackTarget() instanceof EntityGolem) || this.getAttackTarget() instanceof EntityConstruct ) )
+       	
+		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() )
 		{
 			if ( this.isSprinting() )
 			{
-				this.faceEntitySmart(this.getAttackTarget());
+	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 			}
 			else
 			{
@@ -730,7 +727,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			if ( !arrows.isEmpty() )
 			{
 				this.stance = rand.nextInt(6)+5;
-    			this.faceEntitySmart(this.getAttackTarget());
+	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 				if ( dist <= 12 )
 				{
 					this.blockingTimer = 25;
@@ -758,7 +755,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 				this.resetActiveHand();
 				this.inCombat = true;
 				this.stance = rand.nextInt(6)+5;
-    			this.faceEntitySmart(this.getAttackTarget());
+	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 	        	if ( this.onGround && this.getNavigator().getPathToEntityLiving(this.getAttackTarget()) == null )
 				{
 	        		this.blockingTimer = -200;
@@ -791,7 +788,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 				if ( !this.blocking && !this.isSprinting() && dist <= 12 && this.blockingTimer <= -((int)(this.stance*5+dist+20)) && this.getRevengeTarget() != null && this.getRevengeTarget().isEntityAlive() )
 				{
 					this.stance = rand.nextInt(8)+3;
-        			this.faceEntitySmart(this.getAttackTarget());
+		    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 					this.blockingTimer = (int)MathHelper.clamp((rand.nextInt(70)+20-dist), 20, 80);
 					this.blocking = true;
 					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
@@ -828,7 +825,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 					this.blocking = false;
 					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
 					this.stance = rand.nextInt(8)+3;
-        			this.faceEntitySmart(this.getAttackTarget());
+		    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 		        	this.canShieldPush = true;
 					this.resetActiveHand();
 				}
@@ -840,7 +837,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 						if ( rand.nextInt(3) == 0 )
 						{
 							this.stance = rand.nextInt(8)+3;
-		        			this.faceEntitySmart(this.getAttackTarget());
+				    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 						}
 					}
 				}
@@ -856,7 +853,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 						{
 							if ( this.onGround )
 							{
-								this.faceEntitySmart(this.getAttackTarget());
+					    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
 								double push = (1.0D+4.0D*dist);
 								this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
@@ -1074,28 +1071,28 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
     	return super.isOnLadder();
     }
 	
-	public void faceEntitySmart(EntityLivingBase p)
-    {
-//    	if ( !this.getNavigator().noPath() )
-//        {
-	    	try
-	    	{
-		    	//PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-
-		        double d0 = (p.getPositionVector().x - this.getPositionVector().x) * 2;
-		        double d2 = (p.getPositionVector().z - this.getPositionVector().z) * 2;
-		       // double d1 = p.getPositionVector().y - this.getPositionVector().y;
-		
-		       // double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-		        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-		        //float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-		        //this.rotationPitch = f1;
-		        //this.prevRotationPitch = f1;
-		        this.rotationYaw = f;
-		        this.prevRotationYaw = f;
-	    	}
-	    	catch ( Exception e ) {}
-    }
+//	public void faceEntitySmart(EntityLivingBase p)
+//    {
+////    	if ( !this.getNavigator().noPath() )
+////        {
+//	    	try
+//	    	{
+//		    	//PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
+//
+//		        double d0 = (p.getPositionVector().x - this.getPositionVector().x) * 2;
+//		        double d2 = (p.getPositionVector().z - this.getPositionVector().z) * 2;
+//		       // double d1 = p.getPositionVector().y - this.getPositionVector().y;
+//		
+//		       // double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
+//		        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
+//		        //float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
+//		        //this.rotationPitch = f1;
+//		        //this.prevRotationPitch = f1;
+//		        this.rotationYaw = f;
+//		        this.prevRotationYaw = f;
+//	    	}
+//	    	catch ( Exception e ) {}
+//    }
 	
 //	public void faceMovingDirection()
 //    {
@@ -1468,6 +1465,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 		{
 			this.setSprinting(false);
 			super.setAttackTarget(null);
+			return;
 		}
 		else if ( e instanceof EntityPlayer )
 		{
@@ -1483,6 +1481,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			
 			if ( e.getName().equals(this.playerGuard) )
 			{
+				this.setSprinting(false);
 				super.setAttackTarget(null);
 				return;
 			}
@@ -1495,6 +1494,14 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 				this.underAttackTimer = 2 + rand.nextInt(3);
 			}
 		}
+		
+		if ( e.getHealth() <= 0 || e.isDead || e instanceof EntityToroNpc || e instanceof EntityVillager || e instanceof EntityGolem )
+		{
+			this.setSprinting(false);
+			super.setAttackTarget(null);
+			return;
+		}
+		
 		super.setAttackTarget(e);
 	}
 	
@@ -1554,11 +1561,6 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	@Override
 	protected void pledgeAllegianceIfUnaffiliated()
 	{
-//		if ( this.world == null || this.world.isRemote )
-//      {
-//          return;
-//      }
-		
 		if ( this.getCivilization() != null )
 		{
 			return;
@@ -1610,25 +1612,25 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 				}
 			}
 			
-			if ( ticksExisted > 202 )
+			if ( this.posY == 0 || ( this.posX == 0 && this.posZ == 0 ) )
+			{
+				// do not set raid location
+			}
+			else
 			{
 				this.raidX = civ.getCenterX() + rand.nextInt(41)-20;
 				this.raidZ = civ.getCenterZ() + rand.nextInt(41)-20;
-				this.writeEntityToNBT(new NBTTagCompound());
 			}
 		}
 		
 		this.setPlayerGuard(null);
 		this.setCivilization(civ.getCiv());
 		
-		//if ( !this.world.isRemote )
-		//{
 		this.setMeleeWeapon();
-		//}
 		
 		if ( this.posY == 0 || ( this.posX == 0 && this.posZ == 0 ) )
 		{
-	        
+			// do not set raid location
 		}
 		else
 		{
@@ -1849,7 +1851,105 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 		if ( civ != null )
 		{
 			rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(this.getCivilization());
-		
+					
+					try
+					{
+						ItemStack itemstack = player.getHeldItem(hand);
+						Item item = itemstack.getItem();
+
+						if ( item == Items.EMERALD && rep < 0 )
+						{
+							if ( this.murderWitness == player )
+							{
+								if ( this.actionReady() )
+								{
+				            		this.chat(player, "murderer", null);
+								}
+								this.setAnnoyed( player );
+								this.setAttackTarget(player);
+							}
+							else
+							{
+								int maxRepGain = -rep;
+								int emeraldRep = itemstack.getCount()*ToroQuestConfiguration.donateEmeraldRepGain;
+								if ( emeraldRep > maxRepGain )
+								{
+				            		this.chat(player, "bountyclear", null);
+									int remainder = emeraldRep-maxRepGain;
+									this.adjustRep( player, maxRepGain );
+						        	player.setHeldItem( hand, new ItemStack( item, (int)(remainder/ToroQuestConfiguration.donateEmeraldRepGain) ) );
+						        	this.underAttack = null;
+						        	this.isAnnoyedTimer = 0;
+						        	this.setAttackTarget(null);
+								}
+								else
+								{
+				            		this.chat(player, "bounty", null);
+				            		this.underAttack = null;
+						        	this.isAnnoyedTimer = 0;
+						        	this.setAttackTarget(null);
+									this.adjustRep( player, emeraldRep );
+						        	player.setHeldItem( hand, new ItemStack( Items.AIR, 0 ) );
+								}
+								player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND, SoundCategory.AMBIENT, 1.0F, 1.2F);
+								this.setAttackTarget(null);
+							}
+							return true;
+						}
+						else if ( this.getAttackTarget() != null )
+						{
+							return false;
+						}
+						
+						if ( item.equals(Item.getByNameOrId("toroquest:recruitment_papers") ) && this.postReady )
+				        {
+			    			this.postReady = false;
+				        	if ( !this.inCombat && this.getAttackTarget() == null && this.isFriendly(player, rep) )
+				    		{
+				        		if ( player.isSneaking() )
+				        		{
+									BlockPos pos = findSpawnSurface(world, this.getPosition().up(), 32);
+									if ( pos != null )
+									{
+										this.setPositionAndUpdate(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
+										this.raidX = pos.getX();
+										//this.raidY = pos.getY();
+										this.raidZ = pos.getZ();
+										this.writeEntityToNBT(new NBTTagCompound());
+							        	this.playSound(SoundEvents.BLOCK_DISPENSER_LAUNCH, 1.0F, 1.0F);
+					        			this.playTameEffect(false);
+					                    this.world.setEntityState(this, (byte)6);
+										player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
+							        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+									}
+									else
+									{
+										player.sendStatusMessage(new TextComponentString( "§oInvalid post location!§r" ), true);
+										player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+									}
+								}
+				        		else
+				        		{
+				        			this.raidX = (int)this.posX;
+				        			//this.raidY = (int)this.posY;
+				        			this.raidZ = (int)this.posZ;
+									this.writeEntityToNBT(new NBTTagCompound());
+									player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
+						        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+				        		}
+				    		}
+				        	else
+				        	{
+								player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+				        	}
+				        	return true;
+				        }
+					}
+					catch ( Exception e )
+					{
+						
+					}
+				
 			if ( rep <= -100 || this.murderWitness() == player || this.underAttack() == player )
 			{
 				if ( this.actionReady() )
@@ -1857,7 +1957,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 					this.insult(player);
 					//this.actionTimer = 5;
 				}
-				return false;
+				return true;
 			}
 			
 			if ( player.getHeldItem(EnumHand.MAIN_HAND).getItem() instanceof ItemLead )
@@ -1952,108 +2052,12 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			}
 		}
 		
-		// RECRUITMENT_PAPERS
-		//if ( !this.world.isRemote )
+		if ( this.getAttackTarget() == null && ( this.actionReady() || this.interactTalkReady ) ) // && this.postReady )
 		{
-			try
-			{
-				ItemStack itemstack = player.getHeldItem(hand);
-				Item item = itemstack.getItem();
-							
-				if ( item.equals(Item.getByNameOrId("toroquest:recruitment_papers") ) && this.postReady )
-		        {
-	    			this.postReady = false;
-		        	if ( !this.inCombat && this.getAttackTarget() == null && this.isFriendly(player, rep) )
-		    		{
-		        		if ( player.isSneaking() )
-		        		{
-							BlockPos pos = findSpawnSurface(world, this.getPosition().up(), 32);
-							if ( pos != null )
-							{
-								this.setPositionAndUpdate(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
-								this.raidX = pos.getX();
-								//this.raidY = pos.getY();
-								this.raidZ = pos.getZ();
-								this.writeEntityToNBT(new NBTTagCompound());
-					        	this.playSound(SoundEvents.BLOCK_DISPENSER_LAUNCH, 1.0F, 1.0F);
-			        			this.playTameEffect(false);
-			                    this.world.setEntityState(this, (byte)6);
-								player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
-					        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-							}
-							else
-							{
-								player.sendStatusMessage(new TextComponentString( "§oInvalid post location!§r" ), true);
-								player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
-							}
-						}
-		        		else
-		        		{
-		        			this.raidX = (int)this.posX;
-		        			//this.raidY = (int)this.posY;
-		        			this.raidZ = (int)this.posZ;
-							this.writeEntityToNBT(new NBTTagCompound());
-							player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
-				        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
-		        		}
-		    		}
-		        	else
-		        	{
-						player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
-		        	}
-		        	return true;
-		        }
-				else if ( item == Items.EMERALD && rep < 0 )
-				{
-					if ( this.murderWitness == player )
-					{
-						if ( this.actionReady() )
-						{
-		            		this.chat(player, "murderer", null);
-						}
-						this.setAnnoyed( player );
-						this.setAttackTarget(player);
-					}
-					else
-					{
-						int maxRepGain = -rep;
-						int emeraldRep = itemstack.getCount()*ToroQuestConfiguration.donateEmeraldRepGain;
-						if ( emeraldRep > maxRepGain )
-						{
-		            		this.chat(player, "bountyclear", null);
-							int remainder = emeraldRep-maxRepGain;
-							this.adjustRep( player, maxRepGain );
-				        	player.setHeldItem( hand, new ItemStack( item, (int)(remainder/ToroQuestConfiguration.donateEmeraldRepGain) ) );
-				        	this.underAttack = null;
-				        	this.isAnnoyedTimer = 0;
-				        	this.setAttackTarget(null);
-						}
-						else
-						{
-		            		this.chat(player, "bounty", null);
-		            		this.underAttack = null;
-				        	this.isAnnoyedTimer = 0;
-				        	this.setAttackTarget(null);
-							this.adjustRep( player, emeraldRep );
-				        	player.setHeldItem( hand, new ItemStack( Items.AIR, 0 ) );
-						}
-						player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ITEM_ARMOR_EQUIP_DIAMOND, SoundCategory.AMBIENT, 1.0F, 1.2F);
-						this.setAttackTarget(null);
-					}
-					return true;
-				}
-			}
-			catch ( Exception e )
-			{
-				
-			}
-			
-			if ( this.getAttackTarget() == null && ( this.actionReady() || this.interactTalkReady ) ) // && this.postReady )
-			{
-				EntityGuard.guardSpeak(this, player);
-				return true;
-			}
+			EntityGuard.guardSpeak(this, player);
+			return true;
 		}
+		
 		return false;
 	}
 	
@@ -2358,11 +2362,16 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	@Override
 	public void attackEntityWithRangedAttack(EntityLivingBase target, float distanceFactor)
 	{
-		if ( target == null ) return;
+		if ( target == null || this.getHeldItemMainhand() == null )
+		{
+			return;
+		}
+		
 		this.setAttackTarget(target);
+		
 	    EntityArrow entityarrow = this.getArrow(distanceFactor);
 	    entityarrow.setIsCritical(true);
-	    entityarrow.setDamage(entityarrow.getDamage()*(rand.nextFloat()/2+1));
+	    //entityarrow.setDamage(entityarrow.getDamage()*(rand.nextFloat()/2+1));
 	    double d0 = target.posX - this.posX;
 	    double d1 = target.getEntityBoundingBox().minY + target.height/4.0 - entityarrow.posY - 1 - rand.nextDouble();
 	    double d2 = target.posZ - this.posZ;
@@ -2880,9 +2889,9 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
     	    			this.getNavigator().clearPath();
     	    			EntityGuard.guardSpeak(this, player);
 						this.getNavigator().tryMoveToXYZ(((player.posX - this.posX)/2.0+this.posX),player.posY,((player.posZ - this.posZ)/2.0+this.posZ), 0.5D);
-						this.faceEntitySmart(player);
-						this.faceEntity(player, 30.0F, 30.0F);
-						this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
+			    		AIHelper.faceEntitySmart(this, player);
+						this.faceEntity(player, 20.0F, 20.0F);
+						this.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
     	    			return;
     	    		}
     	    		else
@@ -3097,7 +3106,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 		}
 		else
 		{
-			if ( !prov.hasLord && entity.ticksExisted > 500 )
+			if ( prov != null && !prov.hasLord && entity.ticksExisted > 500 )
 			{
 				entity.chat(player, "nolord", name); return;
 			}

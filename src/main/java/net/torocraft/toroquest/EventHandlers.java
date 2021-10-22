@@ -13,6 +13,7 @@ import net.minecraft.block.BlockFence;
 import net.minecraft.block.BlockTrapDoor;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.item.EntityEnderCrystal;
 import net.minecraft.entity.monster.EntityCreeper;
@@ -45,8 +46,10 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.ProjectileImpactEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.torocraft.toroquest.civilization.CivilizationDataAccessor;
@@ -80,6 +83,83 @@ public class EventHandlers
 {
 
 	private Random rand = new Random();
+	
+	@SubscribeEvent (priority = EventPriority.LOW)
+	public void knockBack(LivingKnockBackEvent event)
+	{
+		if ( ToroQuestConfiguration.betterKnockback )
+		{
+			if ( !event.isCanceled() )
+			{
+				try
+				{
+					double strength = event.getStrength();
+					double xRatio = event.getRatioX();
+					double zRatio = event.getRatioZ();
+					EntityLivingBase entityLivingBase = event.getEntityLiving();
+					double knockbackResistance = entityLivingBase.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).getAttributeValue();
+					
+			        if ( knockbackResistance < 1.0D )
+			        {
+			            double f = MathHelper.sqrt(xRatio * xRatio + zRatio * zRatio);
+			            strength = strength * ( 1.0D - knockbackResistance );
+			            
+			        	entityLivingBase.isAirBorne = true;
+			        	
+			            entityLivingBase.motionX = entityLivingBase.motionX / 2.0D * (1.0D + knockbackResistance);
+			            entityLivingBase.motionZ = entityLivingBase.motionZ / 2.0D * (1.0D + knockbackResistance);
+			            
+			            entityLivingBase.motionX -= xRatio / f * strength;
+			            entityLivingBase.motionZ -= zRatio / f * strength;
+			
+			            if (entityLivingBase.onGround)
+			            {
+			            	entityLivingBase.motionY = entityLivingBase.motionY / 2.0D * (1.0D + knockbackResistance);
+			            	entityLivingBase.motionY += strength * ToroQuestConfiguration.knockUpStrength;
+			
+			                if (entityLivingBase.motionY > 0.4D)
+			                {
+			                	entityLivingBase.motionY = 0.4D;
+			                }
+			            }
+			            entityLivingBase.velocityChanged = true;
+			        }
+					event.setCanceled(true);
+				}
+				catch (Exception e)
+				{
+
+				}
+			}
+		}
+	}
+	
+//	public void knockBack(Entity entityIn, float strength, double xRatio, double zRatio)
+//    {
+//        net.minecraftforge.event.entity.living.LivingKnockBackEvent event = net.minecraftforge.common.ForgeHooks.onLivingKnockBack(this, entityIn, strength, xRatio, zRatio);
+//        if(event.isCanceled()) return;
+//        strength = event.getStrength(); xRatio = event.getRatioX(); zRatio = event.getRatioZ();
+//        if (this.rand.nextDouble() >= this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).getAttributeValue())
+//        {
+//            this.isAirBorne = true;
+//            float f = MathHelper.sqrt(xRatio * xRatio + zRatio * zRatio);
+//            this.motionX /= 2.0D;
+//            this.motionZ /= 2.0D;
+//            this.motionX -= xRatio / (double)f * (double)strength;
+//            this.motionZ -= zRatio / (double)f * (double)strength;
+//
+//            if (this.onGround)
+//            {
+//                this.motionY /= 2.0D;
+//                this.motionY += (double)strength;
+//
+//                if (this.motionY > 0.4000000059604645D)
+//                {
+//                    this.motionY = 0.4000000059604645D;
+//                }
+//            }
+//        }
+//    }
 	
 	@SubscribeEvent
 	public void onEntitySpawn(EntityJoinWorldEvent event)

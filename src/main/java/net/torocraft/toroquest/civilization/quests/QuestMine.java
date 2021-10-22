@@ -13,12 +13,14 @@ import net.minecraft.block.BlockObsidian;
 import net.minecraft.block.BlockStone;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.Province;
@@ -982,6 +984,10 @@ public class QuestMine extends QuestBase implements Quest
 	// ========================================================================================
 	// ========================================================================================
 
+	public static final List<ItemStack> blockStone = OreDictionary.getOres("stone");
+
+	// public static final List<ItemStack> blockLog = OreDictionary.getOres("log");
+
 	public boolean isCorrectBlock(EntityPlayer player, Item item, int i)
 	{
 		switch ( i )
@@ -989,7 +995,21 @@ public class QuestMine extends QuestBase implements Quest
 			case 0: // LOG
 			{
 				Block b = Block.getBlockFromItem(item);
-				return ( b instanceof BlockLog );
+				
+				if ( b instanceof BlockLog )
+				{
+					return true;
+				}
+				
+//				for ( ItemStack block : blockLog )
+//				{
+//					if ( block.getItem().getUnlocalizedName() == item.getUnlocalizedName() )
+//					{
+//						return true;
+//					}
+//				}
+				
+				return false;
 			}
 			case 1: // DIRT
 			{
@@ -999,7 +1019,21 @@ public class QuestMine extends QuestBase implements Quest
 			case 2: // STONE
 			{
 				Block b = Block.getBlockFromItem(item);
-				return ( b instanceof BlockStone );
+				
+				if ( b instanceof BlockStone )
+				{
+					return true;
+				}
+				
+				for ( ItemStack block : blockStone )
+				{
+					if ( block.getItem().getUnlocalizedName() == item.getUnlocalizedName() )
+					{
+						return true;
+					}
+				}
+				
+				return false;
 			}
 			case 3: // COAL
 			{

@@ -62,6 +62,7 @@ import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 import net.torocraft.toroquest.entities.render.RenderVillageLord;
 import net.torocraft.toroquest.gui.VillageLordGuiHandler;
@@ -246,12 +247,19 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 
 	public void onLivingUpdate()
 	{
+		
 		super.onLivingUpdate();
 		
-		if ( this.world.isRemote ) 
+		if ( this.world.isRemote )
 		{
 			return;
 		}
+		
+		if ( this.getAttackTarget() != null )
+    	{
+    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
 		
 		if ( this.ticksExisted % 100 == 0 )
 		{

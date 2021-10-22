@@ -1,10 +1,12 @@
 package net.torocraft.toroquest;
 
 import java.io.File;
+import java.util.List;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.datafix.DataFixer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
@@ -14,6 +16,7 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
+import net.minecraftforge.oredict.OreDictionary;
 import net.torocraft.toroquest.block.BlockSmartBanner;
 import net.torocraft.toroquest.block.BlockVillageSpawner;
 import net.torocraft.toroquest.civilization.CivilizationGeneratorHandlers;

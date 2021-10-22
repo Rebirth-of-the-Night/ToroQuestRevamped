@@ -1,18 +1,18 @@
-                                
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-  CsCsCsCsCsCsCsCsCsCsCsCsCsCsCs
-
+          CsCsCsCsCsCsCs    
+  SbPwPwPwSbCsCsCsCsCsSbPwPwPwSb
+  PsCsCsCsCsCsCsCsCsCsCsCsCsCsPw
+  PsCsCsCsCsCsCsCsCsCsCsCsCsCsPw
+  PsCsCsCsCsCsCsCsCsCsCsCsCsCsPw
+  SbCsCsCsCsCsCsCsCsCsCsCsCsCsSb
+      PwCsCsCsCsCsCsCsCsCsPw
+      PwCsCsCsCsCsCsCsCsCsPw
+      PwCsCsCsCsCsCsCsCsCsPw
+  SbCsCsCsCsCsCsCsCsCsCsCsCsCsSb
+  PwCsCsCsCsCsCsCsCsCsCsCsCsCsPw
+  PwCsCsCsCsCsCsCsCsCsCsCsCsCsPw
+  PwCsCsCsCsCsCsCsCsCsCsCsCsCsPw
+  SbPwPwPwSbCsCsCsCsCsSbPwPwPwSb
+          CsCsCsCsCsCsCs
 ######################################
           SsSsSsSsSsSsSs        
   SbPwPwPwSbSsDS*CDSSsSbPwPwPwSb

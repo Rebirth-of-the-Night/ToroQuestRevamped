@@ -7,7 +7,9 @@ import java.util.Set;
 import java.util.UUID;
 
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockSandStone;
 import net.minecraft.block.BlockStone;
+import net.minecraft.block.BlockStoneBrick;
 import net.minecraft.block.material.Material;
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.item.EntityXPOrb;
@@ -62,28 +64,35 @@ public class QuestBuild extends QuestBase implements Quest
 //		System.out.println(event.getPlacedBlock().getMaterial());
 //		System.out.println(event.getPlacedBlock().getBlock().getMaterial(event.getPlacedBlock().getBlock().getDefaultState()));
 
-		if ( event.getPlacedBlock().getMaterial() != Material.ROCK ) // || event.getPlacedBlock() instanceof BlockStone )
+		// QuestMine
+//		for ( ItemStack block : blockStone )
+//		{
+//			if ( block.getItem().getUnlocalizedName() == item.getUnlocalizedName() )
+//			{
+//				return true;
+//			}
+//		}
+		
+		if ( event.getPlacedBlock().getMaterial() == Material.ROCK || event.getPlacedBlock() instanceof BlockStone || event.getPlacedBlock() instanceof BlockStoneBrick || event.getPlacedBlock() instanceof BlockSandStone ) // || event.getPlacedBlock() instanceof BlockStone )
 		{
-			return;
-		}
-		
-		Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(event.getPlayer()).getCurrentQuests();
-		
-		DataWrapper quest = new DataWrapper();
-		
-		for ( QuestData data : quests )
-		{
-			quest.setData(data);
+			Set<QuestData> quests = PlayerCivilizationCapabilityImpl.get(event.getPlayer()).getCurrentQuests();
 			
-			if ( quest.isBuildQuest() )
+			DataWrapper quest = new DataWrapper();
+			
+			for ( QuestData data : quests )
 			{
-				Province province = PlayerCivilizationCapabilityImpl.get(event.getPlayer()).getInCivilization();
-
-				if ( province != null && province.civilization != null && quest.isInCorrectProvince(province) )
+				quest.setData(data);
+				
+				if ( quest.isBuildQuest() )
 				{
-					if ( perform(quest) )
+					Province province = PlayerCivilizationCapabilityImpl.get(event.getPlayer()).getInCivilization();
+	
+					if ( province != null && province.civilization != null && quest.isInCorrectProvince(province) )
 					{
-						return;
+						if ( perform(quest) )
+						{
+							return;
+						}
 					}
 				}
 			}

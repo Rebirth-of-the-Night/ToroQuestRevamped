@@ -87,6 +87,7 @@ import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.quests.QuestRecruit;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.ai.EntityAIBanditAttack;
 import net.torocraft.toroquest.entities.ai.EntityAIDespawn;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
@@ -176,7 +177,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public void setSprinting( boolean b )
 	{
-		if ( this.getAttackTarget() != null && !this.fleeing && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) ) this.faceEntitySmart(this.getAttackTarget());
+		if ( this.getAttackTarget() != null && !this.fleeing && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
 		super.setSprinting(b);
 	}
 	
@@ -564,7 +565,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		}
 		this.replaceItemInInventory(100 + EntityEquipmentSlot.HEAD.getIndex(), ItemStack.EMPTY);
 		super.onDeath(cause);
-		this.dropLoot();
+		if ( this.getRevengeTarget() instanceof EntityPlayer ) this.dropLoot();
 	}
 	
 	protected void dropMask()
@@ -645,7 +646,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    this.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(ToroQuestConfiguration.banditAttackDamage);
     	this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.banditArmor);
     	this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.banditArmorToughness);
-		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
+		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(64.0D);
     	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.395D+rand.nextDouble()/50.0D);
     	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
     }
@@ -788,92 +789,95 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public void onLivingUpdate() // aaa
 	{
-		if ( !this.world.isRemote && this.getRidingEntity() instanceof EntityBoat )
+		if ( !this.world.isRemote )
 		{
-			if ( this.getRidingEntity() == this.boat )
+			if ( this.getRidingEntity() instanceof EntityBoat )
 			{
-	   			if ( this.getAttackTarget() != null )
-	   			{
-	   				double d0 = this.getAttackTarget().posX - this.posX;
- 	                double d1 = this.getAttackTarget().posZ - this.posZ;
- 	                double f = 1+MathHelper.sqrt(d0 * d0 + d1 * d1);
-                    	   				
-	   				if ( f < 7 && this.getHeldItemMainhand().getItem() instanceof ItemBow )
-	   				{
-//	   					this.boat.setDead();
-//	   					this.boatTimer = 5;
-	   				}
-	   				else
-	   				{
-		   				this.boat.addVelocity(d0 / f * 0.05D, 0, d1 / f * 0.05D);
-	   				}
-	   			}
-	   			else
-	   			{
-	   				this.boat.addVelocity(this.boat.getHorizontalFacing().getFrontOffsetX()/32.0D+this.rand.nextGaussian()/32.0D, 0, this.boat.getHorizontalFacing().getFrontOffsetZ()/32.0D+this.rand.nextGaussian()/32.0D);
-	   			}
-	   			
-	   			this.boat.velocityChanged = true;
-	   			
-	   			try
-		    	{
-			    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-	
-			        double d0 = (p.x - this.boat.posX) * 2;
-			        double d2 = (p.z - this.boat.posZ) * 2;
-			        
-			        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-			        this.boat.rotationYaw = f*0.5F+this.rand.nextFloat()*0.05F;
-		    	}
-		    	catch ( Exception err ) {}
-	   			
-	   			// CAMERA
-	        	this.rotationPitch = 0.0F;
-	        	this.posX = this.boat.posX;
-	        	this.posY = this.boat.posY;
-	        	this.posZ = this.boat.posZ;
-	        	this.velocityChanged = true;
-	        	this.rotationYaw = this.boat.rotationYaw;
-	        	this.rotationYawHead = this.boat.rotationYaw;
-	        	
-	   			// if ( this.boat.collidedHorizontally || this.boat.collidedVertically ) this.boat.setDead(); // ( this.boat.isEntityInsideOpaqueBlock() ) this.boat.setDead();
-	   			if ( this.isEntityInsideOpaqueBlock(this.boat) || !this.boat.isInWater() )
-	   			{
-	   				this.boat.setDead();
-	    			this.boatTimer = 5;
-	   			}
-			}
-			else
-			{
-				if ( this.getRidingEntity().getPassengers().size() > 1 )
+				if ( this.getRidingEntity() == this.boat )
 				{
-
+		   			if ( this.getAttackTarget() != null )
+		   			{
+		   				double d0 = this.getAttackTarget().posX - this.posX;
+	 	                double d1 = this.getAttackTarget().posZ - this.posZ;
+	 	                double f = 1+MathHelper.sqrt(d0 * d0 + d1 * d1);
+	                    	   				
+		   				if ( f < 7 && this.getHeldItemMainhand().getItem() instanceof ItemBow )
+		   				{
+	//	   					this.boat.setDead();
+	//	   					this.boatTimer = 5;
+		   				}
+		   				else
+		   				{
+			   				this.boat.addVelocity(d0 / f * 0.05D, 0, d1 / f * 0.05D);
+		   				}
+		   			}
+		   			else
+		   			{
+		   				this.boat.addVelocity(this.boat.getHorizontalFacing().getFrontOffsetX()/32.0D+this.rand.nextGaussian()/32.0D, 0, this.boat.getHorizontalFacing().getFrontOffsetZ()/32.0D+this.rand.nextGaussian()/32.0D);
+		   			}
+		   			
+		   			this.boat.velocityChanged = true;
+		   			
+		   			try
+			    	{
+				    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
+		
+				        double d0 = (p.x - this.boat.posX) * 2;
+				        double d2 = (p.z - this.boat.posZ) * 2;
+				        
+				        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
+				        this.boat.rotationYaw = f*0.5F+this.rand.nextFloat()*0.05F;
+			    	}
+			    	catch ( Exception err ) {}
+		   			
+		   			// CAMERA
+		        	this.rotationPitch = 0.0F;
+		        	this.posX = this.boat.posX;
+		        	this.posY = this.boat.posY;
+		        	this.posZ = this.boat.posZ;
+		        	this.velocityChanged = true;
+		        	this.rotationYaw = this.boat.rotationYaw;
+		        	this.rotationYawHead = this.boat.rotationYaw;
+		        	
+		   			// if ( this.boat.collidedHorizontally || this.boat.collidedVertically ) this.boat.setDead(); // ( this.boat.isEntityInsideOpaqueBlock() ) this.boat.setDead();
+		   			if ( this.isEntityInsideOpaqueBlock(this.boat) || !this.boat.isInWater() )
+		   			{
+		   				this.boat.setDead();
+		    			this.boatTimer = 5;
+		   			}
 				}
 				else
 				{
-					this.boat = (EntityBoat) this.getRidingEntity();
+					if ( this.getRidingEntity().getPassengers().size() > 1 )
+					{
+	
+					}
+					else
+					{
+						this.boat = (EntityBoat) this.getRidingEntity();
+					}
 				}
 			}
+			else if ( this.getAttackTarget() != null && !this.fleeing )
+	    	{
+				if ( EntitySentry.this.getHeldItemMainhand().getItem() instanceof ItemBow )
+				{
+					
+				}
+				else
+				{
+					AIHelper.faceEntitySmart(this, this.getAttackTarget());
+				}
+	    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+	    	}
 		}
-		else if ( this.getAttackTarget() != null && !this.fleeing )
-    	{
-			if ( EntitySentry.this.getHeldItemMainhand().getItem() instanceof ItemBow )
-			{
-				
-			}
-			else
-			{
-				this.faceEntitySmart(this.getAttackTarget());
-			}
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    	}
-//    	else if ( this.hasPath() )
-//    	{
-//        	this.faceMovingDirection();
-//    	}
     	
 		super.onLivingUpdate(); // *** === *** === ***
-		
+				
+		if ( this.world.isRemote )
+		{
+			return;
+		}
 		
 		if ( this.getRidingEntity() instanceof EntityBoat )
 		{
@@ -894,27 +898,17 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			}
 			else
 			{
-				this.faceEntitySmart(this.getAttackTarget());
+	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 			}
     		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
     	}
-    	else
-    	{
-        	// this.faceMovingDirection();
-    	}
-		
-		
-		if ( this.world.isRemote )
-		{
-			return;
-		}
 		
 		if ( this.potionImmunity > 0 ) this.potionImmunity--;
 		
 			// FLANKING
 			if ( this.flanking && (this.getNavigator().noPath() || (this.getAttackTarget() != null && this.getDistance(this.getAttackTarget()) >= 7.5 ) || this.blocking || ((this.motionX*this.motionX + this.motionZ*this.motionZ) <= 0.0018D)) )
 			{
-				if ( this.getAttackTarget() != null ) this.faceEntitySmart(this.getAttackTarget());
+				if ( this.getAttackTarget() != null ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
 				this.flanking = false;
 	    		//System.out.println("xxx");
 			}
@@ -1727,126 +1721,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    }
 	}
 	
-	
-//			 	@Override
-//			    public void onLivingUpdate()
-//			    {
-//		
-//			    	if ( this.getAttackTarget() != null )
-//			    	{
-//			    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    		//this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    	}
-//			    	else
-//			    	{
-//			        	this.faceMovingDirection();
-//			    	}
-//			    	super.onLivingUpdate();
-//			    	if ( this.getAttackTarget() != null )
-//			    	{
-//			    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    		//this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    	}
-//			    	else
-//			    	{
-//			        	this.faceMovingDirection();
-//			    	}
-//			    }
-//			    
-//				public void faceRidingDirection( EntityLiving e )
-//				{
-//					
-//					try
-//			    	{
-//				    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-//		
-//				        double d0 = (p.x - this.posX) * 2;
-//				        double d2 = (p.z - this.posZ) * 2;
-//				        double d1 = p.y - this.posY;
-//				
-//				        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-//				        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-//				        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-//				        this.rotationPitch = f1;
-//				        this.rotationYaw = f;
-//			    	}
-//			    	catch ( Exception err ) {}
-//					
-//					//if ( this.rotationPitch < 0.2F )
-//			        {
-//			        	this.rotationPitch = 0.0F;
-//			        }
-//					
-//			        if ( !this.getNavigator().noPath() )
-//			        {
-//						try
-//						{
-//					    	PathPoint p = e.getNavigator().getPath().getFinalPathPoint();
-//					
-//					        double d0 = (p.x - e.posX) * 2;
-//					        double d2 = (p.z - e.posZ) * 2;
-//					        double d1 = p.y - e.posY;
-//					        
-//					        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-//					        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-//					        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-//					        e.rotationPitch = f1;
-//					        e.rotationYaw = f;
-//						}
-//						catch ( Exception err ) {}
-//			        }
-//					
-//			        //if ( e.rotationPitch < 0.2F )
-//			        {
-//			        	e.rotationPitch = 0.0F;
-//			        }
-//				}
-				
-			 	public void faceEntitySmart(EntityLivingBase p)
-			    {
-//			    	if ( !this.getNavigator().noPath() )
-//			        {
-				    	try
-				    	{
-					    	//PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-			
-					        double d0 = (p.getPositionVector().x - this.getPositionVector().x) * 2;
-					        double d2 = (p.getPositionVector().z - this.getPositionVector().z) * 2;
-					        // double d1 = p.getPositionVector().y - this.getPositionVector().y;
-					
-					        // double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-					        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-					        // float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-					        // this.rotationPitch = f1;
-					        // this.prevRotationPitch = f1;
-					        this.rotationYaw = f;
-					        this.prevRotationYaw = f;
-				    	}
-				    	catch ( Exception e ) {}
-			    }
-	 
-//			    public void faceMovingDirection()
-//			    {
-//			    	if ( !this.getNavigator().noPath() )
-//			        {
-//				    	try
-//				    	{
-//					    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-//			
-//					        double d0 = (p.x - this.posX) * 2;
-//					        double d2 = (p.z - this.posZ) * 2;
-//					        double d1 = p.y - this.posY;
-//					
-//					        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-//					        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-//					        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-//					        this.rotationPitch = f1;
-//					        this.rotationYaw = f;
-//				    	}
-//				    	catch ( Exception e ) {}
-//			        }
-//			    }
-	
 	//===================================================== Ranged Attack =======================================================
 	
 	@Override
@@ -2043,14 +1917,15 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	{
 		this.stance = this.rand.nextInt(6)+5;
 		this.strafeHor = this.getStrafe(this.stance);
-		if ( faceTarget && !this.fleeing ) this.faceEntitySmart(this.getAttackTarget());
+		if ( faceTarget && !this.fleeing ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
+
 	}
 	
 	public void allStance(boolean faceTarget)
 	{
 		this.stance = this.rand.nextInt(8)+3;
 		this.strafeHor = this.getStrafe(this.stance);
-		if ( faceTarget && !this.fleeing ) this.faceEntitySmart(this.getAttackTarget());
+		if ( faceTarget && !this.fleeing ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
 	}
 	
 	//===================================================== DPS =======================================================
@@ -2137,7 +2012,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 					{
 						if ( this.onGround )
 						{
-							this.faceEntitySmart(this.getAttackTarget());
+				    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
 							double push = (1.0D+5.0D*dist);
 							this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
@@ -2349,7 +2224,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 					{
 						if ( this.onGround )
 						{
-							this.faceEntitySmart(this.getAttackTarget());
+				    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
 							double push = (1.0D+5.0D*dist);
 							this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
@@ -2832,7 +2707,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
         		{
         			this.climbUntilPlatform = true;
         			//this.stance = rand.nextInt(6)+5; // tight strafe
-        			this.faceEntitySmart(this.getAttackTarget());
+            		AIHelper.faceEntitySmart(this, this.getAttackTarget());
     				this.motionX = 0.0F;
     				this.motionZ = 0.0F;
 					this.getMoveHelper().strafe( this.strafeVer*0.5F, 0.0F );
@@ -3083,10 +2958,12 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		if ( e == null || e.isDead )
 		{
 			super.setAttackTarget(null);
+			return;
 		}
 		else if ( e.getClass() != this.getClass() )
 		{
 			super.setAttackTarget(e);
+			return;
 		}
 	}
 	

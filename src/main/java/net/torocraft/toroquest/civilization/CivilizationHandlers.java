@@ -101,7 +101,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBloc
 import net.minecraftforge.event.world.BlockEvent.BreakEvent;
 import net.minecraftforge.event.world.BlockEvent.EntityPlaceEvent;
 import net.minecraftforge.event.world.BlockEvent.HarvestDropsEvent;
-import net.minecraftforge.event.world.BlockEvent.PlaceEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.WorldTickEvent;
@@ -118,7 +117,6 @@ import net.torocraft.toroquest.civilization.quests.QuestFarm;
 import net.torocraft.toroquest.civilization.quests.QuestMine;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
-import net.torocraft.toroquest.entities.EntityAdventurer;
 import net.torocraft.toroquest.entities.EntityCaravan;
 import net.torocraft.toroquest.entities.EntityFugitive;
 import net.torocraft.toroquest.entities.EntityGuard;
@@ -135,7 +133,6 @@ import net.torocraft.toroquest.entities.ai.EntityAIDespawnGuard;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 import net.torocraft.toroquest.util.TaskRunner;
 
-@SuppressWarnings("deprecation")
 public class CivilizationHandlers
 {
 	protected static Random rand = new Random();
@@ -2113,105 +2110,105 @@ public class CivilizationHandlers
 		}
 	}
 	
-	// =-=-=-=-=-=-=-=-=-=-=-=-= Spawns ADVENTURERS near PLAYER =-=-=-=-=-=-=-=-=-=-=-=-=
-
-		protected void spawnAdventurersNearPlayer( World world )
-		{
-			if ( world.isRemote )
-			{
-				return;
-			}
-			
-			try
-			{
-				int range = 96;
-				List<EntityPlayer> players = world.playerEntities;
-				Collections.shuffle(players);
-				int tries = 3;
-				while ( tries > 0 )
-				{
-					tries--;
-					for ( EntityPlayer player : players )
-					{
-						if ( player.world.provider.getDimension() != 0 )
-						{
-							continue;
-						}
-						
-						int playerPosX = (int)player.posX;
-						int playerPosZ = (int)player.posZ;
-						
-						int x = (rand.nextInt(range));
-						int z = (rand.nextInt(range));
-						
-						while ( x < range/2 && z < range/2 )
-						{
-							x = (rand.nextInt(range));
-							z = (rand.nextInt(range));
-						}
-						
-						x *= (rand.nextInt(2)*2-1);
-						z *= (rand.nextInt(2)*2-1);
-						
-						x += playerPosX;
-						z += playerPosZ;
-						
-						BlockPos loc = new BlockPos(x,SPAWN_HEIGHT,z);
-						
-//						if ( tries > 0 && !(world.getChunkFromBlockCoords(loc).isLoaded()) )
+//	// =-=-=-=-=-=-=-=-=-=-=-=-= Spawns ADVENTURERS near PLAYER =-=-=-=-=-=-=-=-=-=-=-=-=
+//
+//		protected void spawnAdventurersNearPlayer( World world )
+//		{
+//			if ( world.isRemote )
+//			{
+//				return;
+//			}
+//			
+//			try
+//			{
+//				int range = 96;
+//				List<EntityPlayer> players = world.playerEntities;
+//				Collections.shuffle(players);
+//				int tries = 3;
+//				while ( tries > 0 )
+//				{
+//					tries--;
+//					for ( EntityPlayer player : players )
+//					{
+//						if ( player.world.provider.getDimension() != 0 )
 //						{
 //							continue;
 //						}
-						
-						BlockPos banditSpawnPos = findSpawnLocationFrom(world, loc);
-						
-						if ( banditSpawnPos == null )
-						{
-							continue;
-						}
-						
-//						if ( CivilizationUtil.getProvinceAt(world, banditSpawnPos.getX()/16, banditSpawnPos.getZ()/16) != null )
+//						
+//						int playerPosX = (int)player.posX;
+//						int playerPosZ = (int)player.posZ;
+//						
+//						int x = (rand.nextInt(range));
+//						int z = (rand.nextInt(range));
+//						
+//						while ( x < range/2 && z < range/2 )
+//						{
+//							x = (rand.nextInt(range));
+//							z = (rand.nextInt(range));
+//						}
+//						
+//						x *= (rand.nextInt(2)*2-1);
+//						z *= (rand.nextInt(2)*2-1);
+//						
+//						x += playerPosX;
+//						z += playerPosZ;
+//						
+//						BlockPos loc = new BlockPos(x,SPAWN_HEIGHT,z);
+//						
+////						if ( tries > 0 && !(world.getChunkFromBlockCoords(loc).isLoaded()) )
+////						{
+////							continue;
+////						}
+//						
+//						BlockPos banditSpawnPos = findSpawnLocationFrom(world, loc);
+//						
+//						if ( banditSpawnPos == null )
 //						{
 //							continue;
 //						}
-						
-						if ( !(world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(banditSpawnPos).grow(20, 12, 20))).isEmpty() )
-						{
-							continue;
-						}
-						
-						if ( !(world.getEntitiesWithinAABB(EntityMob.class, new AxisAlignedBB(banditSpawnPos).grow(12, 6, 12))).isEmpty() )
-						{
-							continue;
-						}
-						
-						// =-=-=-=-=-=-=-=-=-=-=-=-=
-						//			BANDIT
-						// =-=-=-=-=-=-=-=-=-=-=-=-=
-						
-						// float difficulty = world.getDifficultyForLocation(banditSpawnPos).getAdditionalDifficulty();
-
-
-						for ( int i = rand.nextInt(3)+1; i > 0; i-- )
-						{
-							EntityAdventurer e = new EntityAdventurer(world);
-							e.despawnTimer-=10;
-							e.setPosition(banditSpawnPos.getX()+0.5,banditSpawnPos.getY()+0.1, banditSpawnPos.getZ()+0.5 );
-							e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
-							world.spawnEntity(e);
-							e.setAttackTarget(null);
-							e.setRaidLocation(playerPosX*2-banditSpawnPos.getX(), playerPosZ*2-banditSpawnPos.getZ());
-						}
-						return;
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				System.out.println("ERROR SPAWNING EntityBandit: " + e);
-				return;
-			}
-		}
+//						
+////						if ( CivilizationUtil.getProvinceAt(world, banditSpawnPos.getX()/16, banditSpawnPos.getZ()/16) != null )
+////						{
+////							continue;
+////						}
+//						
+//						if ( !(world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(banditSpawnPos).grow(20, 12, 20))).isEmpty() )
+//						{
+//							continue;
+//						}
+//						
+//						if ( !(world.getEntitiesWithinAABB(EntityMob.class, new AxisAlignedBB(banditSpawnPos).grow(12, 6, 12))).isEmpty() )
+//						{
+//							continue;
+//						}
+//						
+//						// =-=-=-=-=-=-=-=-=-=-=-=-=
+//						//			BANDIT
+//						// =-=-=-=-=-=-=-=-=-=-=-=-=
+//						
+//						// float difficulty = world.getDifficultyForLocation(banditSpawnPos).getAdditionalDifficulty();
+//
+//
+//						for ( int i = rand.nextInt(3)+1; i > 0; i-- )
+//						{
+//							EntityAdventurer e = new EntityAdventurer(world);
+//							e.despawnTimer-=10;
+//							e.setPosition(banditSpawnPos.getX()+0.5,banditSpawnPos.getY()+0.1, banditSpawnPos.getZ()+0.5 );
+//							e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
+//							world.spawnEntity(e);
+//							e.setAttackTarget(null);
+//							e.setRaidLocation(playerPosX*2-banditSpawnPos.getX(), playerPosZ*2-banditSpawnPos.getZ());
+//						}
+//						return;
+//					}
+//				}
+//			}
+//			catch (Exception e)
+//			{
+//				System.out.println("ERROR SPAWNING EntityBandit: " + e);
+//				return;
+//			}
+//		}
 	
 	// =-=-=-=-=-=-=-=-=-=-=-=-= Spawns WOLVES to attack a PROVINCE =-=-=-=-=-=-=-=-=-=-=-=-=
 	
@@ -2297,12 +2294,14 @@ public class CivilizationHandlers
 					{
 						for ( int i = count; i > 0; i-- )
 						{
-							String className = "net.its_meow.betteranimalsplus.common.entity.EntityFeralWolf";
+							String className = "its_meow.betteranimalsplus.common.entity.EntityFeralWolf";
 							EntityCreature feralWolf = (EntityCreature) Class.forName(className).getConstructor(new Class[] {World.class}).newInstance(new Object[] {world});
-							EntityAIRaid task = new EntityAIRaid(feralWolf, 1.2D, 16, 32);
-							task.setCenter(villageCenterX-banditSpawnPos.getX(), villageCenterZ-banditSpawnPos.getZ());
 							feralWolf.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY()+0.1, banditSpawnPos.getZ() + 0.5 );
 							feralWolf.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(feralWolf)), (IEntityLivingData) null);
+							
+							EntityAIRaid task = new EntityAIRaid(feralWolf, 1.2D, 16, 32);
+							task.setCenter(villageCenterX, villageCenterZ);
+
 							world.spawnEntity(feralWolf);
 							feralWolf.setAttackTarget(player);
 							feralWolf.tasks.addTask( 1, task );
@@ -2318,7 +2317,7 @@ public class CivilizationHandlers
 							e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData) null);
 							world.spawnEntity(e);
 							e.setAttackTarget(player);
-							e.setRaidLocation(villageCenterX-banditSpawnPos.getX(), villageCenterZ-banditSpawnPos.getZ());
+							e.setRaidLocation(villageCenterX, villageCenterZ);
 						}
 					}
 					return;
@@ -2578,7 +2577,7 @@ public class CivilizationHandlers
 					{
 						if ( rand.nextInt(100) > ToroQuestConfiguration.zombieRaiderVillagerChance )
 						{
-							EntityZombieVillagerRaider e = new EntityZombieVillagerRaider(world, province.getCenterX(), province.getCenterZ());
+							EntityZombieVillagerRaider e = new EntityZombieVillagerRaider(world, villageCenterX, villageCenterZ);
 							e.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY()+0.1, banditSpawnPos.getZ() + 0.5 );
 							e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData)null);
 //							final EntityAIRaid areaAI = new EntityAIRaid(e, 0.7D, 48);
@@ -2590,7 +2589,7 @@ public class CivilizationHandlers
 						}
 						else
 						{
-							EntityZombieRaider e = new EntityZombieRaider(world, province.getCenterX(), province.getCenterZ());
+							EntityZombieRaider e = new EntityZombieRaider(world, villageCenterX, villageCenterZ);
 							e.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY()+0.1, banditSpawnPos.getZ() + 0.5 );
 							e.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(e)), (IEntityLivingData)null);
 							world.spawnEntity(e);

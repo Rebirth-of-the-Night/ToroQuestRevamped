@@ -30,6 +30,6 @@ public class ToroQuestEntities
 		EntityOrc.init(id++);
 		EntityConstruct.init(id++);
 		EntityConstructQuest.init(id++);
-		EntityAdventurer.init(id++);
+		//EntityAdventurer.init(id++);
 	}
 }

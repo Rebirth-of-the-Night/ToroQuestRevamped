@@ -30,6 +30,7 @@ public class ToroQuestConfiguration
 	
 	public static float bossHealthMultiplier = 1.0F;
 	public static float bossAttackDamageMultiplier = 1.0F;
+	public static float knockUpStrength = 0.5F;
 	
 	// BANDIT
 	public static int banditBaseHealth = 12;
@@ -65,6 +66,7 @@ public class ToroQuestConfiguration
 	public static int minBaseHealthToBeConsideredBossMob = 250;
 
 	public static boolean enableBloodParticles = false;
+	public static boolean betterKnockback = true;
 	
 	// public static float banditDamageBasedOnHealthModifier = 0.01; per 1HP
 	// public static float orcDamageBasedOnHealthModifier = 0.01; per 1HP
@@ -355,7 +357,7 @@ public class ToroQuestConfiguration
 			useDefaultVillagersOutsideOfProvince = config.getBoolean("useDefaultVillagersOutsideOfProvince", CATEGORY_MOBS, true, "Enable to make default villagers"
 					+ "spawn (instead of toro villagers) outside the bounds of a province. Enable this if you want to be able to trade with villagers that spawn from random structures such as Recurrent Complex.");
 			
-			useDefaultVillagers = config.getBoolean("useDefaultVillagers", CATEGORY_MOBS, false, "Enable to make default villagers spawn instead of toro villagers :(");
+			useDefaultVillagers = config.getBoolean("useDefaultVillagers", CATEGORY_MOBS, false, "If you are using another village mod such as Minecraft Comes Alive, enable this to disable toro villagers and allow normal villager spawning");
 			
 			banditsDropEmeralds = config.getBoolean("banditsDropEmeralds", CATEGORY_MOBS, true,
 					"Enable to allow bandits a 1/3 chance to drop 1-3 Emeralds on death.");
@@ -365,6 +367,12 @@ public class ToroQuestConfiguration
 			
 			enableBloodParticles = config.getBoolean("enableBloodParticles", CATEGORY_MOBS, false,
 					"Enable to have guards and bandits show blood particles when attacked.");
+			
+			betterKnockback = config.getBoolean("betterKnockback", CATEGORY_MOBS, true,
+					"Enable have the knockback_resistance attribute reduce the STRENGTH of knockback effects, rather than reducing the CHANCE to not be knocked back. (For example: by default, a knockback_resistance of 0.5 means a 50% chance to not be knocked back from an attack. However, if this setting is true, a knockback_resistance of 0.5 means the distance or effects of being knocked back are 50% less far or powerful.");			
+			
+			knockUpStrength = config.getFloat("knockUpStrength", CATEGORY_MOBS, 0.5f, 0.0f, 2.0f,
+					"Multiply the motionY amount of knockback by this amount. Set to 0.5 by default to reduce the motionY by 50%. Does nothing if betterKnockback is disabled.");
 			
 			banditsDropPotions = config.getInt("banditsDropPotions", CATEGORY_MOBS, 6, 0, 128,
 					"Chance ( 1 out of X ) for bandits to drop 1 Potion on death. Set to 0 to disable.");
@@ -502,7 +510,7 @@ public class ToroQuestConfiguration
 					"This percent is randomly added to the base flee modifier.");
 			
 			zombieAttackVillageChance = config.getInt("zombieAttackVillageChance", CATEGORY_MOBS, 25, 0, 100,
-					"The chance (out of 100) for zombies that spawn near a province to seige it (these raiding zombies will only replace VANILLA zombies that spawn, so you may need to increase this number if you have mods that add more zombie types). Set to 0 to disable.");
+					"The chance (out of 100) for zombies that spawn near a province to siege it (these raiding zombies will only replace VANILLA zombies that spawn, so you may need to increase this number if you have mods that add more zombie types). Set to 0 to disable.");
 			
 			zombieRaiderVillagerChance = config.getInt("zombieRaiderVillagerChance", CATEGORY_MOBS, 25, 0, 100,
 					"The chance (out of 100) for siege zombies that spawn near a province to become zombie villagers. Set to 0 to disable.");

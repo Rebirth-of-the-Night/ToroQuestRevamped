@@ -7,8 +7,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
 
-import net.minecraft.block.BlockLiquid;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entity;
@@ -16,12 +14,12 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.IRangedAttackMob;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.projectile.EntityArrow;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.inventory.EntityEquipmentSlot;
@@ -33,7 +31,6 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.BossInfo;
@@ -45,6 +42,7 @@ import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.registry.EntityRegistry;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.render.RenderBanditLord;
 
 public class EntityBanditLord extends EntitySentry implements IRangedAttackMob, IMob
@@ -113,7 +111,8 @@ public class EntityBanditLord extends EntitySentry implements IRangedAttackMob, 
 		super(world);
 		this.setSize(0.95F, 2.7F);
         this.setCombatTask();
-        
+		this.stepHeight = 3.05F;
+
 		this.experienceValue = 240;
         this.isImmuneToFire = true;
         
@@ -205,136 +204,12 @@ public class EntityBanditLord extends EntitySentry implements IRangedAttackMob, 
 		return super.attackEntityFrom(source, amount);	
 	}
 	
-	/*
-	public boolean attackEntityFromBoss(DamageSource source, float amount)
-	{
-		if (this.isEntityInvulnerable(source))
-	    {
-	        return false;
-	    }
-	    else if ( this.world.isRemote )
-	    {
-	        return false;
-	    }
-	    else if ( !(source.getTrueSource() instanceof EntityPlayer) )
-	    {
-	    	return false;
-	    }
-	    else
-	    {
-	        this.idleTime = 0;
-	
-	        if (this.getHealth() <= 0.0F)
-	        {
-	            return false;
-	        }
-	        else
-	        {
-	            float f = amount;
-	            boolean flag = false;
-	            boolean flag1 = true;
-	
-	            if ((float)this.hurtResistantTime > (float)this.maxHurtResistantTime / 2.0F)
-	            {
-	                if (amount <= this.lastDamage)
-	                {
-	                    return false;
-	                }
-	
-	                this.damageEntity(source, amount - this.lastDamage);
-	                this.lastDamage = amount;
-	                flag1 = false;
-	            }
-	            else
-	            {
-	                this.lastDamage = amount;
-	                this.hurtResistantTime = this.maxHurtResistantTime;
-	                this.damageEntity(source, amount);
-	                this.maxHurtTime = 10;
-	                this.hurtTime = this.maxHurtTime;
-	            }
-	
-	            this.attackedAtYaw = 0.0F;
-	            Entity entity1 = source.getTrueSource();
-	
-	            if (entity1 != null)
-	            {
-	                if (entity1 instanceof EntityLivingBase)
-	                {
-	                    this.setRevengeTarget((EntityLivingBase)entity1);
-	                }
-	
-	                if (entity1 instanceof EntityPlayer)
-	                {
-	                    this.recentlyHit = 100;
-	                    this.attackingPlayer = (EntityPlayer)entity1;
-	                    System.out.println(this.getHealth());
-	                }
-	                else
-	                {
-	    	    		System.out.println("333");
-	
-	                    return false;
-	                }
-	            }
-	    		System.out.println("99");
-	
-	            if (flag1)
-	            {
-	                if (flag)
-	                {
-	                    this.world.setEntityState(this, (byte)29);
-	                }
-	                else if (source instanceof EntityDamageSource && ((EntityDamageSource)source).getIsThornsDamage())
-	                {
-	                    this.world.setEntityState(this, (byte)33);
-	                }
-	                
-	                if (entity1 != null)
-	                {
-	                    double d1 = entity1.posX - this.posX;
-	                    double d0;
-	
-	                    for (d0 = entity1.posZ - this.posZ; d1 * d1 + d0 * d0 < 1.0E-4D; d0 = (Math.random() - Math.random()) * 0.01D)
-	                    {
-	                        d1 = (Math.random() - Math.random()) * 0.01D;
-	                    }
-	
-	                    this.attackedAtYaw = (float)(MathHelper.atan2(d0, d1) * (180D / Math.PI) - (double)this.rotationYaw);
-	                    this.knockBack(entity1, 0.4F, d1, d0);
-	                }
-	                else
-	                {
-	                    this.attackedAtYaw = (float)((int)(Math.random() * 2.0D) * 180);
-	                }
-	            }
-	    		System.out.println("1000");
-	
-	            if (flag1)
-	            {
-	                this.playHurtSound(source);
-	            }
-	
-	            boolean flag2 = !flag || amount > 0.0F;
-	            
-	            if (entity1 instanceof EntityPlayerMP)
-	            {
-	                CriteriaTriggers.PLAYER_HURT_ENTITY.trigger((EntityPlayerMP)entity1, this, source, f, amount, flag);
-	            }
-	            return flag2;
-	        }
-	    }
-	}
-	*/
-	
-	@Override
     protected void damageEntity(DamageSource damageSrc, float damageAmount)
     {
 		float f1 = this.getHealth();
         this.getCombatTracker().trackDamage(damageSrc, f1, damageAmount);
         this.setHealth(f1 - damageAmount);
     }
-
 
 	@Override
 	public void onDeath(DamageSource cause)
@@ -466,70 +341,100 @@ public class EntityBanditLord extends EntitySentry implements IRangedAttackMob, 
     	public void onLivingUpdate()
     	{
     		super.onLivingUpdate();
-    		
+            
     		if ( this.world.isRemote )
     		{
     			return;
     		}
     		
-           	if ( this.ticksExisted % 25 == 0 )
-           	{
-           		this.bossInfo.setPercent(this.getHealth()/this.getMaxHealth());
-           		
-           		if ( this.getHealth() >= this.getMaxHealth() )
-    			{
-    				if ( !this.inCombat ) 
-    				{
-    					BlockPos pos = this.getPosition();
-    					IBlockState block = world.getBlockState(pos);
-    					if ( block instanceof BlockLiquid )
-    					{
-    				        Vec3d vec3d = RandomPositionGenerator.getLandPos(this, 15, 7);
-    				        if ( vec3d != null )
-    				        {
-    				        	this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5);
-    				        }
-    					}
-    				}
-    			}
-           		else this.heal(ToroQuestConfiguration.bossHealthMultiplier);
-           		
+    		// ======================================
            	if ( this.ticksExisted % 100 == 0 )
         	{
-           		if ( !this.inCombat )
+        		this.setSprinting(false);
+           		           		       		
+           		if ( this.getHealth() >= this.getMaxHealth() )
+    			{
+           			
+    			}
+           		else this.heal(1.0f);
+           		        		
+        		if ( !this.inCombat )
         		{
+        	        this.setSprinting(false);
         			ItemStack iStack = this.getHeldItemMainhand();
         			
-        			if ( this.actionTimer > 0 )
+        			if ( this.getAttackTarget() == null )
         			{
-        				if ( rand.nextBoolean() ) this.actionTimer--;
-        			}
-        			
-        			if ( this.getAttackTarget() == null && this.lastTargetY <= 4 && iStack != null && (iStack.getItem() instanceof ItemBow) ) // SSS
-    				{
-    					this.resetActiveHand();
-    		        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5 );
-    		        	if ( !this.world.isRemote )
+    	    			if ( this.lastTargetY < 4 && iStack != null && (iStack.getItem() instanceof ItemBow) )
     					{
-    		        		setMeleeWeapon();
+    						this.resetActiveHand();
+    			        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+    			        	if ( !this.world.isRemote )
+    						{
+    			        		this.setMeleeWeapon();
+    			        		if ( this.world.canSeeSky(this.getPosition()) && this.world.getWorldTime() >= 12500 && this.world.getWorldTime() <= 23500 )
+    			        		{
+    			        			this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Blocks.TORCH, 1));
+    			        		}
+    						}
+    						this.blockingTimer = 0;
     					}
-    					this.blockingTimer = 0;
-    				}
-    	    		
+    	    			else if ( this.world.canSeeSky(this.getPosition()) && !(iStack.getItem() instanceof ItemBow) && this.world.getWorldTime() >= 12500 && this.world.getWorldTime() <= 23500 )
+    	        		{
+    	    				if ( !(iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH)) )
+    	    				{
+    							this.resetActiveHand();
+    				        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+    				        	if ( !this.world.isRemote )
+    				        	{
+    				        		this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Blocks.TORCH, 1));
+    				        	}
+    							this.blockingTimer = 0;
+    	    				}
+    	        		}
+    	    			else if ( iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH) )
+    	    			{
+    						this.resetActiveHand();
+    			        	this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.8F + rand.nextFloat()/5.0F );
+    			        	if ( !this.world.isRemote )
+    			        	{
+    			        		this.setMeleeWeapon();
+    			        	}
+    	    			}
+        				this.canShieldPush = true;
+        			}
+        		}
+        		else if ( this.getAttackTarget() != null )
+        		{
+    	    		this.callForHelp( this.getAttackTarget() );
         		}
         		else
         		{
-    	    		if ( this.getAttackTarget() == null || !this.getAttackTarget().isEntityAlive() )
-    	        	{
-    	    			this.setAttackTarget( this.getRevengeTarget() );
-    	        	}
+    	    		this.inCombat = false;
         		}
         	}
-           	}
            	
-        	// if has an attacker
-           	if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() && !(this.getAttackTarget() instanceof EntityToroMob)  )
+            if ( this.isRiding() )
+            {
+            	this.dismountRidingEntity();
+            }
+
+           	// =======================================
+           	//				ATTACK TARGET
+           	// =======================================
+           	
+    		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() )
     		{
+    			if ( this.isSprinting() )
+    			{
+    	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    			}
+    			else
+    			{
+    				this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    			}
+        		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    			
     			List<EntityArrow> arrows = this.world.getEntitiesWithinAABB(EntityArrow.class, new AxisAlignedBB(this.getPosition()).grow(8, 8, 8), new Predicate<EntityArrow>()
     			{
     				public boolean apply(@Nullable EntityArrow entity)
@@ -542,211 +447,204 @@ public class EntityBanditLord extends EntitySentry implements IRangedAttackMob, 
     				}
     			});
     			
-    			 double dist = this.getDistanceSq(this.getAttackTarget());
-    				
-    				if ( !arrows.isEmpty() )
+    	        double dist = this.getDistanceSq(this.getAttackTarget());
+    			
+    			if ( !arrows.isEmpty() )
+    			{
+    				this.stance = rand.nextInt(6)+5;
+    	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    				if ( dist <= 12 )
     				{
-    					this.stance = rand.nextInt(6)+5;
-    					if ( dist <= 12 )
+    					this.blockingTimer = 25;
+    				}
+    				else
+    				{
+    					this.blockingTimer = 50;
+    				}
+    				this.blocking = true;
+    				this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
+    	        	this.canShieldPush = true;
+    				this.resetActiveHand();
+    				this.setActiveHand(EnumHand.OFF_HAND);
+    				this.updateActiveHand();
+    				this.strafeVer = 0.4F;
+    			}
+    			
+    	        this.lastTargetY = (int)(Math.abs(this.posY - this.getAttackTarget().posY)+0.5D);
+    	        ItemStack iStack = this.getHeldItemMainhand();
+    	        if ( !this.inCombat )
+    	        {
+    				this.getMoveHelper().strafe( 0.0F, 0.0F );
+    	        	this.getNavigator().clearPath();
+    	        	this.canShieldPush = true;
+    				this.resetActiveHand();
+    				this.inCombat = true;
+    				this.stance = rand.nextInt(6)+5;
+    	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    	        	if ( this.onGround && this.getNavigator().getPathToEntityLiving(this.getAttackTarget()) == null )
+    				{
+    	        		this.blockingTimer = -200;
+    	        	}
+    	        	else
+    				{
+    					this.getMoveHelper().strafe( 0.0F, 0.0F );
+    					this.getNavigator().clearPath();
+    				}
+    	        }
+    	        // if within range and has not been in melee range for a short amount of time, or very close and has not been in melee range for a long amount of time
+    			if (  ( ( dist < 200+this.blockingTimer ) || ( this.lastTargetY < 4 && dist <= 20 && this.canEntityBeSeen(this.getAttackTarget())) ) )
+    	        {
+    				// if this does not have a sword, swap to sword and board
+    				if ( iStack != null && ( iStack.getItem() instanceof ItemBow || iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH) ) ) // SSS
+    				{
+    		        	this.canShieldPush = true;
+    					this.resetActiveHand();
+    					this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.9F + rand.nextFloat()/10.0F );
+    					this.getMoveHelper().strafe( 0.0F, 0.0F );
+    	            	this.getNavigator().clearPath();
+    	            	if ( !this.world.isRemote )
     					{
-    						this.blockingTimer = 25;
+    	            		setMeleeWeapon();
     					}
-    					else
-    					{
-    						this.blockingTimer = 50;
-    					}
+    					this.blockingTimer = 0;
+    				}
+    				
+    				// if this is not blocking, is within range, and block is ready, start blocking
+    				if ( !this.blocking && !this.isSprinting() && dist <= 12 && this.blockingTimer <= -((int)(this.stance*5+dist+20)) && this.getRevengeTarget() != null && this.getRevengeTarget().isEntityAlive() )
+    				{
+    					this.stance = rand.nextInt(8)+3;
+    		    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    					this.blockingTimer = (int)MathHelper.clamp((rand.nextInt(70)+20-dist), 20, 80);
     					this.blocking = true;
+    					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
     		        	this.canShieldPush = true;
     					this.resetActiveHand();
     					this.setActiveHand(EnumHand.OFF_HAND);
     					this.updateActiveHand();
-    					this.strafeHor = getStrafe(stance);
-    					this.strafeVer = 0.4F;
+    					if ( dist <= 6 )
+    					{
+    						this.strafeVer = 0.2F;
+    					}
+    					else
+    					{
+    						this.strafeVer = 0.4F;
+    					}
+    				}
+    				else if ( this.blocking && this.blockingTimer % 16 == 0 )
+    				{
+    		        	this.canShieldPush = true;
+
+    					if ( dist <= 3 )
+    					{
+    						this.strafeVer = 0.2F;
+    					}
+    					else
+    					{
+    						this.strafeVer = 0.4F;
+    					}
     				}
     				
-    		        this.lastTargetY = (int)(Math.abs(this.posY - this.getAttackTarget().posY)+0.5D);
-    		        ItemStack iStack = this.getHeldItemMainhand();
-    		        if ( !this.inCombat )
-    		        {
-    					this.getMoveHelper().strafe( 0.0F, 0.0F );
-    		        	this.getNavigator().clearPath();
+    				// if this is blocking and should no longer block, stop blocking
+    				if ( this.blocking && this.blockingTimer <= 0 )
+    				{
+    					this.blocking = false;
+    					this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+    					this.stance = rand.nextInt(8)+3;
+    		    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
     		        	this.canShieldPush = true;
     					this.resetActiveHand();
-    					this.inCombat = true;
-    					this.stance = rand.nextInt(6)+5;
-    					this.strafeHor = getStrafe(stance);
-    		        	if ( this.onGround && this.getNavigator().getPathToEntityLiving(this.getAttackTarget()) == null )
+    				}
+    				// otherwise, if this is in melee range, strafe
+    				else if ( !this.blocking && dist <= 64 )
+    				{
+    					if ( this.blockingTimer == -12 || this.blockingTimer == -32 || ( this.blockingTimer < -32 && this.blockingTimer % 14 == 0 ) )
     					{
-    		        		this.blockingTimer = -200;
-    		        	}
-    		        	else
-    					{
-    						this.getMoveHelper().strafe( 0.0F, 0.0F );
-    						this.getNavigator().clearPath();
-    					}
-    		        }
-    		        // if within range and has not been in melee range for a short amount of time, or very close and has not been in melee range for a long amount of time
-    				if (  ( ( dist < 200+this.blockingTimer ) || ( this.lastTargetY < 4 && dist <= 20 && this.canEntityBeSeen(this.getAttackTarget())) ) )
-    		        {
-    					// if this does not have a sword, swap to sword and board
-    					if ( iStack != null && ( iStack.getItem() instanceof ItemBow ) )//|| iStack.getItem() == Item.getItemFromBlock(Blocks.TORCH) ) ) // SSS
-    					{
-    			        	this.canShieldPush = true;
-    						this.resetActiveHand();
-    						this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_IRON, 1.0F, 0.9F + rand.nextFloat()/10.0F );
-    						this.getMoveHelper().strafe( 0.0F, 0.0F );
-    		            	this.getNavigator().clearPath();
-    		            	if ( !this.world.isRemote )
+    						if ( rand.nextInt(3) == 0 )
     						{
-    		            		setMeleeWeapon();
+    							this.stance = rand.nextInt(8)+3;
+    				    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
     						}
-    						this.blockingTimer = 0;
-    						this.strafeHor = getStrafe(stance);
     					}
+    				}
+    				
+    				if ( !this.blocking )
+    				{
+    					float strafeMod = 1.0F;
     					
-    					// if this is not blocking, is within range, and block is ready, start blocking
-    					if ( !this.blocking && dist <= 12 && this.blockingTimer <= -((int)(this.stance*5+dist+20)) && this.getRevengeTarget() != null && this.getRevengeTarget().isEntityAlive() )
+    					if ( this.stance < 5 )
     					{
-    						this.stance = rand.nextInt(8)+3;
-    						this.strafeHor = getStrafe(stance);
-    						this.blockingTimer = (int)MathHelper.clamp((rand.nextInt(70)+20-dist), 20, 80);
-    						this.blocking = true;
-    			        	this.canShieldPush = true;
-    						this.resetActiveHand();
-    						this.setActiveHand(EnumHand.OFF_HAND);
-    						this.updateActiveHand();
-    						if ( dist <= 6 )
+    						this.setSprinting(false);
+    						if ( dist <= 30 )
     						{
-    							this.strafeVer = 0.2F;
+    							if ( this.onGround )
+    							{
+    					    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+    								double push = (1.0D+4.0D*dist);
+    								this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
+    			                	this.velocityChanged = true;
+    							}
+    							this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), 0.4F); // bau
+    							this.getMoveHelper().strafe( -1.0F, this.getStrafe(this.stance) );
     						}
     						else
     						{
-    							this.strafeVer = 0.4F;
+    							this.stance = rand.nextInt(6)+5;
+    							this.getNavigator().clearPath();
+    					    	this.getMoveHelper().strafe( 0.0F, 0.0F );
     						}
+    						if ( this.rand.nextBoolean() ) this.blockingTimer--;
+//    						if ( dist <= 30 )
+//    						{
+//    							if ( this.onGround )
+//    							{
+//    								this.faceEntitySmart(this.getAttackTarget());
+//    								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+//    								double push = (1.0D+dist*dist);
+//    								this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
+//    			                	this.velocityChanged = true;
+//    							}
+//    							this.getMoveHelper().strafe( this.strafeVer, this.getStrafe(this.stance)*1.25F );
+//    						}
+//    						else
+//    						{
+//    							this.stance = rand.nextInt(6)+5;
+//    							this.getNavigator().clearPath();
+//    		        			this.faceEntitySmart(this.getAttackTarget());
+//    					    	this.getMoveHelper().strafe( 0.0F, 0.0F );
+//    						}
+//    						this.blockingTimer--;
+    						return;
     					}
-    					else if ( this.blocking && this.blockingTimer % 16 == 0 )
+    					else if ( dist <= 2 )
     					{
-    			        	this.canShieldPush = true;
-
-    						if ( dist <= 3 )
-    						{
-    							this.strafeVer = 0.2F;
-    						}
-    						else
-    						{
-    							this.strafeVer = 0.4F;
-    						}
+    						this.strafeVer = 0.4F;
     					}
-    					
-    					// if this is blocking and should no longer block, stop blocking
-    					if ( this.blocking && this.blockingTimer <= 0 )
+    					else if ( dist <= 4 )
     					{
-    						this.blocking = false;
-    						this.stance = rand.nextInt(8)+3;
-    						this.strafeHor = getStrafe(stance);
-    			        	this.canShieldPush = true;
-    						this.resetActiveHand();
+    						this.strafeVer = 0.7F;
+    						strafeMod = 0.9F;
     					}
-    					// otherwise, if this is in melee range, strafe
-    					else if ( !this.blocking && dist <= 64 )
+    					else if ( dist <= 9 )
     					{
-    						if ( this.blockingTimer == -12 || this.blockingTimer == -32 || ( this.blockingTimer < -32 && this.blockingTimer % 14 == 0 ) )
-    						{
-    							if ( rand.nextInt(3) == 0 )
-    							{
-    								this.stance = rand.nextInt(8)+3;
-    								this.strafeHor = getStrafe(stance);
-    							}
-    						}
+    						this.strafeVer = 0.8F;
+    						strafeMod = 0.8F;
     					}
-    					
-    					if ( !this.blocking )
+    					else
     					{
-    						float strafeMod = 1.0F;
-    						
-    						if ( this.stance < 5 )
-    						{
-    							this.strafeVer = 0.4F;
-
-    							if ( dist <= 25 )
-    							{
-    								if ( !this.world.isRemote && this.onGround )
-    								{
-    									Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-    									double push = (12.0D+dist*dist);
-    									this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
-    				                	this.velocityChanged = true;
-    								}
-    							}
-    							else
-    							{
-    								this.stance = rand.nextInt(6)+5;
-    								this.strafeHor = getStrafe(stance);
-    							}
-    						}
-    						else if ( dist <= 2.5 )
-    						{
-    							this.strafeVer = 0.4F;
-    						}
-    						else if ( dist <= 7 )
-    						{
-    							this.strafeVer = 0.7F;
-    							strafeMod = 0.9F;
-    						}
-    						else if ( dist <= 12 )
-    						{
-    							this.strafeVer = 0.8F;
-    							strafeMod = 0.8F;
-    						}
-    						else
-    						{
-    							this.strafeVer = 0.9F;
-    							strafeMod = 0.7F;
-    						}
-    									
-    						if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
-    						{						
-    							if ( dist >= 12 ) // if this is too far away and blocking, stop blocking faster
-    							{
-    								this.blockingTimer--;
-    							}
-    							else if ( dist <= 3 )
-    							{
-    								if ( !this.world.isRemote && this.onGround && !this.isSprinting() )
-    								{
-    									Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-    									double push = (1.0D+dist*dist);
-    									this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
-    				                	this.velocityChanged = true;
-    								}
-    							}
-    							
-    							if ( this.posY + 1.5D < this.getAttackTarget().posY )
-    							{
-    								this.getMoveHelper().strafe( this.strafeVer, 0.0F );
-    							}
-    							else
-    							{
-    								this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*strafeMod );
-    							}
-    						}
-    						else
-    						{
-    							if ( this.posY + 1.5D < this.getAttackTarget().posY )
-    							{
-    								this.getMoveHelper().strafe( this.strafeVer*0.5F, 0.0F );
-    							}
-    							else
-    							{
-    								this.getMoveHelper().strafe( this.strafeVer*0.5F, this.strafeHor*0.5F*strafeMod );
-    							}
-    						}
+    						this.strafeVer = 0.9F;
+    						strafeMod = 0.7F;
     					}
-    					else // is blocking
-    					{
-    						if ( this.strafeVer < 0.4F )
+    								
+    					if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) ) // ttt
+    					{					
+    						if ( dist >= 12 ) // if this is too far away and blocking, stop blocking faster
     						{
-    							if ( !this.world.isRemote && this.onGround )
+    							this.blockingTimer--;
+    						}
+    						else if ( dist <= 3 )
+    						{
+    							if ( this.onGround && !this.isSprinting() )
     							{
     								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
     								double push = (1.0D+dist*dist);
@@ -754,72 +652,134 @@ public class EntityBanditLord extends EntitySentry implements IRangedAttackMob, 
     			                	this.velocityChanged = true;
     							}
     						}
-    						else if ( this.strafeVer > 0.4F )
-    						{
-    							this.strafeVer = 0.4F;
-    						}
     						
-    						if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
+    						if ( this.posY + 1.5D < this.getAttackTarget().posY )
     						{
-    							this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*1.25F);
+    							this.getMoveHelper().strafe( this.strafeVer, 0.0F );
+    							if ( this.onGround && this.rand.nextInt(10) == 0 )
+    							{
+    								this.addVelocity(0.0D, 0.38D, 0.0D);
+    			                	this.velocityChanged = true;
+    							}
     						}
     						else
     						{
-    							this.getMoveHelper().strafe( this.strafeVer*0.5F, this.strafeHor*0.5F );
+    							this.getMoveHelper().strafe( this.strafeVer, this.getStrafe(this.stance)*strafeMod );
     						}
     					}
-    					
-    		        }
-    				else if ( iStack != null && !(iStack.getItem() instanceof ItemBow) )
-    				{
-    					this.blocking = false;
-    					this.blockingTimer = -200;
-    		        	this.canShieldPush = true;
-    					this.resetActiveHand();
-    					this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.9F + rand.nextFloat()/10 );
-    					
-    					if ( !this.world.isRemote )
+    					else
     					{
-    						this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.BOW, 1));
-    						this.setHeldItem(EnumHand.OFF_HAND, ItemStack.EMPTY);
+    						this.getMoveHelper().strafe( 0.0F, 0.0F );
+
+//    						Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
+//    			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
+//    			            {
+//    			            	this.blocking = false;
+//    							this.blockingTimer = -200;
+//    							return;
+//    			            }
+//    						if ( this.posY + 1.5D < this.getAttackTarget().posY )
+//    						{
+//    							this.getMoveHelper().strafe( this.strafeVer*0.5F, 0.0F );
+//    						}
+//    						else
+//    						{
+//    							this.getMoveHelper().strafe( this.strafeVer*0.5F, this.getStrafe(this.stance)*0.5F*strafeMod );
+//    						}
+    					}
+    				}
+    				else // is blocking
+    				{
+    					if ( this.strafeVer < 0.4F )
+    					{
+    						if ( !this.world.isRemote && this.onGround )
+    						{
+    							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+    							double push = (1.0D+dist*dist);
+    							this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+    		                	this.velocityChanged = true;
+    						}
+    					}
+    					else if ( this.strafeVer > 0.4F )
+    					{
+    						this.strafeVer = 0.4F;
     					}
     					
-    					this.strafeVer = 0.0F;
-    					this.strafeHor = 0.0F;
-    			    	this.getMoveHelper().strafe( 0.0F, 0.0F );
-    			    	this.getNavigator().clearPath();
+    					if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
+    					{
+    						this.getMoveHelper().strafe( this.strafeVer, this.getStrafe(this.stance)*1.5F);
+    					}
+    					else
+    					{
+    						this.getMoveHelper().strafe( this.strafeVer*0.5F, this.getStrafe(this.stance)*0.5F );
+    					}
     				}
-    				this.blockingTimer--;
-    			}
-    			else if ( this.blocking || this.inCombat ) // end of combat
+    				
+    	        }
+    			else if ( iStack != null && !(iStack.getItem() instanceof ItemBow) )
     			{
-    				this.inCombat = false;
+    				if ( !this.onGround )
+    				{
+    					this.motionX/=2.0D;
+    					this.motionZ/=2.0D;
+    				}
     				this.blocking = false;
-//    				if (this.raidX != null && this.raidZ != null && this.getDistance(this.raidX, this.posY, this.raidZ) > 20)
-//    		    	{
-//    		    		if ( returnToPost(0) )
-//    		    		{
-//    		    			this.returnToPost = true;
-//    		    		}
-//    		    		else
-//    		    		{
-//    			    		if ( returnToPost(20) )
-//    			    		{
-//    			    			this.returnToPost = true;
-//    			    		}
-//    		    		}
-//    		    	}
-    				this.setAttackTarget(null);
-    				//this.searchNextEnemy = true;
+    				this.blockingTimer = -200;
+    		    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
     	        	this.canShieldPush = true;
     				this.resetActiveHand();
-    				this.activeItemStackUseCount = 0;
-    		    	this.strafeHor = 0F;
-    		    	this.strafeHor = 0F;
+    				this.playSound(SoundEvents.ITEM_ARMOR_EQUIP_LEATHER, 1.0F, 0.9F + rand.nextFloat()/5.0F );
+    				
+    				if ( !this.world.isRemote )
+    				{
+    					this.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.BOW, 1));
+    					this.setHeldItem(EnumHand.OFF_HAND, ItemStack.EMPTY);
+    				}
+    				this.setRevengeTarget(this.getAttackTarget());
+    				this.strafeVer = 0.0F;
+    				this.stance = 0;
     		    	this.getMoveHelper().strafe( 0.0F, 0.0F );
     		    	this.getNavigator().clearPath();
     			}
+    			this.blockingTimer--;
+    			//if ( this.getAttackTarget() != null )
+    	    	//{
+    	    		//this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	    		//this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	    		//this.prevRotationPitch = 0;
+    	    		//this.prevRotationYaw = 0;
+    	    		//this.newPosRotationIncrements = 0;
+    	    	//}
+    		}
+    		else if ( this.blocking || this.inCombat ) // end of combat
+    		{
+    			this.inCombat = false;
+    			this.blocking = false;
+    			this.setAttackTarget(null);
+            	this.canShieldPush = true;
+    			this.resetActiveHand();
+    			this.activeItemStackUseCount = 0;
+    	    	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
+    	    	this.stance = 0;
+    	    	this.getMoveHelper().strafe( 0.0F, 0.0F );
+    	    	this.getNavigator().clearPath();
+    		}
+    		
+    		//if ( this.getAttackTarget() != null && Math.abs(this.motionX*this.motionZ) > 0.01 )
+//    		else if ( this.getAttackTarget() == null && this.hasPath() )
+//    		{
+//    			this.faceMovingDirection();
+//    		}
     	}
+    	
+        public boolean isOnLadder()
+        {
+        	if ( !this.getHeldItemMainhand().isEmpty() && this.getHeldItemMainhand().getItem() instanceof ItemBow )
+        	{
+        		return false;
+        	}
+        	return super.isOnLadder();
+        }
     	
     	public void setMeleeWeapon()
     	{

@@ -47,6 +47,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.ai.EntityAIThrow;
 import net.torocraft.toroquest.entities.ai.EntityAIZombieLeap;
 import net.torocraft.toroquest.entities.render.RenderBas;
@@ -424,31 +425,18 @@ public class EntityBas extends EntitySkeleton implements IMob
 	@Override
 	public void onLivingUpdate()
 	{
-		
-		if ( this.getAttackTarget() != null )
-    	{
-    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    	}
-    	else
-    	{
-        	//this.faceMovingDirection();
-    	}
-    	super.onLivingUpdate();
-    	if ( this.getAttackTarget() != null )
-    	{
-    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    	}
-    	else
-    	{
-        	//this.faceMovingDirection();
-    	}
+		super.onLivingUpdate();
 		
 		if ( this.world.isRemote )
 		{
 			return;
 		}
+		
+		if ( this.getAttackTarget() != null )
+    	{
+    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
 		
 		float health = this.getHealth()/this.getMaxHealth();
         this.bossInfo.setPercent(health);

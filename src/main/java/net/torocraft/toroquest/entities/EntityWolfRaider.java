@@ -89,18 +89,37 @@ public void setRaidLocation(Integer x, Integer z)
 	this.tasks.removeTask(this.areaAI);
 	if ( x != null && z != null )
 	{
+		if ( x == 0 && z == 0 )
+		{
+			this.despawn = true;
+			return;
+		}
 		this.raidX = x;
 		this.raidZ = z;
 		this.areaAI.setCenter(x, z);
 		this.tasks.addTask(7, this.areaAI);
-		NBTTagCompound nbt = new NBTTagCompound();
-		this.writeEntityToNBT(nbt);
+		this.writeEntityToNBT(new NBTTagCompound());
 		this.despawn = false;
 	}
 	else
 	{
 		this.despawn = true;
 	}
+//	this.tasks.removeTask(this.areaAI);
+//	if ( x != null && z != null )
+//	{
+//		this.raidX = x;
+//		this.raidZ = z;
+//		this.areaAI.setCenter(x, z);
+//		this.tasks.addTask(7, this.areaAI);
+//		NBTTagCompound nbt = new NBTTagCompound();
+//		this.writeEntityToNBT(nbt);
+//		this.despawn = false;
+//	}
+//	else
+//	{
+//		this.despawn = true;
+//	}
 }
 
 	public EntityWolfRaider(World worldIn)
@@ -122,7 +141,7 @@ public void setRaidLocation(Integer x, Integer z)
     {
 		super.onLivingUpdate();
 		
-		if ( world.isRemote )
+		if ( this.world.isRemote )
 		{
 			return;
 		}

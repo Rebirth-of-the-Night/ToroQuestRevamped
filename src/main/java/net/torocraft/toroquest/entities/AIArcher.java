@@ -108,7 +108,8 @@ public class AIArcher<T extends EntityLiving & IRangedAttackMob> extends EntityA
     {
         if ( shouldExecute() )
         {
-            double d0 = this.entity.getDistanceSq(this.entity.getAttackTarget());
+        	
+            double d0 = this.entity.getDistance(this.entity.getAttackTarget());
             boolean canSee = this.entity.getEntitySenses().canSee(this.entity.getAttackTarget());
             boolean seeTimeIsGreaterThanZero = this.seeTime > 0;
             boolean outOfReach = false;

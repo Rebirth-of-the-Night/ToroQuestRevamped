@@ -80,12 +80,16 @@ public class EntityZombieRaider extends EntityZombie implements IMob
 		this.tasks.removeTask(this.areaAI);
 		if ( x != null && z != null )
 		{
+			if ( x == 0 && z == 0 )
+			{
+				this.despawn = true;
+				return;
+			}
 			this.raidX = x;
 			this.raidZ = z;
 			this.areaAI.setCenter(x, z);
 			this.tasks.addTask(7, this.areaAI);
-			NBTTagCompound nbt = new NBTTagCompound();
-			this.writeEntityToNBT(nbt);
+			this.writeEntityToNBT(new NBTTagCompound());
 			this.despawn = false;
 		}
 		else
