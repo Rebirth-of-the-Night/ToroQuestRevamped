@@ -221,17 +221,17 @@ public class ItemRoyalArmor extends ItemArmor {
 						
 						for ( EntityGuard guard : guards )
 						{
-							if ( CivilizationUtil.getProvinceAt(playerIn.getEntityWorld(), playerIn.chunkCoordX, playerIn.chunkCoordZ) == null )
+							if ( CivilizationUtil.getProvinceAt(guard.getEntityWorld(), guard.chunkCoordX, guard.chunkCoordZ) == null )
 							{
-					            EntityVillageLord vl = new EntityVillageLord(worldIn);
-								CivilizationsWorldSaveData.get(worldIn).register(playerIn.chunkCoordX, playerIn.chunkCoordZ);
-					            if( !worldIn.isRemote )
+					            EntityVillageLord vl = new EntityVillageLord(guard.getEntityWorld());
+								CivilizationsWorldSaveData.get(guard.getEntityWorld()).register(guard.chunkCoordX, guard.chunkCoordZ);
+					            if( !guard.getEntityWorld().isRemote )
 					            {
 									vl.setPosition(guard.posX,guard.posY,guard.posZ);
 									vl.addArmor();
 									guard.setDead();
 									guard.setHealth(0);
-									worldIn.spawnEntity(vl);
+									guard.getEntityWorld().spawnEntity(vl);
 									vl.playTameEffect((byte) 6);
 				                    vl.world.setEntityState(vl, (byte)6);
 									vl.playSound(SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 1.0F, 0.8F);
@@ -245,7 +245,7 @@ public class ItemRoyalArmor extends ItemArmor {
 										}
 									}
 					            }
-					            provinceOn = CivilizationUtil.getProvinceAt(playerIn.getEntityWorld(), playerIn.chunkCoordX, playerIn.chunkCoordZ);
+					            provinceOn = CivilizationUtil.getProvinceAt(guard.getEntityWorld(), guard.chunkCoordX, guard.chunkCoordZ);
 								if ( provinceOn != null )
 								{
 									vl.setCivilization(provinceOn.civilization);

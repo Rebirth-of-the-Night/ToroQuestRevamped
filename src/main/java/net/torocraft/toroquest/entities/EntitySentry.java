@@ -1341,8 +1341,15 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			}
 			else
 			{
-				if ( this.getAttackTarget() == e ) this.setAttackTarget(null);
-				return false;
+				if ( this instanceof EntityOrc )
+				{
+					
+				}
+				else
+				{
+					if ( this.getAttackTarget() == e ) this.setAttackTarget(null);
+					return false;
+				}
 			}
 		}
 		
@@ -1444,6 +1451,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			
 			return false;
 		}
+		
+		
 		
 		if ( super.attackEntityFrom(source, amount) ) // *** run away if can't reach
 		{			
@@ -2432,7 +2441,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	{
 		if ( victim == null || !victim.isEntityAlive() || victim.getClass() == this.getClass() )
 		{
-			setAttackTarget(null);
+			this.setAttackTarget(null);
 			return false;
 		}
 		else
