@@ -171,13 +171,11 @@ public class AIAttackWithSword extends EntityAIBase
         	if ( e.isDrinkingPotion() )
 			{
             	this.attackTick = 10;
-    	        this.attacker.setSprinting(false);
         		backPeddaling = true;
 				return;
 			}
         	if ( e.stance < 5 )
         	{
-    	        this.attacker.setSprinting(false);
         		backPeddaling = true;
         	}
         	if ( e.flanking )
@@ -190,16 +188,17 @@ public class AIAttackWithSword extends EntityAIBase
     		EntityGuard e = (EntityGuard)this.attacker;
     		if ( e.stance < 5 )
          	{
-    	        this.attacker.setSprinting(false);
          		backPeddaling = true;
          	}
         }
         
+    	this.attacker.setSprinting(false);
+    	
         if ( !this.attacker.collidedHorizontally && !backPeddaling && !this.attacker.isHandActive() ) // this.attacker.getNavigator().getPathToEntityLiving(victim) != null
         {
         	int tt = Math.abs(this.attackTick-5) % 40;
         	
-        	if ( tt < 5 )
+        	if ( tt < 3 )
         	{
             	this.attacker.setSprinting(true);
             	if ( tt == 0 && distanceSq <= 12 )

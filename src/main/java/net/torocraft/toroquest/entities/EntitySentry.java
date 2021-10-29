@@ -794,7 +794,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	protected EntityBoat boat;
 	protected int boatTimer = 0;
 	
-	protected int aggroTimer = 0;
+	//protected int aggroTimer = 0;
 	
 	@Override
 	public void onLivingUpdate() // aaa
@@ -920,9 +920,10 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			if ( this.flanking )
 			{
 				this.setSprinting(false);
-				if (this.getNavigator().noPath() || (this.getAttackTarget() != null && this.getDistance(this.getAttackTarget()) >= 7.5 ) || this.blocking || ((this.motionX*this.motionX + this.motionZ*this.motionZ) <= 0.0018D))
+				if ( this.getNavigator().noPath() || (this.getAttackTarget() != null && this.getDistance(this.getAttackTarget()) >= 7.5 ) || this.blocking || ( this.getNavigator().getPath() != null && this.getNavigator().getPath().getFinalPathPoint() != null && this.getDistanceSq(this.getNavigator().getPath().getFinalPathPoint().x,this.getNavigator().getPath().getFinalPathPoint().y,this.getNavigator().getPath().getFinalPathPoint().z) < 4 - (Math.abs(this.motionX) + (Math.abs(this.motionZ)) ) * 4 ) )// ((this.motionX*this.motionX + this.motionZ*this.motionZ) <= 0.0018D))
 				{
 					this.flanking = false;
+					this.getNavigator().clearPath();
 				}
 			}
 		
@@ -996,7 +997,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    	        		this.setSprinting(false);
 	    	        		this.flanking = true;
 	    	        		//this.faceEntitySmart(this.getAttackTarget());
-	    	        		System.out.println("!!!???");
+	    	        		//System.out.println("!!!???");
 	    	        		double dist = this.getDistanceSq(this.getAttackTarget());
 	    	        		Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
 	    	        		if ( velocityVector != null )
@@ -1022,25 +1023,30 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
     				this.setAttackTarget(null);
     				return;
     			}
-    			else if ( this.aggroTimer++ > 4 && this.getDistance(this.getAttackTarget()) > 12 )
-    			{
-    				if ( this.getAttackTarget().getPositionVector() != null )
-    				{
-	    				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
-			            if ( vec3d != null )
-			            {
-	    	        		System.out.println("!!!???null");
-
-		    				this.setAttackTarget(null);
-					        this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D);
-					        return;
-			            }
-    				}
-    			}
+//    			else if ( this.aggroTimer++ > 4 && this.getDistance(this.getAttackTarget()) > 12 && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) )
+//    			{
+//    				System.out.println("hmm!!!");
+//
+//    				if ( this.getAttackTarget().getPositionVector() != null )
+//    				{
+//	    				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 16, 6, this.getAttackTarget().getPositionVector());
+//			            if ( vec3d != null )
+//			            {
+//					        if ( this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
+//					        {
+//			    				this.setAttackTarget(null);
+//								this.getMoveHelper().strafe( 0.0F, 0.0F );
+//					        	this.forceFleeing = true;
+//					        	this.aggroTimer = 0;
+//					        }
+//					        return;
+//			            }
+//    				}
+//    			}
     		}
     		else
     		{
-    			this.aggroTimer = 0;
+    			//this.aggroTimer = 0;
     			this.fleeing = false;
     		}
     		
@@ -1265,7 +1271,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
             return false;
         }
 		
-		this.aggroTimer = 0;
+		//this.aggroTimer = 0;
 
 		Entity e = source.getTrueSource();
 		
@@ -1762,6 +1768,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			return;
 		}
 		
+		//this.aggroTimer = 0;
+		
 	    EntityArrow entityarrow = this.getArrow(distanceFactor);
 	
 	    if ( EnchantmentHelper.getEnchantments(this.getHeldItemMainhand()).containsKey(Enchantment.getEnchantmentByLocation("minecraft:flame")) )
@@ -2137,8 +2145,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 						Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
 			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
 			            {
-	    	        		System.out.println("!!!???aaa");
-
 					        this.forceFleeing = true;
 					        return;
 			            }
@@ -2380,8 +2386,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 						Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
 			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
 			            {
-	    	        		System.out.println("!!!???aaa");
-
 					        this.forceFleeing = true;
 					        return;
 			            }
@@ -2513,15 +2517,19 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public boolean attackEntityAsMob(Entity victim) // atttack
 	{
-		if ( victim == null || !victim.isEntityAlive() || victim.getClass() == this.getClass() )
+		if ( victim == null || !victim.isEntityAlive() || victim.getClass().equals(this.getClass()) )
 		{
 			this.setAttackTarget(null);
 			return false;
 		}
 		else
 		{
-			this.flanking = false;
-			this.aggroTimer = 0;
+			if ( this.flanking )
+			{
+				this.flanking = false;
+				this.getNavigator().clearPath();
+			}
+			//this.aggroTimer = 0;
 			this.attackTargetEntityWithCurrentItem(victim);
 			this.setSprinting(false);
 			return true;
@@ -2530,7 +2538,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	
 	public void attackTargetEntityWithCurrentItem(Entity targetEntity)
 	{
-		
+
 		if ( !(this instanceof EntityOrc) && rand.nextInt(5) == 0 )
         {
         	this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5.0F );

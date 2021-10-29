@@ -517,7 +517,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 			{
        			if ( this.getAttackTarget() != null )
        			{
-	       			if ( ++this.aggroTimer > 4 && !this.canEntityBeSeen(this.getAttackTarget()) && Math.abs(this.posY-this.getAttackTarget().posY)*3 >= this.getDistance(this.getAttackTarget()) )
+	       			if ( this.aggroTimer++ > 4 && !this.canEntityBeSeen(this.getAttackTarget()) && Math.abs(this.posY-this.getAttackTarget().posY)*3 >= this.getDistance(this.getAttackTarget()) )
 					{
 						this.returnToPost = returnToPost();
 	
@@ -684,7 +684,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	    		this.callForHelp( this.getAttackTarget() );
 	    		if ( !this.isHandActive() && !this.canEntityBeSeen(this.getAttackTarget()) )
 	    		{
-	    			if ( this.aggroTimer++ > 1 )
+	    			if ( this.aggroTimer++ > 2 )
 	    			{
 		    			this.setAttackTarget(null);
 		    			this.searchNextEnemy = true;
@@ -2390,6 +2390,8 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 		{
 			return;
 		}
+		
+		this.aggroTimer = 0;
 		
 		this.setAttackTarget(target);
 		
