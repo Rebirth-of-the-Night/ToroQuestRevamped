@@ -240,7 +240,7 @@ public class EntityAIBanditAttack extends EntityAITarget
 	 */
 	public boolean shouldExecute()
 	{
-		if ( this.taskOwner.getAttackTarget() != null || this.rand.nextInt(16) != 0 )
+		if ( this.taskOwner.getAttackTarget() != null || this.rand.nextInt(12) != 0 )
 		{
 			return false;
 	    }

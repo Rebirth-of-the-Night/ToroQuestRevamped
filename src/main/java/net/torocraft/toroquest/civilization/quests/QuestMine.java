@@ -11,6 +11,7 @@ import net.minecraft.block.BlockGrass;
 import net.minecraft.block.BlockLog;
 import net.minecraft.block.BlockObsidian;
 import net.minecraft.block.BlockStone;
+import net.minecraft.block.material.Material;
 import net.minecraft.entity.item.EntityXPOrb;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -985,9 +986,11 @@ public class QuestMine extends QuestBase implements Quest
 	// ========================================================================================
 
 	public static final List<ItemStack> blockStone = OreDictionary.getOres("stone");
+	//public static final List<ItemStack> blockStoneBrick = OreDictionary.getOres("stonebrick");
 
 	// public static final List<ItemStack> blockLog = OreDictionary.getOres("log");
 
+	@SuppressWarnings("deprecation")
 	public boolean isCorrectBlock(EntityPlayer player, Item item, int i)
 	{
 		switch ( i )
@@ -1019,18 +1022,29 @@ public class QuestMine extends QuestBase implements Quest
 			case 2: // STONE
 			{
 				Block b = Block.getBlockFromItem(item);
-				
-				if ( b instanceof BlockStone )
+
+				System.out.println(b.getUnlocalizedName());
+
+				if ( ToroQuestConfiguration.useOreDicForMineQuest )
 				{
-					return true;
-				}
-				
-				for ( ItemStack block : blockStone )
-				{
-					if ( block.getItem().getUnlocalizedName() == item.getUnlocalizedName() )
+					if ( b.getUnlocalizedName().equals("tile.stonebrick") ) // I mean it works...
 					{
 						return true;
 					}
+					
+					for ( ItemStack block : blockStone )
+					{
+						System.out.println(block.getItem().getUnlocalizedName());
+
+						if ( block.getItem().getUnlocalizedName().equals(b.getUnlocalizedName()) )
+						{
+							return true;
+						}
+					}
+				}
+				else if ( b.getMaterial(b.getDefaultState()) == Material.ROCK )
+				{
+					return true;
 				}
 				
 				return false;

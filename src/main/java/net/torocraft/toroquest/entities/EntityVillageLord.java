@@ -258,7 +258,7 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		if ( this.getAttackTarget() != null )
     	{
     		AIHelper.faceEntitySmart(this, this.getAttackTarget());
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 30.0F, 30.0F);
     	}
 		
 		if ( this.ticksExisted % 100 == 0 )
@@ -650,8 +650,8 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 	{
 		if ( ToroQuestConfiguration.guardsHaveDialogue )
 		{
-			this.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
-			this.faceEntity(player, 20.0F, 20.0F);
+			this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
+			this.faceEntity(player, 30.0F, 30.0F);
 			
 			if ( player.world.isRemote )
 			{
@@ -697,8 +697,8 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		
 		if ( ToroQuestConfiguration.guardsHaveDialogue && this.actionReady() )
 		{
-			guard.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
-			guard.faceEntity(player, 20.0F, 20.0F);
+			guard.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
+			guard.faceEntity(player, 30.0F, 30.0F);
 			
 			if ( player.world.isRemote )
 			{

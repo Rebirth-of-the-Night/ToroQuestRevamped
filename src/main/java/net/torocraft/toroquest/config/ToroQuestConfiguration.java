@@ -117,6 +117,7 @@ public class ToroQuestConfiguration
 	public static boolean removeMuleOnCaravanEscort = false;
 	
 	public static boolean enderIdolTeleport = true;
+	public static boolean useOreDicForMineQuest = true;
 
 	public static boolean titanBoss = true;
 	public static boolean pigBoss = true;
@@ -652,6 +653,9 @@ public class ToroQuestConfiguration
 			
 			enderIdolTeleport = config.getBoolean("enderIdolTeleport", CATEGORY, true,
 					"If set to true, the ender idol item will save you (similar to totem of undying) and teleport you on death, instead of having you respawn with all of your items and experience after a death. Set to true if you have other inventory death mods such as corpse complex, as there may be inventory dupe interactions.");
+			
+			useOreDicForMineQuest = config.getBoolean("useOreDicForMineQuest", CATEGORY, true,
+					"If set to true, uses oreDict to look up stone for the mining quest. Otherwise, it just checks if the material is rock. Set this to false as a final resort if the mining quest does not work correctly with your modpack.");
 			
 			anyAnimalForBreedQuest = config.getBoolean("anyAnimalForBreedQuest", CATEGORY, false,
 					"Set to true if you want to have all animals count for the breed quest. Set to true of you have mods installed that include many extra animals, such as Animania.");

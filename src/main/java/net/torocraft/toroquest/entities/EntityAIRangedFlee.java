@@ -9,6 +9,7 @@ import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.item.ItemBow;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -37,7 +38,7 @@ public class EntityAIRangedFlee extends EntityAIBase
 		if ( this.creature.getHeldItemMainhand().getItem() instanceof ItemBow )
 		{
     		EntityLivingBase attacker = this.creature.getAttackTarget();
-    		if ( attacker != null && !this.creature.isHandActive() && this.creature.getDistanceSq( attacker ) <= 40 )
+    		if ( attacker != null && !(attacker instanceof EntityVillager) && !this.creature.isHandActive() && this.creature.getDistanceSq( attacker ) <= 40 )
     		{
     			this.creature.resetActiveHand();
 	            boolean flag = this.findRandomPosition(attacker);
