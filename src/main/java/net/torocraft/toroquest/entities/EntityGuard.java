@@ -1484,7 +1484,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	@Override
 	public void setAttackTarget( EntityLivingBase e )
 	{
-		if ( e == null )
+		if ( e == null || !e.isEntityAlive() )
 		{
 			this.setSprinting(false);
 			super.setAttackTarget(null);

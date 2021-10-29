@@ -61,12 +61,19 @@ public class AIAttackWithSword extends EntityAIBase
         if ( iStack != null )
     	{
         	String s = iStack.getItem().getRegistryName().toString();
-        		 if ( s.contains("lance") ) 		{range = 6.0F;}
-        	else if ( s.contains("pike") )  	 	{range = 6.0F;}
-        	else if ( s.contains("glaive") ) 		{range = 4.5F;}
-        	else if ( s.contains("halberd") ) 		{range = 4.5F;}
-        	else if ( s.contains("greatsword") ) 	{range = 4.0F;}
-        	else if ( s.contains("spear") ) 		{range = 4.0F;}
+        		 if ( s.contains("lance") ) 		{range = 6.25F;}
+        	else if ( s.contains("pike") )  	 	{range = 6.25F;}
+        	else if ( s.contains("glaive") ) 		{range = 4.75F;}
+        	else if ( s.contains("halberd") ) 		{range = 4.75F;}
+        	else if ( s.contains("greatsword") ) 	{range = 4.25F;}
+        	else if ( s.contains("spear") ) 		{range = 4.25F;}
+        		 
+//        		 if ( s.contains("lance") ) 		{range = 6.0F;}
+//        	else if ( s.contains("pike") )  	 	{range = 6.0F;}
+//        	else if ( s.contains("glaive") ) 		{range = 4.5F;}
+//        	else if ( s.contains("halberd") ) 		{range = 4.5F;}
+//        	else if ( s.contains("greatsword") ) 	{range = 4.0F;}
+//        	else if ( s.contains("spear") ) 		{range = 4.0F;}
     	}
 		        
         if ( !shouldContinueExecuting() )
@@ -107,7 +114,7 @@ public class AIAttackWithSword extends EntityAIBase
             return false;
         }
         
-        if (!this.attacker.getAttackTarget().isEntityAlive())
+        if ( !this.attacker.getAttackTarget().isEntityAlive() )
         {
             return false;
         }
@@ -139,7 +146,8 @@ public class AIAttackWithSword extends EntityAIBase
     public void resetTask()
     {
         //if ( this.attacker.getAttackTarget() != null && ( this.attacker.getAttackTarget().isDead || this.attacker.getAttackTarget().getHealth() <= 0 ) ) this.attacker.setAttackTarget(null);
-        this.attacker.getNavigator().clearPath();
+        //this.attacker.getNavigator().clearPath();
+    	this.attacker.setSprinting(false);
     }
 
     /**
