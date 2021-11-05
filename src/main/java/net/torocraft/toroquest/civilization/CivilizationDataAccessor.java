@@ -8,6 +8,8 @@ public interface CivilizationDataAccessor
 	Province atLocation(int chunkX, int chunkZ);
 
 	Province register(int chunkX, int chunkZ);
+	
+	Province registerCrown(int chunkX, int chunkZ);
 
 	List<Province> getProvinces();
 

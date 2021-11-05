@@ -258,7 +258,7 @@ public class EntityBas extends EntitySkeleton implements IMob
 	protected void ai()
 	{
 		this.tasks.addTask(1, new EntityAISwimming(this));
-		this.tasks.addTask(2, new EntityAIThrow(this, 1.0D, true, 0.2D, -6, 35));
+		this.tasks.addTask(2, new EntityAIThrow(this, 1.0D, true, 0.2D, 30));
         this.tasks.addTask(5, new EntityAIZombieLeap(this, 0.4F, false));
         this.tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
         this.tasks.addTask(3, new EntityAILookIdle(this));

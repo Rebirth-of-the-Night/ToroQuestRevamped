@@ -985,12 +985,15 @@ public class QuestMine extends QuestBase implements Quest
 	// ========================================================================================
 	// ========================================================================================
 
-	public static final List<ItemStack> blockStone = OreDictionary.getOres("stone");
+	// public static final List<ItemStack> blockStone = OreDictionary.getOres("stone");
+	
+	// public static final List<ItemStack> blockStone = OreDictionary.getOres("stone");
+
 	//public static final List<ItemStack> blockStoneBrick = OreDictionary.getOres("stonebrick");
 
 	// public static final List<ItemStack> blockLog = OreDictionary.getOres("log");
 
-	@SuppressWarnings("deprecation")
+	// @SuppressWarnings("deprecation")
 	public boolean isCorrectBlock(EntityPlayer player, Item item, int i)
 	{
 		switch ( i )
@@ -1023,26 +1026,32 @@ public class QuestMine extends QuestBase implements Quest
 			{
 				Block b = Block.getBlockFromItem(item);
 
-				System.out.println(b.getUnlocalizedName());
-
-				if ( ToroQuestConfiguration.useOreDicForMineQuest )
-				{
-					if ( b.getUnlocalizedName().equals("tile.stonebrick") ) // I mean it works...
-					{
-						return true;
-					}
-					
-					for ( ItemStack block : blockStone )
-					{
-						System.out.println(block.getItem().getUnlocalizedName());
-
-						if ( block.getItem().getUnlocalizedName().equals(b.getUnlocalizedName()) )
-						{
-							return true;
-						}
-					}
-				}
-				else if ( b.getMaterial(b.getDefaultState()) == Material.ROCK )
+//				if ( ToroQuestConfiguration.useOreDicForMineQuest )
+//				{
+//					if ( b.getUnlocalizedName().equals("tile.stonebrick") )
+//					{
+//						return true;
+//					}
+//					
+//					if ( b.getUnlocalizedName().equals("tile.cobblestone") )
+//					{
+//						return true;
+//					}
+//					
+//					if ( b.getUnlocalizedName().equals("tile.stone") )
+//					{
+//						return true;
+//					}xx
+//					
+////					for ( ItemStack block : blockStone )
+////					{
+////						if ( block.getItem().getUnlocalizedName().equals(b.getUnlocalizedName()) )
+////						{
+////							return true;
+////						}
+////					}
+//				}
+				if ( b.getDefaultState().getMaterial() == Material.ROCK && b.getDefaultState().isFullCube() )
 				{
 					return true;
 				}
@@ -1149,37 +1158,37 @@ public class QuestMine extends QuestBase implements Quest
 		{
 			case 0: // LOG
 			{
-				roll = (rand.nextInt(5)+2)*32;
-				em = (int)Math.round(roll/8)+4;
+				roll = (rand.nextInt(3)+2)*64;
+				em = (int)Math.round(roll/6)+4;
 				break;
 			}
 			case 1: // DIRT
 			{
-				roll = (rand.nextInt(4)+3)*32;
+				roll = (rand.nextInt(3)+2)*64;
 				em = (int)Math.round(roll/16)+4;
 				break;
 			}
 			case 2: // STONE
 			{
-				roll = (rand.nextInt(4)+3)*32;
+				roll = (rand.nextInt(3)+2)*64;
 				em = (int)Math.round(roll/16)+4;
 				break;
 			}
 			case 3: // COAL
 			{
 				roll = (rand.nextInt(3)+2)*8;
-				em = (int)Math.round(roll/4)+4;
+				em = (int)Math.round(roll/2)+2;
 				break;
 			}
 			case 4: // REDSTONE
 			{
 				roll = (rand.nextInt(3)+2)*8;
-				em = (int)Math.round(roll/4)+6;
+				em = (int)Math.round(roll/3)+6;
 				break;
 			}
 			case 5: // OBSIDIAN
 			{
-				roll = (rand.nextInt(4)+2)*4;
+				roll = (rand.nextInt(4)+2)*8;
 				em = (int)Math.round(roll/2)+8;
 				break;
 			}

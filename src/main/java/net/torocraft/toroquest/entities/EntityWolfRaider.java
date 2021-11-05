@@ -155,7 +155,7 @@ public void setRaidLocation(Integer x, Integer z)
     	{
     		if ( --this.despawnTimer < 0 )
     		{
-				if ( world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32)).isEmpty() )
+				if ( world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(25, 15, 25)).isEmpty() || this.despawnTimer < -60 )
 				{
 					this.despawn = true;
 	    			this.setHealth( 0 );
@@ -163,11 +163,6 @@ public void setRaidLocation(Integer x, Integer z)
 	    			return;
 				}
     		}
-    		
-			if ( this.rand.nextBoolean() )
-			{
-				vector3d = null;
-			}
     		
     		EntityLivingBase attacker = this.getAttackTarget();
     		
@@ -177,32 +172,21 @@ public void setRaidLocation(Integer x, Integer z)
             }
             
             double dist = this.getDistanceSq(attacker);
-            
-            if ( dist > 64 ) return;
-    		
-    		if ( dist >= 4 && Math.pow(this.posY - attacker.posY,2) > Math.abs((this.posX - attacker.posX)*(this.posZ - attacker.posZ)) )
+                		
+    		if ( dist < 64 && dist >= 4 && Math.pow(this.posY - attacker.posY,2) > Math.abs((this.posX - attacker.posX)*(this.posZ - attacker.posZ)) )
     		{
-    			if ( vector3d == null )
-    			{
-    				vector3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 24, 12, attacker.getPositionVector());
-    				this.setAttackTarget( null );
-    			}
+    			Vec3d vector3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, attacker.getPositionVector());
+    				
+			    if ( vector3d != null )
+			    {
+					this.setAttackTarget( null );
+			        this.getNavigator().tryMoveToXYZ(vector3d.x, vector3d.y, vector3d.z, 0.7D);
+			    }
     		}
     	}
 		
-	    if ( vector3d != null )
-	    {
-			this.setAttackTarget( null );
-            double rPosX = vector3d.x;
-            double rPosY = vector3d.y;
-		    double rPosZ = vector3d.z;
-	        this.getNavigator().tryMoveToXYZ(rPosX, rPosY, rPosZ, 0.8D);
-	    }
-		
     }
-	
-	private Vec3d vector3d = null;
-	
+		
 	@Override
 	protected boolean canDespawn()
 	{

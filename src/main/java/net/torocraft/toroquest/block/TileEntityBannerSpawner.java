@@ -10,6 +10,7 @@ import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.ITickable;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -43,9 +44,9 @@ public class TileEntityBannerSpawner extends TileEntity implements ITickable
 
 	public void update()
 	{
-		if (!world.isRemote && isRunTick() && withinRange())
+		if (!world.isRemote) // && withinRange())
 		{
-			triggerSpawner();
+			this.triggerSpawner();
 		}
 	}
 
@@ -53,11 +54,14 @@ public class TileEntityBannerSpawner extends TileEntity implements ITickable
 	{
 		try
 		{
-			Block banner = this.world.getBlockState(pos).getBlock();
-			if ( banner instanceof BlockSmartBanner )
+			if ( this.getPos() != null && this.getPos() != BlockPos.ORIGIN )
 			{
-				VillagePieceBlockMap.setBannerRotation(this.getWorld(), pos, ((BlockSmartBanner)banner).getFacing() );
-				this.markDirty();
+				Block banner = this.world.getBlockState(this.pos).getBlock();
+				if ( banner instanceof BlockSmartBanner )
+				{
+					VillagePieceBlockMap.setBannerRotation(this.getWorld(), pos, ((BlockSmartBanner)banner).getFacing() );
+					this.markDirty();
+				}
 			}
 		}
 		catch (Exception e)
@@ -99,10 +103,11 @@ public class TileEntityBannerSpawner extends TileEntity implements ITickable
 
         return false;
     }
-	protected boolean isRunTick()
-	{
-		return world.getWorldTime() % 50 == 0;
-	}
+//	protected boolean isRunTick()
+//	{
+//		System.out.println("still alive");
+//		return world.getWorldTime() % 25 == 0;
+//	}
 
 	@Nullable
 	public SPacketUpdateTileEntity getUpdatePacket()

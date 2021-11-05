@@ -173,20 +173,19 @@ public class EventHandlers
 		}
 		
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= MOB =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-		if ( entity instanceof EntityMob )
+		if ( entity instanceof IMob )
 		{
-			EntityMob mob = (EntityMob) entity;
-			int entityPosX = mob.getPosition().getX();
-			int entityPosZ = mob.getPosition().getZ();
+			int entityPosX = entity.getPosition().getX();
+			int entityPosZ = entity.getPosition().getZ();
 			
-			Province province = CivilizationUtil.getProvinceAt(mob.getEntityWorld(), entityPosX/16, entityPosZ/16);
+			Province province = CivilizationUtil.getProvinceAt(entity.getEntityWorld(), entityPosX/16, entityPosZ/16);
 			
 			// =-=-=-=-=-=-=-=-= PROVINCE =-=-=-=-=-=-=-=-=-=
 			if ( province != null )
 			{
-				if ( mob instanceof EntityCreeper || mob instanceof EntityEnderman )
+				if ( entity instanceof EntityCreeper || entity instanceof EntityEnderman )
 				{
-					mob.setDead();
+					entity.setDead();
 					event.setCanceled(true);
 					return;
 				}
@@ -194,100 +193,78 @@ public class EventHandlers
 				int villageCenterX = province.getCenterX();
 				int villageCenterZ = province.getCenterZ();
 				/*
-			 * Village length is equal to 208.
-			 */
-				int allowedDistance = ToroQuestConfiguration.disableMobSpawningNearVillage;
+				 * Village length is equal to 208.
+			 	 */
+				int allowedDistance = (entity instanceof EntityZombie)?ToroQuestConfiguration.disableZombieSpawningNearVillage:ToroQuestConfiguration.disableMobSpawningNearVillage;				
 				
-				if ( ( mob.getPosition().getY() >= 32 && Math.abs(villageCenterX-entityPosX) <= allowedDistance && Math.abs(villageCenterZ-entityPosZ) <= allowedDistance ) )
+				if ( ( entity.getPosition().getY() >= 40 && Math.abs(villageCenterX-entityPosX) <= allowedDistance && Math.abs(villageCenterZ-entityPosZ) <= allowedDistance ) )
 				{
-					mob.setDead();
+					entity.setDead();
 					event.setCanceled(true);
 					return;
 				}
 			}
-			// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 			
-//			if ( !(mob instanceof EntityCreeper) && !(mob instanceof EntityEnderman) )
-//			{
-//				if ( ToroQuestConfiguration.entityMobAttackGuardsTask )
-//				{
-//					mob.targetTasks.addTask(4, new EntityAIAttackVillagersAndGuards<EntityToroNpc>(mob, EntityToroNpc.class, 50, true, false, new Predicate<EntityToroNpc>()
-//					{
-//						@Override
-//						public boolean apply(EntityToroNpc target)
-//						{
-//							return true;
-//						}
-//					}));
-//				}
-//				
-//				if ( ToroQuestConfiguration.entityMobAttackVillagersTask && !(mob instanceof EntityZombie) )
-//				{
-//					mob.targetTasks.addTask(5, new EntityAIAttackVillagersAndGuards<EntityVillager>(mob, EntityVillager.class, 50, true, false, new Predicate<EntityVillager>()
-//					{
-//						@Override
-//						public boolean apply(EntityVillager target)
-//						{
-//							return true;
-//						}
-//					}));
-//				}
-//			}
-			if ( mob.getClass() == EntityZombie.class && !(mob instanceof EntityZombieRaider || mob instanceof EntityZombieVillagerRaider) )
+			if ( entity instanceof EntityMob )
 			{
-				if ( ToroQuestConfiguration.zombieAttackVillageChance > 0 && ToroQuestConfiguration.zombieAttackVillageChance > rand.nextInt( 100 ) )
+				EntityMob mob = (EntityMob) entity;
+	
+				if ( mob.getClass() == EntityZombie.class && !(mob instanceof EntityZombieRaider || mob instanceof EntityZombieVillagerRaider) )
 				{
-					if ( province == null )
+					if ( ToroQuestConfiguration.zombieAttackVillageChance > 0 && ToroQuestConfiguration.zombieAttackVillageChance > rand.nextInt( 100 ) )
 					{
-						province = CivilizationUtil.getProvinceAt(world, entityPosX/16+2, entityPosZ/16+2);
-						
 						if ( province == null )
 						{
-							province = CivilizationUtil.getProvinceAt(world, entityPosX/16+2, entityPosZ/16-2);
-							
+							province = CivilizationUtil.getProvinceAt(world, entityPosX/16+2, entityPosZ/16+2);
 							
 							if ( province == null )
 							{
-								province = CivilizationUtil.getProvinceAt(world, entityPosX/16-2, entityPosZ/16+2);
+								province = CivilizationUtil.getProvinceAt(world, entityPosX/16+2, entityPosZ/16-2);
+								
 								
 								if ( province == null )
 								{
-									province = CivilizationUtil.getProvinceAt(world, entityPosX/16-2, entityPosZ/16-2);
+									province = CivilizationUtil.getProvinceAt(world, entityPosX/16-2, entityPosZ/16+2);
+									
+									if ( province == null )
+									{
+										province = CivilizationUtil.getProvinceAt(world, entityPosX/16-2, entityPosZ/16-2);
+									}
 								}
 							}
 						}
-					}
-					if ( province != null )
-					{
-						if ( mob instanceof EntityZombieVillager || ( ToroQuestConfiguration.zombieRaiderVillagerChance > 0 && ToroQuestConfiguration.zombieRaiderVillagerChance > rand.nextInt( 100 ) ) )
+						if ( province != null )
 						{
-							if ( !world.isRemote )
+							if ( mob instanceof EntityZombieVillager || ( ToroQuestConfiguration.zombieRaiderVillagerChance > 0 && ToroQuestConfiguration.zombieRaiderVillagerChance > rand.nextInt( 100 ) ) )
 							{
-								EntityZombieVillagerRaider zombie = new EntityZombieVillagerRaider(world, province.getCenterX(), province.getCenterZ());
-								BlockPos pos = mob.getPosition();
-								zombie.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-								world.spawnEntity(zombie);
+								if ( !world.isRemote )
+								{
+									EntityZombieVillagerRaider zombie = new EntityZombieVillagerRaider(world, province.getCenterX(), province.getCenterZ());
+									BlockPos pos = mob.getPosition();
+									zombie.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
+									world.spawnEntity(zombie);
+								}
+								mob.setHealth(0);
+								mob.setDead();
+								event.setCanceled(true);
 							}
-							mob.setHealth(0);
-							mob.setDead();
-							event.setCanceled(true);
-						}
-						else
-						{
-							if ( !world.isRemote )
+							else
 							{
-								EntityZombieRaider zombie = new EntityZombieRaider(world, province.getCenterX(), province.getCenterZ());
-								BlockPos pos = mob.getPosition();
-								zombie.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-								world.spawnEntity(zombie);
+								if ( !world.isRemote )
+								{
+									EntityZombieRaider zombie = new EntityZombieRaider(world, province.getCenterX(), province.getCenterZ());
+									BlockPos pos = mob.getPosition();
+									zombie.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
+									world.spawnEntity(zombie);
+								}
+								mob.setHealth(0);
+								mob.setDead();
+								event.setCanceled(true);
 							}
-							mob.setHealth(0);
-							mob.setDead();
-							event.setCanceled(true);
 						}
 					}
+					return;
 				}
-				return;
 			}
 		}
 		// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -732,10 +709,17 @@ public class EventHandlers
 				((EntityGuard) attacker).setAttackTarget(null);
 				event.setAmount(0);
 				event.setCanceled(true);
+				return;
 			}
 			else if ( victim instanceof EntityPlayer ) // PLAYER
 			{
-				event.setAmount( event.getAmount() * (ToroQuestConfiguration.guardDamageBaseMultiplierToPlayers + this.healthDamageMultiplier(ToroQuestConfiguration.guardDamageAdditiveModifierPer1HP, ToroQuestConfiguration.guardBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.guardDamageBaseMultiplierToPlayers+(((event.getSource()!=null&&(event.getSource().isProjectile()||event.getSource().isMagicDamage()))?(this.damageMultiplier(ToroQuestConfiguration.guardAttackDamage,attacker.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getBaseValue())):0))) * this.rngDamageMultiplier() );
+				return;
+			}
+			else
+			{
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.guardDamageBaseMultiplierToMobs+(((event.getSource()!=null&&(event.getSource().isProjectile()||event.getSource().isMagicDamage()))?(this.damageMultiplier(ToroQuestConfiguration.guardAttackDamage,attacker.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getBaseValue())):0))) * this.rngDamageMultiplier() );
+
 				Province province = CivilizationUtil.getProvinceAt( attacker.getEntityWorld(), attacker.chunkCoordX, attacker.chunkCoordZ );
 				
 				if ( province == null || !victim.isNonBoss() || victim.getMaxHealth() >= ToroQuestConfiguration.minBaseHealthToBeConsideredBossMob ) // NO PROVINCE
@@ -743,21 +727,14 @@ public class EventHandlers
 					event.setAmount(event.getAmount()*ToroQuestConfiguration.guardDamageBaseMultiplierToMobsOutsideProvinceOrToBosses);
 					return;
 				}
-			}
-			else
-			{
-				event.setAmount( event.getAmount() * (ToroQuestConfiguration.guardDamageBaseMultiplierToMobs + this.healthDamageMultiplier(ToroQuestConfiguration.guardDamageAdditiveModifierPer1HP, ToroQuestConfiguration.guardBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
-				Province province = CivilizationUtil.getProvinceAt( attacker.getEntityWorld(), attacker.chunkCoordX, attacker.chunkCoordZ );
-				if ( province == null || !victim.isNonBoss() || victim.getMaxHealth() >= ToroQuestConfiguration.minBaseHealthToBeConsideredBossMob ) // NO PROVINCE
-				{
-					event.setAmount(event.getAmount()*ToroQuestConfiguration.guardDamageBaseMultiplierToMobsOutsideProvinceOrToBosses);
-					return;
-				}
+				
 				CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(attacker.world);
+				
 				if ( worldData == null )
 				{
 					return;
 				}
+				
 				if ( worldData.hasTrophyTitan(province.id) )
 				{
 					event.setAmount(event.getAmount()*ToroQuestConfiguration.trophyTitanAdditionalGuardDamageMulitiplier);
@@ -768,11 +745,11 @@ public class EventHandlers
 		{
 			if ( attacker instanceof EntityOrc )
 			{
-				event.setAmount( event.getAmount() * (ToroQuestConfiguration.banditBaseDamageMultiplier + this.healthDamageMultiplier(ToroQuestConfiguration.banditDamageAdditiveModifierPer1HP, ToroQuestConfiguration.banditBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.orcDamageMultiplier+(((event.getSource()!=null&&(event.getSource().isProjectile()||event.getSource().isMagicDamage()))?(this.damageMultiplier(ToroQuestConfiguration.orcAttackDamage,attacker.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getBaseValue())):0))) * this.rngDamageMultiplier() );
 			}
 			else // if ( !(attacker instanceof EntityBanditLord) )
 			{
-				event.setAmount( event.getAmount() * (ToroQuestConfiguration.orcBaseDamageMultiplier + this.healthDamageMultiplier(ToroQuestConfiguration.orcDamageAdditiveModifierPer1HP, ToroQuestConfiguration.orcBaseHealth, attacker.getMaxHealth())) * this.rngDamageMultiplier() );
+				event.setAmount( event.getAmount() * (ToroQuestConfiguration.banditDamageMultiplier+(((event.getSource()!=null&&(event.getSource().isProjectile()||event.getSource().isMagicDamage()))?(this.damageMultiplier(ToroQuestConfiguration.banditAttackDamage,attacker.getEntityAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getBaseValue())):0))) * this.rngDamageMultiplier() );
 			}
 		}
 		else if ( attacker instanceof EntityIronGolem )
@@ -791,9 +768,9 @@ public class EventHandlers
 		return 1.0F+((rand.nextFloat()-0.5F)/10.0F);
 	}
 	
-	protected float healthDamageMultiplier( float multiplier, float baseHealth, float maxHealth )
+	protected float damageMultiplier(float base, double current)
 	{
-		return (maxHealth - baseHealth) * multiplier;
+		return (float)((current-base)/current);
 	}
 
 	private EntityLivingBase getAttacker(LivingHurtEvent event)

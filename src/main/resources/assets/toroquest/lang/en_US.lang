@@ -379,7 +379,7 @@ quests.mine.diamondresource.incomplete=I need @e more diamonds! §7[put the item
 
 quests.mine.dirt.accept=My farmers need fertile soil for their crops. Gather some fresh dirt and return the supplies to me.
 
-quests.mine.wood.accept=My builders need wood to repair several houses after the last storm. Take to the forest and bring back the supplies.
+quests.mine.log.accept=My builders need wood to repair several houses after the last storm. Take to the forest and bring back the supplies.
 
 quests.mine.stone.accept=My builders need stone to repair several houses after the last bandit raid. Take to the mines and bring back the supplies!
 

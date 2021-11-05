@@ -87,6 +87,7 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 			{
 											possibleQuests.add(QuestFarm.INSTANCE);
 			}
+			
 			if ( rep >= 10 )
 			{
 											possibleQuests.add(QuestMine.INSTANCE);

@@ -23,6 +23,7 @@ import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAIWatchClosest;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.item.EntityItem;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
@@ -886,18 +887,13 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 	}
 	
 	public void callForHelp( EntityLivingBase attacker )
-	{		
-		if ( attacker == null )
+	{
+		if ( attacker == null || !attacker.isEntityAlive() || attacker instanceof EntityToroNpc || attacker instanceof EntityVillager )
 		{
 			return;
 		}
 		
-		if ( attacker instanceof EntityPlayer ) 
-		{
-			this.setUnderAttack((EntityPlayer)attacker);
-		}
-		
-		List<EntityGuard> guards = this.world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getPosition()).grow(25, 15, 25), new Predicate<EntityGuard>()
+		List<EntityGuard> guards = this.getEntityWorld().getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getPosition()).grow(25, 15, 25), new Predicate<EntityGuard>()
 		{
 			public boolean apply(@Nullable EntityGuard entity)
 			{
@@ -907,34 +903,94 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		
 		for (EntityGuard guard: guards)
 		{
-			// if ( guard.getAttackTarget() == null && guard.canEntityBeSeen( attacker ) )
+			//if ( guard.getAttackTarget() == null && guard.canEntityBeSeen( attacker ) )
 			{
-				if ( attacker instanceof EntityPlayer ) guard.setAnnoyed((EntityPlayer)attacker);
+				if ( attacker instanceof EntityPlayer )
+				{
+					guard.setAnnoyed( (EntityPlayer)attacker );
+				}
 				guard.setAttackTarget( attacker );
 			}
 		}
 		
-		if ( this.getAttackTarget() == null || !this.getAttackTarget().isEntityAlive() )
-		{
-			if ( this.getRevengeTarget() instanceof EntityPlayer ) this.setAnnoyed((EntityPlayer)attacker);
-			this.setAttackTarget( this.getRevengeTarget() );
-		}
+//		if ( this.getAttackTarget() == null || !this.getAttackTarget().isEntityAlive() )
+//		{
+//			if ( this.getRevengeTarget() != null )
+//			{
+//				if ( this.getRevengeTarget() instanceof EntityPlayer )
+//				{
+//					this.setAnnoyed( (EntityPlayer)attacker );
+//				}
+//				this.setAttackTarget( this.getRevengeTarget() );
+//			}
+//		}
 		
-		List<EntityToroVillager> villagers = world.getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(getPosition()).grow(12, 8, 12), new Predicate<EntityToroVillager>()
+//		if ( this.getAttackTarget() != null && !this.getAttackTarget().isEntityAlive() )
+//		{
+//			this.setAttackTarget(null);
+//		}
+		
+		List<EntityToroVillager> villagers = attacker.getEntityWorld().getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(getPosition()).grow(20, 12, 20), new Predicate<EntityToroVillager>()
 		{
 			public boolean apply(@Nullable EntityToroVillager entity)
 			{
 				return true;
 			}
 		});
-
+	
 		for ( EntityToroVillager villager : villagers )
 		{
-			//if ( villager.canEntityBeSeen(attacker) )
-			{
-				villager.setUnderAttack(attacker);
-			}
+			villager.setUnderAttack(attacker);
 		}
+		
+//		if ( attacker == null )
+//		{
+//			return;
+//		}
+//		
+//		if ( attacker instanceof EntityPlayer ) 
+//		{
+//			this.setUnderAttack((EntityPlayer)attacker);
+//		}
+//		
+//		List<EntityGuard> guards = this.world.getEntitiesWithinAABB(EntityGuard.class, new AxisAlignedBB(this.getPosition()).grow(25, 15, 25), new Predicate<EntityGuard>()
+//		{
+//			public boolean apply(@Nullable EntityGuard entity)
+//			{
+//				return true;
+//			}
+//		});
+//		
+//		for (EntityGuard guard: guards)
+//		{
+//			// if ( guard.getAttackTarget() == null && guard.canEntityBeSeen( attacker ) )
+//			{
+//				if ( attacker instanceof EntityPlayer ) guard.setAnnoyed((EntityPlayer)attacker);
+//				guard.setAttackTarget( attacker );
+//			}
+//		}
+//		
+//		if ( this.getAttackTarget() == null || !this.getAttackTarget().isEntityAlive() )
+//		{
+//			if ( this.getRevengeTarget() instanceof EntityPlayer ) this.setAnnoyed((EntityPlayer)attacker);
+//			this.setAttackTarget( this.getRevengeTarget() );
+//		}
+//		
+//		List<EntityToroVillager> villagers = world.getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(getPosition()).grow(12, 8, 12), new Predicate<EntityToroVillager>()
+//		{
+//			public boolean apply(@Nullable EntityToroVillager entity)
+//			{
+//				return true;
+//			}
+//		});
+//
+//		for ( EntityToroVillager villager : villagers )
+//		{
+//			//if ( villager.canEntityBeSeen(attacker) )
+//			{
+//				villager.setUnderAttack(attacker);
+//			}
+//		}
 	}
 	
     // Village village = null;

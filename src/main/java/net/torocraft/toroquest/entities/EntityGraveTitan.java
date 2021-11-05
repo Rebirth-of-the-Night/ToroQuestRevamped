@@ -245,29 +245,44 @@ public class EntityGraveTitan extends EntityZombie implements IMob
 	{
 		tasks.addTask(1, new EntityAISwimming(this));
 //		tasks.addTask(2, new EntityAIThrow(this, 0.6D, true, 0.5, -4, 40));
-		tasks.addTask(2, new EntityAIThrow(this, 0.5D, true, 0.2, -12, 60));
+		tasks.addTask(2, new EntityAIThrow(this, 0.5D, true, 0.2, 60));
 		//tasks.addTask(2, new EntityAIAttackMelee(this, 0.5D, false));
 		tasks.addTask(3, new EntityAILookIdle(this));
 		targetTasks.addTask(1, new EntityAIHurtByTarget(this, false, new Class[0]));
 		targetTasks.addTask(2, new EntityAINearestAttackableTarget(this, EntityPlayer.class, false, false));
 	}
 
-	private void spawnZombies()
+	private void spawnZombies( double a )
 	{
 		if ( this.world.isRemote )
 		{
 			return;
 		}
 		
-		if ( rand.nextBoolean() )
+		if ( a > 1 && maxZombiesSpawned > 0 )
 		{
-			for (int i = 0; i < 1 + this.rand.nextInt( (int)( ((this.getHealth()/this.getMaxHealth())*3) + 1) ); i++)
+			List<EntityZombie> help = world.getEntitiesWithinAABB(EntityZombie.class, new AxisAlignedBB(getPosition()).grow(25, 10, 25), new Predicate<EntityZombie>()
 			{
-	
-				this.spawnZombie();
+				public boolean apply(@Nullable EntityZombie entity)
+				{
+					return true;
+				}
+			});
+			
+			if ( help.size() < 10 )
+			{
+				for (int i = 0; i < 1 + this.rand.nextInt( (int)( ((this.getHealth()/this.getMaxHealth())*3) + 1) ); i++)
+				{
+					this.spawnZombie();
+	        		this.dropLootItem(Items.ROTTEN_FLESH, 1 );
+	        		this.dropLootItem(Items.ROTTEN_FLESH, 1 );
+	        		this.maxZombiesSpawned--;
+				}
 			}
 		}
 	}
+	
+	protected int maxZombiesSpawned = 100;
 	
 	@Override
 	public int getHorizontalFaceSpeed()
@@ -428,7 +443,6 @@ public class EntityGraveTitan extends EntityZombie implements IMob
                         return false;
                     }
                     this.damageEntity(source, amount - this.lastDamage);
-                    if ( rand.nextBoolean() ) this.spawnZombie();
                     this.lastDamage = amount;
                     flag1 = false;
                 }
@@ -439,14 +453,7 @@ public class EntityGraveTitan extends EntityZombie implements IMob
                     this.lastDamage = amount;
                     this.hurtResistantTime = this.maxHurtResistantTime;
                     this.damageEntity(source, amount);
-                    this.spawnZombies();
-                    if ( amount >= 3.0 )
-                    {
-	                    // int flesh = rand.nextInt((int)amount);
-	            		this.dropLootItem(Items.ROTTEN_FLESH, 1 );
-	            		this.dropLootItem(Items.ROTTEN_FLESH, 1 );
-	            		this.dropLootItem(Items.ROTTEN_FLESH, 1 );
-                    }
+                    this.spawnZombies( amount );
                     this.maxHurtTime = 10;
                     this.hurtTime = this.maxHurtTime;
                 }

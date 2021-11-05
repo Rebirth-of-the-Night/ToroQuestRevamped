@@ -120,7 +120,9 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
 		// TABLE
 		DEFAULT_PALLETTE.put("Wp", Blocks.WOODEN_PRESSURE_PLATE.getDefaultState());
 		DEFAULT_PALLETTE.put("Fw", Blocks.OAK_FENCE.getDefaultState());
-		DEFAULT_PALLETTE.put("F<", Blocks.FURNACE.getDefaultState().withProperty(BlockFurnace.FACING, EnumFacing.WEST));
+		
+		
+		DEFAULT_PALLETTE.put("F<", Blocks.LIT_FURNACE.getDefaultState().withProperty(BlockFurnace.FACING, EnumFacing.WEST));
 		
 		DEFAULT_PALLETTE.put("CT", Block.getBlockFromName(ToroQuestConfiguration.craftingTableResourceName).getDefaultState());
 		DEFAULT_PALLETTE.put("CA", Blocks.CAULDRON.getDefaultState());
@@ -200,7 +202,7 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
 //		DEFAULT_PALLETTE.put("w^", Blocks.BED.getDefaultState().withProperty(BlockBed.FACING, EnumFacing.SOUTH).withProperty(BlockColored.COLOR, EnumDyeColor.RED));
 //		DEFAULT_PALLETTE.put("w>", Blocks.BED.getDefaultState().withProperty(BlockBed.FACING, EnumFacing.EAST).withProperty(BlockColored.COLOR, EnumDyeColor.RED));
 //		DEFAULT_PALLETTE.put("w<", Blocks.BED.getDefaultState().withProperty(BlockBed.FACING, EnumFacing.WEST).withProperty(BlockColored.COLOR, EnumDyeColor.RED));
-		IBlockState ET = Blocks.AIR.getDefaultState();
+		IBlockState ET = Blocks.ENCHANTING_TABLE.getDefaultState();
 		try {ET = Block.getBlockFromName(ToroQuestConfiguration.enchantingTableResourceName).getDefaultState();}catch(Exception e){}
 		DEFAULT_PALLETTE.put("ET", ET);
 		DEFAULT_PALLETTE.put("IP", Blocks.HEAVY_WEIGHTED_PRESSURE_PLATE.getDefaultState());
@@ -918,7 +920,7 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
         nbttaglist.appendTag(patterntag);
         // BROWN POLE
         patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "ms");
+        patterntag.setString("Pattern", "cs");
         patterntag.setInteger("Color", 3);
         nbttaglist.appendTag(patterntag);
         // DARK GREEN TOP
@@ -933,7 +935,7 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
         nbttaglist.appendTag(patterntag);
         // DARK GREEN SKULL
         patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "cre");
+        patterntag.setString("Pattern", "sku");
         patterntag.setInteger("Color", 2);
         nbttaglist.appendTag(patterntag);
         // GREEN FLOWER

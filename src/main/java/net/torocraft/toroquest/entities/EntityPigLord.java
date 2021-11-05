@@ -193,7 +193,7 @@ public class EntityPigLord extends EntityPigZombie implements IMob
 	protected void ai()
 	{
 		tasks.addTask(1, new EntityAISwimming(this));
-		tasks.addTask(2, new EntityAIThrow(this, 0.6D, true, 0.75, -4, 40));
+		tasks.addTask(2, new EntityAIThrow(this, 0.6D, true, 0.75, 40));
 		tasks.addTask(3, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
 		tasks.addTask(3, new EntityAILookIdle(this));
 		targetTasks.addTask(1, new EntityAIHurtByTarget(this, false, new Class[0]));
