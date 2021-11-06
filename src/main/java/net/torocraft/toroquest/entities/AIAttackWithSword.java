@@ -35,7 +35,7 @@ public class AIAttackWithSword extends EntityAIBase
 //    private boolean canPenalize = false;
     protected boolean offhandAttack = false;
     
-	protected float range = 3.0F;
+	protected float range = 3.25F;
 
     public AIAttackWithSword(EntityCreature creature, double speedIn)
     {
@@ -61,13 +61,15 @@ public class AIAttackWithSword extends EntityAIBase
         if ( iStack != null )
     	{
         	String s = iStack.getItem().getRegistryName().toString();
-        		 if ( s.contains("lance") ) 		{range = 6.25F;}
-        	else if ( s.contains("pike") )  	 	{range = 6.25F;}
-        	else if ( s.contains("glaive") ) 		{range = 4.75F;}
-        	else if ( s.contains("halberd") ) 		{range = 4.75F;}
-        	else if ( s.contains("greatsword") ) 	{range = 4.25F;}
-        	else if ( s.contains("spear") ) 		{range = 4.25F;}
-        		 
+        		 if ( s.contains("pike_") ) 		{range = 6.5F;}
+        	else if ( s.contains("spear_") )  	 	{range = 4.5F;}
+        	else if ( s.contains("glaive_") ) 		{range = 4.5F;}
+        	else if ( s.contains("halberd_") ) 		{range = 4.5F;}
+        	else if ( s.contains("greatsword_") ) 	{range = 4.5F;}
+        	else if ( s.contains("lance_") ) 		{range = 4.5F;}
+        	
+        	//else if ( s.contains("staff") ) 		{range = 4.5F;}
+
 //        		 if ( s.contains("lance") ) 		{range = 6.0F;}
 //        	else if ( s.contains("pike") )  	 	{range = 6.0F;}
 //        	else if ( s.contains("glaive") ) 		{range = 4.5F;}
@@ -211,12 +213,24 @@ public class AIAttackWithSword extends EntityAIBase
             	this.attacker.setSprinting(true);
             	if ( tt == 0 && distanceSq <= 12 )
             	{
-    		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
-    		        if ( !this.world.isRemote ) 
-    		        {
-    		        	this.attacker.addVelocity((velocityVector.x)/12.0,0.02D,(velocityVector.z)/12.0);
-    		        	this.attacker.velocityChanged = true;
-    		        }
+            		if ( distanceSq >= 3.5D && this.attacker.onGround && this.rand.nextInt(5) == 0 )
+            		{
+            			if ( !this.world.isRemote ) 
+        		        {
+            		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
+        		        	this.attacker.addVelocity((velocityVector.x)/12.0,0.3D,(velocityVector.z)/12.0);
+        		        	this.attacker.velocityChanged = true;
+        		        }
+            		}
+            		else
+            		{
+            			if ( !this.world.isRemote ) 
+        		        {
+            		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
+        		        	this.attacker.addVelocity((velocityVector.x)/10.0,0.02D,(velocityVector.z)/10.0);
+        		        	this.attacker.velocityChanged = true;
+        		        }
+            		}
             	}
         	}
         }

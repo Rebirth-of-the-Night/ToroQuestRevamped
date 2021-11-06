@@ -80,7 +80,7 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 		// data.setChatStack( "You have my gratitude, " + data.getPlayer().getName() + "." );
 		Province province = loadProvince(data.getPlayer().world, data.getPlayer().getPosition());
 
-		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) )
+		if ( province == null || province.id == null || !province.id.equals(data.getProvinceId()) || data == null )
 		{
 			return null;
 		}
@@ -114,16 +114,11 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 				return in;
 			}
 			
-			if ( kills < 1 )
-			{
-				data.setChatStack( "enemy_encampment.nokills", data.getPlayer(), null );
-				this.setData(data);
-				return null;
-			}
-			
 			int count = countEntities(data);
 			
-			if ( kills > 1 && count - kills < minKillsRequired )
+			int tiles = countTiles(data);
+			
+			if ( (kills > 1 && count - kills < minKillsRequired) || tiles == 0 )
 			{
 				data.setCompleted(true);
 				CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
@@ -146,6 +141,13 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 				in.addAll(getRewardItems(data));
 				this.setData(data);
 				return in;
+			}
+			
+			if ( kills < 1 )
+			{
+				data.setChatStack( "enemy_encampment.nokills", data.getPlayer(), null );
+				this.setData(data);
+				return null;
 			}
 			
 			if ( kills > 0 )
@@ -182,15 +184,57 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 	
 	private int countEntities(final QuestData data)
 	{
-		Predicate<EntitySentry> filter = new Predicate<EntitySentry>()
+		try
 		{
-			@Override
-			public boolean apply( EntitySentry entity )
+			Predicate<EntitySentry> filter = new Predicate<EntitySentry>()
 			{
-				return entity.getTags().contains("encampment_quest") && entity.getTags().contains(data.getQuestId().toString());
+				@Override
+				public boolean apply( EntitySentry entity )
+				{
+					return entity.getTags().contains("encampment_quest") && entity.getTags().contains(data.getQuestId().toString());
+				}
+			};
+			return data.getPlayer().world.getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(getSpawnPosition(data)).expand(64, 64, 64), filter).size();
+		}
+		catch ( Exception e )
+		{
+			return 0;
+		}
+	}
+	
+	private int countTiles(final QuestData data)
+	{
+		try
+		{
+			int tiles = 0;
+			
+			BlockPos pos = getSpawnPosition(data);
+			
+			int x = pos.getX();
+			int z = pos.getZ();
+			int s = 12;
+			
+			for ( int xx = x-s; x+s >= xx; xx++ )
+			{
+				for ( int yy = 48; yy <= 96; yy++ )
+				{
+					for ( int zz = z-s; z+s >= zz; zz++ )
+					{
+						TileEntity tileentity = data.getPlayer().world.getTileEntity(new BlockPos(xx, yy, zz));
+						if (tileentity instanceof TileEntityToroSpawner)
+						{
+							// System.out.print(tiles);
+							tiles++;
+						}
+					}
+				}
 			}
-		};
-		return data.getPlayer().world.getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(getSpawnPosition(data)).expand(96, 64, 96), filter).size();
+			return tiles;
+		}
+		catch ( Exception e )
+		{
+			return 0;
+		}
 	}
 
 	@Override
@@ -234,12 +278,12 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 	{
 		try
 		{
-			BlockPos pos = searchForSuitableLocation(data, 400, 20);
-			int tries = 3;
+			BlockPos pos = searchForSuitableLocation(data, 300, 20);
+			int tries = 6;
 			while ( tries > 0 && !buildHut(data, pos) )
 			{
 				tries--;
-				pos = searchForSuitableLocation(data, 400, 20);
+				pos = searchForSuitableLocation(data, 400-tries*20, 20);
 			}
 			setSpawnPosition(data, pos);
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)3, true, true);
@@ -260,17 +304,49 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 	}
 	
 	@Override
-	public BlockPos randomLocation(QuestData data, Random rand, int range, boolean force, int occupiedRange)
+	public BlockPos findSurface(World world, int x, int z, boolean force)
 	{
-		BlockPos pos = super.randomLocation(data, rand, range, force, occupiedRange);
+		BlockPos pos = new BlockPos(x, world.getActualHeight(), z);
+		IBlockState blockState;
+		while (pos.getY() > 0)
+		{
+			blockState = world.getBlockState(pos);
+			
+			if ( isLiquid(blockState) )
+			{
+				return null;
+			}
+			
+			if ( !force && CivilizationHandlers.isStructureBlock(blockState) )
+			{
+				return null;
+			}
+			
+			if ( isGroundBlock(blockState) )
+			{
+				break;
+			}
+			
+			pos = pos.down();
+		}
+		return pos.up();
+	}
+	
+	@Override
+	public BlockPos randomLocation(QuestData data, int range, boolean force, int occupiedRange)
+	{
+		BlockPos pos = super.randomLocation(data, range, force, occupiedRange);
+		
 		if (force)
 		{
 			return pos;
 		}
+		
 		if ( pos == null )
 		{
 			return null;
 		}
+		
 		if ( getLocalMinimum(data, pos) )
 		{
 			return pos;
@@ -283,7 +359,7 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 
 	public boolean getLocalMinimum(QuestData data, BlockPos pos)
 	{
-		int w = 10;
+		int w = 6;
 		int max = 0, min = 256;
 		int y;
 		for (int x = -w; x <= w; x++)
@@ -305,10 +381,12 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 	private boolean buildHut(QuestData data, BlockPos pos)
 	{
 		World world = data.getPlayer().getEntityWorld();
+		
 		if (pos == null)
 		{
 			return false;
 		}
+		
 		int w = hutHalfWidth;
 
 		BlockPos pointer;

@@ -396,7 +396,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 		this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.guardArmor);
 		this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(ToroQuestConfiguration.guardArmorToughness);
 		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
-    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.38975D);
+    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.39D);
     	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
     }
 	
@@ -1400,7 +1400,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 							if ( this.canShieldPush )
 							{
 								this.canShieldPush = false;
-								this.knockBackSmart(((EntityLivingBase)e), (float)(0.22D-MathHelper.clamp(dist/120.0, 0.0D, 0.12D)));
+								this.knockBackSmart(((EntityLivingBase)e), (float) (0.25D-dist/100.0D));
 
 //								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
 //								if ( velocityVector != null )
@@ -1497,26 +1497,10 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	{
 		try
 		{
-//			if ( againstEntityIn )
-//			{
-				Vec3d pos = this.getPositionVector();
-		        Vec3d targetPos = entityIn.getPositionVector();
-		        //entityIn.motionX /= 2.0D;
-		        //entityIn.motionZ /= 2.0D;
-		        entityIn.knockBack(entityIn, strength, targetPos.x - pos.x, targetPos.z - pos.z);
-	            entityIn.motionY /= 2.0D;
-	            entityIn.velocityChanged = true;
-//			}
-//			else
-//			{
-//				Vec3d pos = this.getPositionVector();
-//		        Vec3d targetPos = entityIn.getPositionVector();
-//		        this.motionX /= 2.0D;
-//		        this.motionZ /= 2.0D;
-//		        this.knockBack(this, strength, pos.x - targetPos.x, pos.z - targetPos.z);
-//	            this.motionY /= 2.0D;
-//	            this.velocityChanged = true;
-//			}
+			Vec3d pos = this.getPositionVector();
+	        Vec3d targetPos = entityIn.getPositionVector();
+	        entityIn.knockBack(entityIn, strength, pos.x - targetPos.x, pos.z - targetPos.z);
+            entityIn.velocityChanged = true;
 	    }
 	    catch ( Exception e )
 	    {

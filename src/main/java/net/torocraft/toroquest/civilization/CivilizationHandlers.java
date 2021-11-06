@@ -1782,7 +1782,7 @@ public class CivilizationHandlers
 		
 		try
 		{
-			int range = 180+rand.nextInt(32);
+			int range = 180+rand.nextInt(40);
 			List<EntityPlayer> players = world.playerEntities;
 			Collections.shuffle(players);
 			int tries = 3;
@@ -1796,7 +1796,7 @@ public class CivilizationHandlers
 						continue;
 					}
 					
-					Village village = world.getVillageCollection().getNearestVillage(player.getPosition(), 360);
+					Village village = world.getVillageCollection().getNearestVillage(player.getPosition(), 320);
 					
 					if ( village == null )
 					{
@@ -1818,10 +1818,10 @@ public class CivilizationHandlers
 					int x = (int) (Math.cos(angle)*range);
 					int z = (int) (Math.sin(angle)*range);
 					
-					for ( int i = 8; i > 0; i-- )
+					for ( int i = 0; 8 > i; i++ )
 					{
 						double distance = player.getDistance(x, player.posY, z);
-						if ( distance < 100 && distance > 25 )
+						if ( distance+i*8 < 100 && distance > 25 )
 						{
 							break;
 						}

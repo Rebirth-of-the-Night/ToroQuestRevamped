@@ -15,6 +15,7 @@ import net.minecraft.block.BlockLog;
 import net.minecraft.block.BlockSlab;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
 import net.minecraft.item.ItemStack;
@@ -27,10 +28,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
-import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
@@ -334,7 +331,7 @@ public abstract class QuestBase implements Quest
 
 	public static boolean isLiquid(IBlockState blockState)
 	{
-		return blockState.getBlock() instanceof BlockLiquid;
+		return blockState.getBlock() instanceof BlockLiquid || blockState == Blocks.WATER || blockState == Blocks.FLOWING_WATER || blockState == Blocks.LAVA || blockState == Blocks.FLOWING_LAVA;
 	}
 
 	protected static boolean isGroundBlock(IBlockState blockState)
@@ -531,24 +528,25 @@ public abstract class QuestBase implements Quest
 	
 	//  =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= Location =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-	Random rand = new Random();
+	public Random rand = new Random();
 	
 	public BlockPos searchForSuitableLocation( QuestData data, int range, int occupiedRange )
 	{
 		BlockPos pos = null;
 		for (int i = 0; i < 100; i++)
 		{
-			pos = randomLocation(data, rand, range, false, occupiedRange);
+			pos = randomLocation(data, range, false, occupiedRange);
 			if (pos != null)
 			{
 				break;
 			}
 		}
+		
 		if (pos == null)
 		{
 			for (int i = 0; i < 10; i++)
 			{
-				pos = randomLocation(data, rand, range*2, true, occupiedRange);
+				pos = randomLocation(data, range*2, true, occupiedRange);
 				if (pos != null)
 				{
 					break;
@@ -558,7 +556,7 @@ public abstract class QuestBase implements Quest
 		return pos;
 	}
 
-	public BlockPos randomLocation(QuestData data, Random random, int range, boolean force, int occupiedRange)
+	public BlockPos randomLocation(QuestData data, int range, boolean force, int occupiedRange)
 	{
 		Province province = getQuestProvince(data);
 		EntityPlayer player = data.getPlayer();
@@ -569,20 +567,30 @@ public abstract class QuestBase implements Quest
 			return null;
 		}
 		
-		int x = (random.nextInt(range));
-		int z = (random.nextInt(range));
+		range = rand.nextInt(range/2)+range/2;
 		
-		while ( x + z < range/2 )
-		{
-			x = (random.nextInt(range));
-			z = (random.nextInt(range));
-		}
-		
-		x *= (random.nextInt(2)*2-1);
-		z *= (random.nextInt(2)*2-1);
+		double angle = rand.nextDouble()*Math.PI*2.0D;
+
+		int x = (int) (Math.cos(angle)*range);
+		int z = (int) (Math.sin(angle)*range);
 		
 		x += province.getCenterX();
 		z += province.getCenterZ();
+		
+//		int x = (random.nextInt(range));aaa
+//		int z = (random.nextInt(range));
+//		
+//		while ( x + z < range/2 )
+//		{
+//			x = (random.nextInt(range));
+//			z = (random.nextInt(range));
+//		}
+//		
+//		x *= (random.nextInt(2)*2-1);
+//		z *= (random.nextInt(2)*2-1);
+//		
+//		x += province.getCenterX();
+//		z += province.getCenterZ();
 		
 		BlockPos pos = findSurface(player.world, x, z, force);
 
@@ -628,14 +636,14 @@ public abstract class QuestBase implements Quest
 			
 			for ( int xx = x-s; x+s >= xx; xx++ )
 			{
-				for ( int yy = 40; 55 >= yy; yy++ )
+				for ( int yy = 48; yy <= 96; yy++ )
 				{
 					for ( int zz = z-s; z+s >= zz; zz++ )
 					{
 						tileentity = data.getPlayer().world.getTileEntity(new BlockPos(xx, yy, zz));
 						if (tileentity instanceof TileEntityChest)
 						{
-							//System.out.println("CHESTTATTTTTTTTTAAAAAAA");
+							//System.out.println("CHEST HERE");
 							return null;
 						}
 					}
@@ -655,7 +663,7 @@ public abstract class QuestBase implements Quest
 						tileentity = data.getPlayer().world.getTileEntity(new BlockPos(xx, yy, zz));
 						if (tileentity instanceof TileEntityChest)
 						{
-							//System.out.println("CHESTTATTTTTTTTTAAAAAAA");
+							//System.out.println("CHEST HERE");
 							return null;
 						}
 					}
@@ -675,14 +683,17 @@ public abstract class QuestBase implements Quest
 		while (pos.getY() > 0)
 		{
 			blockState = world.getBlockState(pos);
-			if (!force && (isLiquid(blockState) || CivilizationHandlers.isStructureBlock(blockState)))
+			
+			if ( !force && ( isLiquid(blockState) || CivilizationHandlers.isStructureBlock(blockState) ) )
 			{
 				return null;
 			}
-			if (isGroundBlock(blockState))
+			
+			if ( isGroundBlock(blockState) )
 			{
 				break;
 			}
+			
 			pos = pos.down();
 		}
 		return pos.up();

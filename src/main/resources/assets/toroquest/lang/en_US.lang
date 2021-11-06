@@ -213,13 +213,13 @@ quests.courier.description=§lDeliver§r this letter to %s%s and return his repl
 quests.courier.accept=I need this letter sent to the lord of @e immediately. Be swift, @p.
 quests.courier.complete=Ah yes, thank you for the reply note, @p.
 quests.courier.incomplete=I need the reply note, @p. §7[put the note in left column]
-quests.courier.description=The lord of @e and I have much to discuss. Make sure this letter gets to him.
+quests.courier.description=The lord of %s and I have much to discuss. Make sure this letter gets to him%s§lReward:§r %s%s Reputation
 quests.courier.reject=You reject my request? Surely your actions will not bode well for your reputation.
 
 ################## QUEST BANDIT CAMP ##################
 
 quests.enemy_encampment.title=§lClear Encampment§r
-quests.enemy_encampment.description=§lClear§r the %s encampment %s§lReward:§r %s%s Reputation
+quests.enemy_encampment.description=§lClear§r the %s encampment%s§lReward:§r %s%s Reputation
 quests.enemy_encampment.nokills=Do you take me for a fool? You haven't killed any bandits yet!
 quests.enemy_encampment.incomplete=My scouts report the bandits have not yet been done away with!
 quests.enemy_encampment.help=Not all bandits kills have been accounted for, you must have scared them off!

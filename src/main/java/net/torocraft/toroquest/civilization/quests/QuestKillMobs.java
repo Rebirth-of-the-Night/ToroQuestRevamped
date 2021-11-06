@@ -145,7 +145,7 @@ public class QuestKillMobs extends QuestBase implements Quest
 	{
 		Province province = loadProvince(quest.getPlayer().world, quest.getPlayer().getPosition());
 
-		if (province == null || province.id == null || !province.id.equals(quest.getProvinceId()))
+		if ( province == null || province.id == null || !province.id.equals(quest.getProvinceId()) )
 		{
 			return null;
 		}
@@ -165,6 +165,22 @@ public class QuestKillMobs extends QuestBase implements Quest
 			return null;
 		}
 
+		List<ItemStack> rewards = getRewardItems(quest);
+		
+		if ( rewards != null )
+		{
+			items.addAll(rewards);
+		}
+		
+		String s = TextComponentHelper.createComponentTranslation(quest.getPlayer(), "quests.killmobs.monsters", new Object[0]).getFormattedText();
+		
+		if ( quest.getsData().get("mobString") != null )
+		{
+			s = quest.getsData().get("mobDisplay")+"s";
+		}
+		
+		quest.setChatStack("killmobs.complete", quest.getPlayer(), s);
+		
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
 		
 		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(quest.getCiv()) >= 3000 )
@@ -181,21 +197,6 @@ public class QuestKillMobs extends QuestBase implements Quest
 	            }
 	        }
 		}
-
-		List<ItemStack> rewards = getRewardItems(quest);
-		
-		if (rewards != null)
-		{
-			items.addAll(rewards);
-		}
-		
-		String s = TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.killmobs.monsters", new Object[0]).getFormattedText();
-		
-		if ( quest.getsData().get("mobString") != null )
-		{
-			s = quest.getsData().get("mobDisplay")+"s";
-		}
-		quest.setChatStack("killmobs.complete", quest.getPlayer(), s);
 		
 		this.setData(quest);
 		return items;

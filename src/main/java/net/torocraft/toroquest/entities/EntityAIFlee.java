@@ -131,11 +131,16 @@ public class EntityAIFlee extends EntityAIBase
         		this.creature.setAttackTarget(this.creature.getRevengeTarget());
                 this.creature.faceEntity(this.creature.getRevengeTarget(), 20.0F, 20.0F);
         	}
-    		this.creature.useHealingPotion = true;
-    		this.creature.setSprinting(false);
-            this.runningTimer = 0;
-            this.creature.fleeing = false;
-            this.creature.getNavigator().clearPath();
+        	
+        	if ( this.creature.getHealth() < this.creature.getMaxHealth()*0.75D )
+        	{
+	    		this.creature.useHealingPotion = true;
+	    		this.creature.setSprinting(false);
+	            this.runningTimer = 0;
+	            this.creature.fleeing = false;
+	            this.creature.getNavigator().clearPath();
+        	}	
+            
         	return false;        	
         }
         else

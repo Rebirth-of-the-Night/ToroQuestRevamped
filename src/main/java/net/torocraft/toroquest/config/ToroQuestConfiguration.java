@@ -1716,9 +1716,9 @@ public class ToroQuestConfiguration
 				    
 					new String[]
 				    {
-				    	"Undead Rising~EntityZombie~Zombie~10~20~0.6~x~0~Countless undead have risen from fallen villagers after the recent bandit attacks. @p, cut down any walking corpses you see and lay their souls to rest.",
-				    	"Band of Bandits~EntitySentry~Bandit~6~12~1.0~x~250~The bandit attacks have getting worse, @p. Cut them down.",
-				    	"Dragon Sighting~EntityDragon~Dragon~1~1~32.0~x~1000~My scouts have reported a seeing a dragon not too far from here! Go, slay it at once! Before it catches scent of the village!"
+				    	"§lUndead Rising§r~EntityZombie~Zombie~10~20~0.6~x~0~Countless undead have risen from fallen villagers after the recent bandit attacks. @p, cut down any walking corpses you see and lay their souls to rest.",
+				    	"§lBand of Bandits§r~EntitySentry~Bandit~6~12~1.0~x~250~The bandit attacks have getting worse, @p. Cut them down.",
+				    	"§6§lDragon Sighting§r~EntityDragon~Dragon~1~1~32.0~x~1000~My scouts have reported a seeing a dragon not too far from here! Go, slay it at once! Before it catches scent of the village!"
 				    },
 				    
 					"Custom configuration for the Kill Mobs quest:\n questTitle~mobToKill~mobDisplayName~minimumNumberOfKills~maximimumNumberOfKills~EmeraldsPerKill~ProvinceAllowed~minReputationRequired~lordDialogue \n ProvinceAllowed: x, RED, YELLOW, BLUE, BROWN, BLACK --- example:   Great Hunt~EntityBear~Bear~1~1~32.0~BROWN,GREEN~50~Hunt a bear!\nProvinceAllowed can include multiple provinces (unlike the villager trade format)");
