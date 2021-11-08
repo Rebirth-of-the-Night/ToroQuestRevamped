@@ -1029,7 +1029,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 	@Override
 	public boolean getIsWillingToMate(boolean updateFirst)
     {
-        if ( updateFirst && this.bedLocation == null )
+        if ( updateFirst ) // && this.bedLocation == null )
         {
         	int s = 8;
         	int x = (int)(this.posX+0.5D);
@@ -1045,7 +1045,7 @@ public class EntityToroVillager extends EntityVillager implements INpc, IMerchan
 						Block bed = this.world.getBlockState((new BlockPos(xx, yy, zz))).getBlock();
     					if ( bed instanceof BlockBed )
     					{
-    						// System.out.println(bed);
+    						//System.out.println(bed);
     						this.bedLocation = new BlockPos(xx, yy, zz);
     				        return this.bedLocation != null ? true: false;
     					}

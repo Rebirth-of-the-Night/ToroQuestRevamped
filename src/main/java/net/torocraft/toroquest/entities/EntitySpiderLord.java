@@ -57,6 +57,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
 import net.torocraft.toroquest.entities.ai.EntityAIThrow;
 import net.torocraft.toroquest.entities.render.RenderSpiderLord;
@@ -152,8 +153,8 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
         this.fuseTime = 30;
         this.isImmuneToFire = true;
         this.setCreeperState(-1);
-		this.setSize(4.9F, 1.9F);
-		this.setRealSize(4.9F, 1.9F);
+		this.setSize(3.9F, 1.9F);
+		this.setRealSize(3.9F, 1.9F);
 		this.experienceValue = 400;
 		this.stepHeight = 4.05F;
 	}
@@ -161,7 +162,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 	@Override
 	public float getEyeHeight()
 	{
-		return super.getEyeHeight() * 3f;
+		return 1.85F;
 	}
 	
 	
@@ -206,8 +207,8 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		this.tasks.addTask(1, new EntityAISwimming(this));		
 		this.tasks.addTask(2, new EntityAIThrow(this, 0.5D, false, true));
         this.tasks.addTask(5, new EntityAIWanderAvoidWater(this, 0.8D));
-        this.tasks.addTask(6, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
-        this.tasks.addTask(6, new EntityAILookIdle(this));
+        //this.tasks.addTask(6, new EntityAIWatchClosest(this, EntityPlayer.class, 8.0F));
+        //this.tasks.addTask(6, new EntityAILookIdle(this));
         this.targetTasks.addTask(0, new EntityAIHurtByTarget(this, false, new Class[0]));
 		this.targetTasks.addTask(1, new EntityAINearestAttackableTarget<EntityPlayer>(this, EntityPlayer.class, true));
 	}
@@ -274,23 +275,29 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
     // LEAP
     protected void leap(EntityLivingBase leapTarget)
     {
-    	double d0;
-    	double d1;
+    	double d0 = 0;
+    	double d1 = 0;
 
     	if ( this.targetLastPosX != null && this.targetLastPosZ != null )
         {
         	d0 = this.targetLastPosX - this.posX;
             d1 = this.targetLastPosZ - this.posZ;
         }
-        else // fallback position, in case of null
-        {
-        	d0 = 0; //leapTarget.posX - this.posX;
-        	d1 = 0; //leapTarget.posZ - this.posZ;
-        }
+//        else // fallback position, in case of null
+//        {
+//        	d0 = 0; //leapTarget.posX - this.posX;
+//        	d1 = 0; //leapTarget.posZ - this.posZ;
+//        }
+    	
 		this.playSound(SoundEvents.BLOCK_CLOTH_PLACE, 3.0F, 0.3F);
 		this.playSound(SoundEvents.BLOCK_SAND_FALL, 3.0F, 0.8F);
+		
 		this.setPositionAndUpdate(this.posX, this.posY+2, this.posZ);
-		if ( !this.world.isRemote ) this.addVelocity(d0/6.0, 2.0, d1/6.0);
+		
+		if ( !this.world.isRemote )
+		{
+			this.addVelocity(d0/6.0D, 2.0D, d1/6.0D);
+		}
     }
     
     private void clearWebs() // clear webs, then explode
@@ -299,6 +306,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
     	{
     		return;
     	}
+    	
     	this.isClearWebsReady = false;
     	
     	this.lastActiveTime = 0;
@@ -342,7 +350,6 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 				}
 			}
 		}
-		
     	this.explode = true;
     }
     
@@ -539,6 +546,7 @@ public class EntitySpiderLord extends EntityCaveSpider implements IMob
 		if ( this.getAttackTarget() != null )
     	{
 	    	bossAbility(this.getAttackTarget());
+	    	AIHelper.faceEntitySmart(this, this.getAttackTarget());
 		}
 		else
 		{

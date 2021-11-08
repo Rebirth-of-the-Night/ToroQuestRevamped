@@ -39,7 +39,7 @@ public class EntityAIToroVillagerMate extends EntityAIBase
     }
 
     private final int toroVillagerMateChance = ToroQuestConfiguration.toroVillagerMateChance;
-    private final float villageDoorsModifier = ToroQuestConfiguration.villageDoorsModifier;
+    private final double villageDoorsModifier = ToroQuestConfiguration.villageDoorsModifier;
     private final int maxVillagersPerVillage = ToroQuestConfiguration.maxVillagersPerVillage;
 
     
@@ -48,10 +48,14 @@ public class EntityAIToroVillagerMate extends EntityAIBase
      */
     public boolean shouldExecute()
     {
-        if ( this.villager.getGrowingAge() != 0 )
+    	if ( this.villager.getGrowingAge() == 0 && !this.villager.isChild() && this.villager.underAttack == null && this.villager.blockedTrade < 1 && this.villager.isEntityAlive() )
         {
-            return false;
+
         }
+		else
+		{
+			return false;
+		}
         
         if ( this.villager.getRNG().nextInt(this.toroVillagerMateChance) != 0 )
         {
@@ -71,13 +75,8 @@ public class EntityAIToroVillagerMate extends EntityAIBase
         {
             return false;
         }
-		
-        if ( this.villager.underAttack != null || this.villager.blockedTrade > 1 )
-        {
-        	return false;
-        }
         
-        List<EntityPlayer> players = this.world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.villager.getPosition()).grow(20, 12, 20), new Predicate<EntityPlayer>()
+        List<EntityPlayer> players = this.world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.villager.getPosition()).grow(25, 12, 25), new Predicate<EntityPlayer>()
 		{
 			public boolean apply(@Nullable EntityPlayer entity)
 			{
@@ -86,11 +85,13 @@ public class EntityAIToroVillagerMate extends EntityAIBase
 		});
         
         int rep = 0;
+        
         EntityPlayer p = null;
         
 		for ( EntityPlayer player : players )
         {
     		int tempRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(prov.civilization);
+    		
     		if ( tempRep > rep)
     		{
     			rep = tempRep;
@@ -102,23 +103,33 @@ public class EntityAIToroVillagerMate extends EntityAIBase
 		{
 			return false;
 		}
-
         
+//		System.out.println(this.checkSufficientDoorsPresentForNewVillager(rep));
+//		System.out.println(this.villager.getIsWillingToMate(true));
+		
         if ( this.checkSufficientDoorsPresentForNewVillager(rep) && this.villager.getIsWillingToMate(true) )
         {
-			List<EntityToroVillager> entities = this.world.getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(this.villager.getPosition()).grow(8, 4, 8), new Predicate<EntityToroVillager>()
+//			System.out.println("!!!");
+
+			List<EntityToroVillager> entities = this.world.getEntitiesWithinAABB(EntityToroVillager.class, new AxisAlignedBB(this.villager.getPosition()).grow(10, 6, 10), new Predicate<EntityToroVillager>()
 			{
 				public boolean apply(@Nullable EntityToroVillager entity)
 				{
 					return true;
+//					if ( entity != villager && entity.getGrowingAge() == 0 && !entity.isChild() && entity.underAttack == null && entity.blockedTrade < 1 )
+//					{
+//						return true;
+//					}
+//					return false;
 				}
 			});
+			
 			Collections.shuffle(entities);
 
 			for ( EntityToroVillager entity : entities )
 			{
-                if ( this.mate.getGrowingAge() == 0 )
-                {
+				if ( entity != villager && entity.getGrowingAge() == 0 && !entity.isChild() && entity.underAttack == null && entity.blockedTrade < 1 && entity.isEntityAlive() )
+				{
     				this.mate = entity;
                     this.mate.bedLocation = this.villager.bedLocation;
                     if ( this.mate.getNavigator().tryMoveToXYZ(this.villager.bedLocation.getX(),this.villager.bedLocation.getY(),this.villager.bedLocation.getZ(), 0.5D) 
@@ -215,13 +226,13 @@ public class EntityAIToroVillagerMate extends EntityAIBase
 //      {
 //          return false;
 //      }
-    	if ( this.village.getNumVillagers() < this.maxVillagersPerVillage )
+    	if ( this.village.getNumVillagers() > this.maxVillagersPerVillage )
     	{
     		return false;
     	}
     	else
         {
-            return this.village.getNumVillagers() < (int)( this.village.getNumVillageDoors() * this.villageDoorsModifier * ( 1 + repMod/800.0D ) );
+            return this.village.getNumVillagers() < (int)( this.village.getNumVillageDoors() * this.villageDoorsModifier * ( 1.0D + repMod/800.0D ) );
         }
     }
 
