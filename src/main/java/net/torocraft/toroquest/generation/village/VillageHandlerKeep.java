@@ -7,19 +7,12 @@ import java.util.Random;
 
 import javax.annotation.Nullable;
 
-import ibxm.Player;
 import net.minecraft.block.BlockChest;
-import net.minecraft.block.BlockColored;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.IEntityLivingData;
-import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EnumFacing;
@@ -32,26 +25,15 @@ import net.minecraft.world.gen.structure.StructureVillagePieces;
 import net.minecraft.world.gen.structure.StructureVillagePieces.PieceWeight;
 import net.minecraft.world.gen.structure.StructureVillagePieces.Start;
 import net.minecraft.world.gen.structure.StructureVillagePieces.Village;
-import net.minecraft.world.storage.MapStorage;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.fml.common.registry.VillagerRegistry.IVillageCreationHandler;
 import net.torocraft.toroquest.ToroQuest;
-import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
-import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
-import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityVillageLord;
 import net.torocraft.toroquest.generation.village.util.BlockMapMeasurer;
 import net.torocraft.toroquest.generation.village.util.VillagePieceBlockMap;
-import net.torocraft.toroquest.item.ItemScrollEarth;
-import net.torocraft.toroquest.item.ItemScrollFire;
-import net.torocraft.toroquest.item.ItemScrollMoon;
-import net.torocraft.toroquest.item.ItemScrollSun;
-import net.torocraft.toroquest.item.ItemScrollWater;
-import net.torocraft.toroquest.item.ItemScrollWind;
 
 public class VillageHandlerKeep implements IVillageCreationHandler
 {
@@ -251,19 +233,19 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 					{
 						setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Item.getByNameOrId("toroquest:recruitment_papers")), 1 ));
 						
-						for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), 5 ));
-						}
-						for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+//						for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
+//						{
+//							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), 5 ));
+//						}
+						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.EMERALD), 1 ));
 						}
-						for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+						for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_INGOT), 1 ));
 						}
-						for ( int i = worldIn.rand.nextInt(3)+1; i > 0; i-- )
+						for ( int i = worldIn.rand.nextInt(3); i > 0; i-- )
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_NUGGET), worldIn.rand.nextInt(5)+1 ));
 						}

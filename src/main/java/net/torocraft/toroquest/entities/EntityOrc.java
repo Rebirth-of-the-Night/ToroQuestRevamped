@@ -110,7 +110,7 @@ public class EntityOrc extends EntitySentry implements IRangedAttackMob, IMob
 	public EntityOrc(World worldIn)
 	{
 		super(worldIn);
-        this.setSize(0.6F, 1.9F);
+        this.setSize(0.6F, 1.95F);
 		this.setAlwaysRenderNameTag(false);
 		this.experienceValue = 30;
 		this.splashPotionTimer = -1;
@@ -140,7 +140,7 @@ public class EntityOrc extends EntitySentry implements IRangedAttackMob, IMob
     	this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.orcArmor);
     	this.getEntityAttribute(SharedMonsterAttributes.ARMOR_TOUGHNESS).setBaseValue(ToroQuestConfiguration.orcArmorToughness);
 		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
-    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.395D+rand.nextDouble()/50.0D);
+    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.393D+rand.nextDouble()/50.0D);
     	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
     }
 	
@@ -373,6 +373,11 @@ public class EntityOrc extends EntitySentry implements IRangedAttackMob, IMob
 	@Override
 	protected void callForHelp(EntityLivingBase attacker)
 	{
+		if ( attacker == null || !attacker.isEntityAlive() )
+		{
+			return;
+		}
+		
 		List<EntityOrc> help = world.getEntitiesWithinAABB(EntityOrc.class, new AxisAlignedBB(getPosition()).grow(32, 16, 32), new Predicate<EntityOrc>()
 		{
 			public boolean apply(@Nullable EntityOrc entity)

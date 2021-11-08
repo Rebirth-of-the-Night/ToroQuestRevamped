@@ -4,13 +4,14 @@ import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIAttackMelee;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
 public class EntityAIThrow extends EntityAIAttackMelee
 {
 	protected double strength = 1.0;
 	protected boolean isPassive = false;
-	protected int widthRange = 6;
+	// protected int widthRange = 6;
 	protected int attackCooldown = 20;
 	
     public EntityAIThrow(EntityCreature creature, double speedIn, boolean useLongMemory)
@@ -30,19 +31,25 @@ public class EntityAIThrow extends EntityAIAttackMelee
 		this.isPassive = passive;
 	}
     
-    public EntityAIThrow(EntityCreature creature, double speedIn, boolean useLongMemory, double strength, int widthRange, int attackCooldown)
+    public EntityAIThrow(EntityCreature creature, double speedIn, boolean useLongMemory, double strength, int attackCooldown)
     {
 		super(creature, speedIn, useLongMemory);
 		this.strength = strength;
-		this.widthRange = widthRange;
+		//this.widthRange = widthRange;
 		this.attackCooldown = 40;
 	}
 
     @Override
+    protected double getAttackReachSqr(EntityLivingBase attackTarget)
+    {
+        return (double)(this.attacker.width * this.attacker.width + attackTarget.width * 3.0D + 3.0D);
+    }
+    
+    @Override
 	protected void checkAndPerformAttack(EntityLivingBase e, double range)
     {
     	if ( this.isPassive ) return;
-        double dist = this.getAttackReachSqr(e) + this.widthRange;
+        double dist = this.getAttackReachSqr(e);
 
         if (range <= dist && this.attackTick <= 0)
         {

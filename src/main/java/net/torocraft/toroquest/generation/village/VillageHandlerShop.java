@@ -11,9 +11,7 @@ import net.minecraft.block.BlockChest;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.EnumFacing;
@@ -29,20 +27,12 @@ import net.minecraft.world.gen.structure.StructureVillagePieces.Village;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.fml.common.registry.VillagerRegistry.IVillageCreationHandler;
 import net.torocraft.toroquest.ToroQuest;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
-import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityShopkeeper;
 import net.torocraft.toroquest.generation.village.util.BlockMapMeasurer;
 import net.torocraft.toroquest.generation.village.util.VillagePieceBlockMap;
-import net.torocraft.toroquest.item.ItemScrollEarth;
-import net.torocraft.toroquest.item.ItemScrollFire;
-import net.torocraft.toroquest.item.ItemScrollMoon;
-import net.torocraft.toroquest.item.ItemScrollSun;
-import net.torocraft.toroquest.item.ItemScrollWater;
-import net.torocraft.toroquest.item.ItemScrollWind;
 
 public class VillageHandlerShop implements IVillageCreationHandler {
 
@@ -168,17 +158,17 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 					{
 						//((TileEntityChest) tileentity).setLootTable(LootTableList.CHESTS_SIMPLE_DUNGEON, worldIn.rand.nextLong());
 						TileEntityChest t = (TileEntityChest) tileentity;
-						for ( int i = worldIn.rand.nextInt(5)+5; i > 0; i-- )
+						for ( int i = worldIn.rand.nextInt(5)+3; i > 0; i-- )
 						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.PAPER, 1) );
+							setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.PAPER, worldIn.rand.nextInt(5)+1) );
 						}
-						for ( int i = worldIn.rand.nextInt(6)+3; i > 0; i-- )
+						for ( int i = worldIn.rand.nextInt(5)+1; i > 0; i-- )
 						{
-							if ( worldIn.rand.nextInt(3) == 0 )
-							{
-								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EMERALD, 5));
-							}
-							else
+//							if ( worldIn.rand.nextInt(3) == 0 )
+//							{
+//								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EMERALD, 5));
+//							}
+//							else
 							{
 								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EMERALD, 1));
 							}
@@ -203,15 +193,11 @@ public class VillageHandlerShop implements IVillageCreationHandler {
 								setSlot(t, worldIn.rand.nextInt(27), new ItemStack(Items.EXPERIENCE_BOTTLE, 1));
 							}
 						}
-						for ( int i = worldIn.rand.nextInt(3)+2; i > 0; i-- )
+						for ( int i = worldIn.rand.nextInt(2); i > 0; i-- )
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_INGOT), 1 ));
 						}
-						for ( int i = worldIn.rand.nextInt(3)+2; i > 0; i-- )
-						{
-							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_NUGGET), worldIn.rand.nextInt(5)+1 ));
-						}
-						for ( int i = worldIn.rand.nextInt(3)+2; i > 0; i-- )
+						for ( int i = worldIn.rand.nextInt(4); i > 0; i-- )
 						{
 							setSlot(t, worldIn.rand.nextInt(27), new ItemStack( (Items.GOLD_NUGGET), worldIn.rand.nextInt(5)+1 ));
 						}

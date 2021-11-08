@@ -120,7 +120,9 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
 		// TABLE
 		DEFAULT_PALLETTE.put("Wp", Blocks.WOODEN_PRESSURE_PLATE.getDefaultState());
 		DEFAULT_PALLETTE.put("Fw", Blocks.OAK_FENCE.getDefaultState());
-		DEFAULT_PALLETTE.put("F<", Blocks.FURNACE.getDefaultState().withProperty(BlockFurnace.FACING, EnumFacing.WEST));
+		
+		
+		DEFAULT_PALLETTE.put("F<", Blocks.LIT_FURNACE.getDefaultState().withProperty(BlockFurnace.FACING, EnumFacing.WEST));
 		
 		DEFAULT_PALLETTE.put("CT", Block.getBlockFromName(ToroQuestConfiguration.craftingTableResourceName).getDefaultState());
 		DEFAULT_PALLETTE.put("CA", Blocks.CAULDRON.getDefaultState());
@@ -200,7 +202,7 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
 //		DEFAULT_PALLETTE.put("w^", Blocks.BED.getDefaultState().withProperty(BlockBed.FACING, EnumFacing.SOUTH).withProperty(BlockColored.COLOR, EnumDyeColor.RED));
 //		DEFAULT_PALLETTE.put("w>", Blocks.BED.getDefaultState().withProperty(BlockBed.FACING, EnumFacing.EAST).withProperty(BlockColored.COLOR, EnumDyeColor.RED));
 //		DEFAULT_PALLETTE.put("w<", Blocks.BED.getDefaultState().withProperty(BlockBed.FACING, EnumFacing.WEST).withProperty(BlockColored.COLOR, EnumDyeColor.RED));
-		IBlockState ET = Blocks.AIR.getDefaultState();
+		IBlockState ET = Blocks.ENCHANTING_TABLE.getDefaultState();
 		try {ET = Block.getBlockFromName(ToroQuestConfiguration.enchantingTableResourceName).getDefaultState();}catch(Exception e){}
 		DEFAULT_PALLETTE.put("ET", ET);
 		DEFAULT_PALLETTE.put("IP", Blocks.HEAVY_WEIGHTED_PRESSURE_PLATE.getDefaultState());
@@ -918,15 +920,10 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
         nbttaglist.appendTag(patterntag);
         // BROWN POLE
         patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "ms");
+        patterntag.setString("Pattern", "cs");
         patterntag.setInteger("Color", 3);
         nbttaglist.appendTag(patterntag);
-        // GREEN GRADIENT
-        patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "gra");
-        patterntag.setInteger("Color", 12);
-        nbttaglist.appendTag(patterntag);
-        // GREEN TOP
+        // DARK GREEN TOP
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "hh");
         patterntag.setInteger("Color", 2);
@@ -938,18 +935,18 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
         nbttaglist.appendTag(patterntag);
         // DARK GREEN SKULL
         patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "cre");
+        patterntag.setString("Pattern", "sku");
         patterntag.setInteger("Color", 2);
         nbttaglist.appendTag(patterntag);
         // GREEN FLOWER
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "flo");
-        patterntag.setInteger("Color", 12);
+        patterntag.setInteger("Color", 10);
         nbttaglist.appendTag(patterntag);
         // GREEN DIAMOND
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "mr");
-        patterntag.setInteger("Color", 12);
+        patterntag.setInteger("Color", 10);
         nbttaglist.appendTag(patterntag);
         
         nbttagcompound.setTag("Patterns", nbttaglist);
@@ -1004,10 +1001,10 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
         patterntag.setInteger("Color", 12);
         nbttaglist.appendTag(patterntag);
         // GRADIENT WHITE
-        patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "gra");
-        patterntag.setInteger("Color", 15);
-        nbttaglist.appendTag(patterntag);
+//        patterntag = new NBTTagCompound();
+//        patterntag.setString("Pattern", "gra");
+//        patterntag.setInteger("Color", 15);
+//        nbttaglist.appendTag(patterntag);
 
         nbttagcompound.setTag("Patterns", nbttaglist);
                 
@@ -1026,60 +1023,40 @@ public abstract class VillagePieceBlockMap extends StructureVillagePieces.Villag
 	public static ItemStack getBrownBanner()
 	{
 		NBTTagCompound nbttagcompound = new NBTTagCompound();
-		nbttagcompound.setInteger("Base", 7);
+		nbttagcompound.setInteger("Base", 3);
 		
     	NBTTagCompound patterntag = new NBTTagCompound();
         NBTTagList nbttaglist = new NBTTagList();
 
-        // FLOWER
-        patterntag.setString("Pattern", "flo");
-        patterntag.setInteger("Color", 11);
+        // GRADIENT BLUE
+        patterntag = new NBTTagCompound();
+        patterntag.setString("Pattern", "gru");
+        patterntag.setInteger("Color", 15);
         nbttaglist.appendTag(patterntag);
         // CIRCLE
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "mc");
-        patterntag.setInteger("Color", 14);
-        nbttaglist.appendTag(patterntag);
-        // BOX BOTTOM
-        patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "hhb");
         patterntag.setInteger("Color", 15);
-        nbttaglist.appendTag(patterntag);
-        // GRADIENT BLUE
-        patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "gru");
-        patterntag.setInteger("Color", 4);
-        nbttaglist.appendTag(patterntag);
-        // TRIANGLE BLACK
-        patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "bt");
-        patterntag.setInteger("Color", 0);
         nbttaglist.appendTag(patterntag);
         // TRIANGLE BROWN
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "bt");
         patterntag.setInteger("Color", 3);
         nbttaglist.appendTag(patterntag);
-        // GRADIENT WHITE
-        patterntag = new NBTTagCompound();
-        patterntag.setString("Pattern", "gra");
-        patterntag.setInteger("Color", 15);
-        nbttaglist.appendTag(patterntag);
-        // SPIKES BLACK
+        // SPIKES WHITE
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "bts");
-        patterntag.setInteger("Color", 0);
+        patterntag.setInteger("Color", 15);
         nbttaglist.appendTag(patterntag);
         // SPIKES BROWN
         patterntag = new NBTTagCompound();
         patterntag.setString("Pattern", "bts");
         patterntag.setInteger("Color", 3);
         nbttaglist.appendTag(patterntag);
-        //
         
         nbttagcompound.setTag("Patterns", nbttaglist);
         
-        ItemStack banner = ItemBanner.makeBanner(EnumDyeColor.SILVER, nbttaglist);
+        ItemStack banner = ItemBanner.makeBanner(EnumDyeColor.BROWN, nbttaglist);
         banner.setTagInfo("BlockEntityTag", nbttagcompound);
         return banner;
 	}

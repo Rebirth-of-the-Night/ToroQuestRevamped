@@ -16,21 +16,17 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITarget;
-import net.minecraft.entity.passive.EntityMule;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
-import net.torocraft.toroquest.entities.EntityAdventurer;
 import net.torocraft.toroquest.entities.EntityGuard;
 import net.torocraft.toroquest.entities.EntityOrc;
 import net.torocraft.toroquest.entities.EntitySentry;
@@ -74,7 +70,7 @@ public class EntityAIBanditAttack extends EntityAITarget
 					}
 				}
 				
-				if ( target instanceof EntityToroNpc || target instanceof EntityVillager || ( target instanceof EntityPlayer && shouldAttackPlayer((EntityPlayer)target) ) || target instanceof EntityAdventurer )
+				if ( target instanceof EntityToroNpc || target instanceof EntityVillager || ( target instanceof EntityPlayer && shouldAttackPlayer((EntityPlayer)target) ) ) // || target instanceof EntityAdventurer )
 				{
 					return true;
 				}
@@ -244,7 +240,7 @@ public class EntityAIBanditAttack extends EntityAITarget
 	 */
 	public boolean shouldExecute()
 	{
-		if ( this.taskOwner.getAttackTarget() != null || this.rand.nextInt(16) != 0 )
+		if ( this.taskOwner.getAttackTarget() != null || this.rand.nextInt(12) != 0 )
 		{
 			return false;
 	    }

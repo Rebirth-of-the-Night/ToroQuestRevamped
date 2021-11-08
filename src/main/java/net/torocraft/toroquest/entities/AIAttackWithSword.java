@@ -35,7 +35,7 @@ public class AIAttackWithSword extends EntityAIBase
 //    private boolean canPenalize = false;
     protected boolean offhandAttack = false;
     
-	protected float range = 3.0F;
+	protected float range = 3.25F;
 
     public AIAttackWithSword(EntityCreature creature, double speedIn)
     {
@@ -61,12 +61,21 @@ public class AIAttackWithSword extends EntityAIBase
         if ( iStack != null )
     	{
         	String s = iStack.getItem().getRegistryName().toString();
-        		 if ( s.contains("lance") ) 		{range = 6.0F;}
-        	else if ( s.contains("pike") )  	 	{range = 6.0F;}
-        	else if ( s.contains("glaive") ) 		{range = 4.5F;}
-        	else if ( s.contains("halberd") ) 		{range = 4.5F;}
-        	else if ( s.contains("greatsword") ) 	{range = 4.0F;}
-        	else if ( s.contains("spear") ) 		{range = 4.0F;}
+        		 if ( s.contains("pike_") ) 		{range = 6.5F;}
+        	else if ( s.contains("spear_") )  	 	{range = 4.5F;}
+        	else if ( s.contains("glaive_") ) 		{range = 4.5F;}
+        	else if ( s.contains("halberd_") ) 		{range = 4.5F;}
+        	else if ( s.contains("greatsword_") ) 	{range = 4.5F;}
+        	else if ( s.contains("lance_") ) 		{range = 4.5F;}
+        	
+        	//else if ( s.contains("staff") ) 		{range = 4.5F;}
+
+//        		 if ( s.contains("lance") ) 		{range = 6.0F;}
+//        	else if ( s.contains("pike") )  	 	{range = 6.0F;}
+//        	else if ( s.contains("glaive") ) 		{range = 4.5F;}
+//        	else if ( s.contains("halberd") ) 		{range = 4.5F;}
+//        	else if ( s.contains("greatsword") ) 	{range = 4.0F;}
+//        	else if ( s.contains("spear") ) 		{range = 4.0F;}
     	}
 		        
         if ( !shouldContinueExecuting() )
@@ -107,7 +116,7 @@ public class AIAttackWithSword extends EntityAIBase
             return false;
         }
         
-        if (!this.attacker.getAttackTarget().isEntityAlive())
+        if ( !this.attacker.getAttackTarget().isEntityAlive() )
         {
             return false;
         }
@@ -139,7 +148,8 @@ public class AIAttackWithSword extends EntityAIBase
     public void resetTask()
     {
         //if ( this.attacker.getAttackTarget() != null && ( this.attacker.getAttackTarget().isDead || this.attacker.getAttackTarget().getHealth() <= 0 ) ) this.attacker.setAttackTarget(null);
-        this.attacker.getNavigator().clearPath();
+        //this.attacker.getNavigator().clearPath();
+    	this.attacker.setSprinting(false);
     }
 
     /**
@@ -152,8 +162,8 @@ public class AIAttackWithSword extends EntityAIBase
     		return;
     	}
         
-        this.attacker.faceEntity(this.attacker.getAttackTarget(), 20.0F, 20.0F);
-        this.attacker.getLookHelper().setLookPositionWithEntity(this.attacker.getAttackTarget(), 20.0F, 20.0F);
+        this.attacker.faceEntity(this.attacker.getAttackTarget(), 30.0F, 30.0F);
+        this.attacker.getLookHelper().setLookPositionWithEntity(this.attacker.getAttackTarget(), 30.0F, 30.0F);
         
         double d0 = this.attacker.getDistanceSq(this.attacker.getAttackTarget().posX, this.attacker.getAttackTarget().getEntityBoundingBox().minY, this.attacker.getAttackTarget().posZ);
         //this.attackTick = Math.max(this.attackTick - 1, 0);
@@ -171,13 +181,15 @@ public class AIAttackWithSword extends EntityAIBase
         	if ( e.isDrinkingPotion() )
 			{
             	this.attackTick = 10;
-    	        this.attacker.setSprinting(false);
         		backPeddaling = true;
 				return;
 			}
         	if ( e.stance < 5 )
         	{
-    	        this.attacker.setSprinting(false);
+        		backPeddaling = true;
+        	}
+        	if ( e.flanking )
+        	{
         		backPeddaling = true;
         	}
         }
@@ -186,44 +198,40 @@ public class AIAttackWithSword extends EntityAIBase
     		EntityGuard e = (EntityGuard)this.attacker;
     		if ( e.stance < 5 )
          	{
-    	        this.attacker.setSprinting(false);
          		backPeddaling = true;
          	}
         }
         
-        if ( !this.attacker.collidedHorizontally && !backPeddaling && !this.attacker.isHandActive() && distanceSq <= 20 && distanceSq >= 2 && this.attacker.getNavigator().getPathToEntityLiving(victim) != null )
+    	this.attacker.setSprinting(false);
+    	
+        if ( !this.attacker.collidedHorizontally && !backPeddaling && !this.attacker.isHandActive() ) // this.attacker.getNavigator().getPathToEntityLiving(victim) != null
         {
-        	if ( this.attacker instanceof EntitySentry )
-          	{
-        		EntitySentry e = (EntitySentry)this.attacker;
-          		if ( !e.flanking )
-          		{
-          			int tt = Math.abs(this.attackTick-4) % 40;
-                	
-                	if ( tt <= 4 )
-                	{
-                    	this.attacker.setSprinting(true);
-                    	if ( tt == 0 )
-                    	{
-            		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
-            		        if ( !this.world.isRemote ) this.attacker.addVelocity((velocityVector.x)/14.0,0.0D,(velocityVector.z)/14.0);
-                    	}
-                	}
-          		}
-          	}
-        	else
+        	int tt = Math.abs(this.attackTick-5) % 40;
+        	
+        	if ( tt < 3 )
         	{
-	        	int tt = Math.abs(this.attackTick-5) % 40;
-	        	
-	        	if ( tt <= 5 )
-	        	{
-	            	this.attacker.setSprinting(true);
-	            	if ( tt == 0 )
-	            	{
-	    		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
-	    		        if ( !this.world.isRemote ) this.attacker.addVelocity((velocityVector.x)/14.0,0.0D,(velocityVector.z)/14.0);
-	            	}
-	        	}
+            	this.attacker.setSprinting(true);
+            	if ( tt == 0 && distanceSq <= 12 )
+            	{
+            		if ( distanceSq >= 3.5D && this.attacker.onGround && this.rand.nextInt(5) == 0 )
+            		{
+            			if ( !this.world.isRemote ) 
+        		        {
+            		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
+        		        	this.attacker.addVelocity((velocityVector.x)/12.0,0.3D,(velocityVector.z)/12.0);
+        		        	this.attacker.velocityChanged = true;
+        		        }
+            		}
+            		else
+            		{
+            			if ( !this.world.isRemote ) 
+        		        {
+            		        Vec3d velocityVector = new Vec3d(victim.posX - this.attacker.posX, 0, victim.posZ - this.attacker.posZ);
+        		        	this.attacker.addVelocity((velocityVector.x)/10.0,0.02D,(velocityVector.z)/10.0);
+        		        	this.attacker.velocityChanged = true;
+        		        }
+            		}
+            	}
         	}
         }
         
@@ -272,7 +280,7 @@ public class AIAttackWithSword extends EntityAIBase
     
     protected double getAttackReachSqr(EntityLivingBase attackTarget)
     {
-        return (double)(this.attacker.width * range * this.attacker.width * range + attackTarget.width);
+        return (this.attacker.width * range * this.attacker.width * range + attackTarget.width + (rand.nextDouble()/8.0D));
     }
 
 	public static boolean canReach(EntityCreature creature)

@@ -4,13 +4,9 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.google.common.base.Predicate;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.init.SoundEvents;
@@ -22,9 +18,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.event.RegistryEvent;
@@ -38,8 +32,6 @@ import net.torocraft.toroquest.civilization.CivilizationsWorldSaveData;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
 import net.torocraft.toroquest.entities.EntityGuard;
-import net.torocraft.toroquest.entities.EntityOrc;
-import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityVillageLord;
 import net.torocraft.toroquest.material.ArmorMaterials;
 
@@ -129,7 +121,7 @@ public class ItemRoyalArmor extends ItemArmor {
 	{
 		super(ArmorMaterials.ROYAL, renderIndexIn, equipmentSlotIn);
 		this.setUnlocalizedName(unlocalizedName);
-		setMaxDamage(170);
+		setMaxDamage(-1);
 	}
 	
 	@Override
@@ -180,11 +172,11 @@ public class ItemRoyalArmor extends ItemArmor {
 									guard.setHealth(0);
 									worldIn.spawnEntity(vl);
 									vl.playTameEffect((byte) 6);
-				                    vl.world.setEntityState(vl, (byte)6);
+									worldIn.setEntityState(vl, (byte)6);
 									vl.playSound(SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 1.0F, 0.8F);
 									vl.playSound(SoundEvents.BLOCK_ANVIL_USE, 0.8F, 0.8F);
 									vl.playSound(SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, 1.0F, 1.0F);
-									for ( EntityPlayer player : vl.world.playerEntities )
+									for ( EntityPlayer player : worldIn.playerEntities )
 									{
 										{
 											player.sendMessage(new TextComponentString("§lA new Lord has been crowned!§r"));
@@ -196,22 +188,22 @@ public class ItemRoyalArmor extends ItemArmor {
 									vl.setCivilization(provinceOn.civilization);
 									provinceOn.hasLord = true;
 								}
-								return super.onItemRightClick(worldIn, playerIn, handIn);
+								return new ActionResult<ItemStack>(EnumActionResult.FAIL, ItemStack.EMPTY);
 							}
 							return super.onItemRightClick(worldIn, playerIn, handIn);
 						}
 					}
 					else
 					{
-						Province 			    	 provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX+6, playerIn.chunkCoordZ+6);
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX+6, playerIn.chunkCoordZ-6);}
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX-6, playerIn.chunkCoordZ+6);}
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX-6, playerIn.chunkCoordZ-6);}
+						Province 			    	 provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX+6, playerIn.chunkCoordZ+6);
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX+6, playerIn.chunkCoordZ-6);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX-6, playerIn.chunkCoordZ+6);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX-6, playerIn.chunkCoordZ-6);}
 						
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX+7, playerIn.chunkCoordZ);}
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX, playerIn.chunkCoordZ+7);}
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX-7, playerIn.chunkCoordZ);}
-						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(playerIn.world, playerIn.chunkCoordX, playerIn.chunkCoordZ-7);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX+7, playerIn.chunkCoordZ);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX, playerIn.chunkCoordZ+7);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX-7, playerIn.chunkCoordZ);}
+						if ( provinceNear == null ) {provinceNear = CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX, playerIn.chunkCoordZ-7);}
 						
 						if ( provinceNear != null )
 						{
@@ -221,37 +213,37 @@ public class ItemRoyalArmor extends ItemArmor {
 						
 						for ( EntityGuard guard : guards )
 						{
-							if ( CivilizationUtil.getProvinceAt(playerIn.getEntityWorld(), playerIn.chunkCoordX, playerIn.chunkCoordZ) == null )
+							if ( CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX, playerIn.chunkCoordZ) == null )
 							{
-					            EntityVillageLord vl = new EntityVillageLord(worldIn);
-								CivilizationsWorldSaveData.get(worldIn).register(playerIn.chunkCoordX, playerIn.chunkCoordZ);
-					            if( !worldIn.isRemote )
-					            {
-									vl.setPosition(guard.posX,guard.posY,guard.posZ);
-									vl.addArmor();
-									guard.setDead();
-									guard.setHealth(0);
-									worldIn.spawnEntity(vl);
-									vl.playTameEffect((byte) 6);
-				                    vl.world.setEntityState(vl, (byte)6);
-									vl.playSound(SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 1.0F, 0.8F);
-									vl.playSound(SoundEvents.BLOCK_ANVIL_USE, 0.8F, 0.8F);
-									vl.playSound(SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, 1.0F, 0.9F);
-									playerIn.sendStatusMessage(new TextComponentString( "§oProvince founded!§r" ), true);
-									for ( EntityPlayer player : vl.world.playerEntities )
-									{
-										{
-											player.sendMessage(new TextComponentString("§lA new Lord has been crowned!§r"));
-										}
-									}
-					            }
-					            provinceOn = CivilizationUtil.getProvinceAt(playerIn.getEntityWorld(), playerIn.chunkCoordX, playerIn.chunkCoordZ);
+					            EntityVillageLord vl = new EntityVillageLord(guard.getEntityWorld());
+								CivilizationsWorldSaveData.get(worldIn).registerCrown(playerIn.chunkCoordX, playerIn.chunkCoordZ);
+								provinceOn = CivilizationUtil.getProvinceAt(worldIn, guard.chunkCoordX, guard.chunkCoordZ);
 								if ( provinceOn != null )
 								{
 									vl.setCivilization(provinceOn.civilization);
 									provinceOn.hasLord = true;
+									if( !worldIn.isRemote )
+						            {
+										vl.setPosition(guard.posX,guard.posY,guard.posZ);
+										vl.addArmor();
+										guard.setDead();
+										guard.setHealth(0);
+										worldIn.spawnEntity(vl);
+										vl.playTameEffect((byte) 6);
+										worldIn.setEntityState(vl, (byte)6);
+										vl.playSound(SoundEvents.ITEM_ARMOR_EQUIP_GOLD, 1.0F, 0.8F);
+										vl.playSound(SoundEvents.BLOCK_ANVIL_USE, 0.8F, 0.8F);
+										vl.playSound(SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, 1.0F, 0.9F);
+										playerIn.sendStatusMessage(new TextComponentString( "§oProvince founded!§r" ), true);
+										for ( EntityPlayer player : worldIn.playerEntities )
+										{
+											{
+												player.sendMessage(new TextComponentString("§lA new Lord has been crowned!§r"));
+											}
+										}
+						            }
+									return new ActionResult<ItemStack>(EnumActionResult.FAIL, ItemStack.EMPTY);
 								}
-								return new ActionResult<ItemStack>(EnumActionResult.FAIL, ItemStack.EMPTY);
 							}
 							return super.onItemRightClick(worldIn, playerIn, handIn);
 						}

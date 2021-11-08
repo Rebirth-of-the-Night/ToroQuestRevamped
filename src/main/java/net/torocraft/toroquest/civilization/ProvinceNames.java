@@ -28,7 +28,7 @@ public class ProvinceNames
 
 	private static final String[] START_X =
 	{
-		"lok", "vvarden", "rotn", "eagle", "wolf", "wolfe", "drift", "razer", "razor", "widow", "vvarz", "vvel", "sunken", "ender", "wither", "neth", "skel", "stev", "king", "duke", "baron", "aro", "arow", "fort", "angel", "demon", "daemon", "rother", "davon", "narn", "blen", "dews", "raven", "ravens", "ror", "nor", "falk", "wind", "mor", "mark", "wyver", "boar", "dragon", "alc", "farn", "fourne", "strath", "jed", "bar", "dale", "cael", "hals", "calen", "ha", "dagger", "swift", "far", "gloom", "hero", "might", "mid",
+		"foreck", "lok", "vvarden", "rotn", "eagle", "wolf", "wolfe", "drift", "razer", "razor", "widow", "vvarz", "vvel", "sunken", "ender", "wither", "neth", "skel", "stev", "king", "duke", "baron", "aro", "arow", "fort", "angel", "demon", "daemon", "rother", "davon", "narn", "blen", "dews", "raven", "ravens", "ror", "nor", "falk", "wind", "mor", "mark", "wyver", "boar", "dragon", "alc", "farn", "fourne", "strath", "jed", "bar", "dale", "cael", "hals", "calen", "ha", "dagger", "swift", "far", "gloom", "hero", "might", "mid",
 		"modan", "loch", "mal", "vy", "vor", "vvar", "vir", "vyn", "mor", "went", "bear", "hartl", "ter", "terg", "swan", "doon", "mas", "high", "fae", "new", "first", "hinter", "north", "south", "east", "west", "way", "liver", "sky",
 		"brer", "ez", "skol", "breeze", "wind", "val", "fjor", "forn", "wither", "stoh", "grog", "elder", "dunn", "sin", "rod", "soar", "wilt", "wult", "ad", "small", "sult", "sword", "ox", "mount", "old", "new", "blood", "hinter", "north", "south", "east", "west", "way", "kul", "lys", "mar", "rael",
 	};
@@ -64,17 +64,17 @@ public class ProvinceNames
 			
 		"green", "wild", "maple", "pine", "oak", "oaken", "willow", "tangle", "primal",
 		"thrag", "strong", "elder", "verdure", "moss", "ash", "emerald", "wilder",
-		"copse", "summer", "vvild", "copse", "elm", "willow", "birch", "ash", "bark"
+		"copse", "summer", "vvild", "copse", "elm", "willow", "birch", "ashen", "lumber"
 	};
 	
 	private static final String[] END_EARTH =
 	{
-		"weald", "glade", "thicket", "enclave", "garden", "fern", "wood", "woods", "bark", "forest", "leaf", "peak", "vale"
+		"weald", "glade", "thicket", "clave", "garden", "fern", "wood", "woods", "bark", "forest", "leaf", "peak", "vale"
 	};
 	
 	private static final String[] EARTH =
 	{
-		"arbor", "arbour", "alcove", "arborvitae", "bower", "labyrinth", "lombardy", "viburnum",
+		"lumber", "arbor", "arbour", "alcove", "arborvitae", "bower", "labyrinth", "lombardy", "viburnum",
 		"arrowwood", "sycamore", "laurel", "sequoia", "maidenhair", "maple", "adansonia", "cordata",
 		"caprea", "tilia", "quercus", "hemlock", "camphor", "yggdrassil"
 	};
@@ -82,20 +82,20 @@ public class ProvinceNames
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= MOUNTAIN =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_WIND =
 	{		
-		"steel", "sunder", "thunder", "sky", "boulder", "arid", "bronze", "clay",
+		"steel", "sunder", "thunder", "sky", "boulder", "high", "bronze", "clay",
 		"grey", "gray", "white", "brow", "stone", "iron", "tin", "copper", "silver",
-		"shale", "granite", "coal", "slate", "flint", "silt", "high", "sulfur"
+		"shale", "granite", "coal", "slate", "flint", "silt", "high", "sulfur", "grey"
 	};
 	
 	private static final String[] END_WIND =
 	{
-		"heights", "pinnacle", "rise", "bluff", "summit", "slopes", "land", "planes", "smith", "fall", "forge", "reach",
-		"clif", "cliff", "peak", "cliffe", "rock", "brick", "break", "hill", "hills", "mont", "ryse", "rize", "rise"
+		"brow", "crown", "ridge", "heights", "pinnacle", "rise", "bluff", "summit", "slopes", "land", "planes", "smith", "fall", "forge", "reach",
+		"clif", "cliff", "peak", "cliffe", "rock", "brick", "bleak", "break", "hill", "hills", "mont", "ryse", "rize", "rise"
 	};
 	
 	private static final String[] WIND =
 	{
-		"quarry", "grotto", "forge", "apex", "bronn", "sunder", "skyreach", "thunder", "flint", "hammer", "haven", "forge"
+		"alps", "zenith", "summit", "shale", "brick", "chisel", "quarry", "grotto", "forge", "apex", "bronn", "sunder", "skyreach", "thunder", "flint", "hammer", "haven", "forge"
 	};
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= ROSE =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_FIRE =
@@ -106,35 +106,35 @@ public class ProvinceNames
 	private static final String[] END_FIRE =
 	{
 		"thorn", "glade", "garden", "grove", "bloom", "meadow", "meadows", "fern", "field", "fields",
-		"briar", "land", "brier", "valley", "aloe", "acer", "shrub", "acre",
+		"briar", "land", "brier", "valley", "aloe", "acer", "shrub", "acre", "bloom", "blossom"
 	};
 	
 	private static final String[] FIRE =
 	{
 		"virrose", "allium", "azela", "perennial", "avens", "yucca", "hawthorn", "crimson", "scarlet", "eglantine", "vera",
-		"hibiscus", "calluna", "lonicera", "malenocarpa", "weigela", "lantana", "daphne", "peony", "myrica", "acer", "aloe",
+		"hibiscus", "calluna", "lonicera", "malenocarpa", "weigela", "lantana", "daphne", "peony", "bloom", "acer", "aloe",
 		"talon", "sage", "yarrow", "aster", "iris", "lavender", "prim", "calla", "lily", "laurel", "silverleaf", "anemone",
-		"ivy", "amaryllis", "camellia", "maidenhair", "alstroemeria", "bleedingheart", "purslane", "coreopsis",
+		"ivy", "amaryllis", "camellia", "maidenhair", "alstroemeria", "bleedingheart", "purslane", "coreopsis", "blossom",
 		"clematis", "vernal", "vinca", "weigela", "phlox", "alyssum", "dahlias", "forsythia", "foxglove", "spirea",
 		"lombardy", "thistle", "marigold"
 	};
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= GLACIER =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_WATER =
 	{
-		"sno", "snow", "drift", "frosst", "flur", "flurry", "bliz", "sleet", "storm", "bleak",
-		"white", "pale", "vvynter", "freeze", "frost", "cold", "winter", "river",
-		"dew",  "sunken", "ice", "yce", "glace", "bleak", "numb", "glacial"
+		"sno", "snow", "drift", "flur", "flurry", "bliz", "sleet", "storm", "bleak",
+		"white", "pale", "vvynter", "freeze", "frost", "cold", "winter", "river", "shiver",
+		"dew",  "sunken", "ice", "glace", "glacier", "bleak", "numb", "glacial", "thaw", "wolf", "polar"
 	};
 	
 	private static final String[] END_WATER =
 	{
-		"shiver", "weald", "bite", "fjord", "ford", "thaw"
+		"weald", "bite", "fjord", "ford", "whelm", "post", "fort", "watch", "well", "rift", "run", "scape"
 	};
 	
 	private static final String[] WATER =
 	{
-		"yce", "rime", "glace", "glasis", "flake", "thaw", "shiver", "solitude", "coldsnap", "shatter",
-		"fjord", "burrrg", "berrrg"
+		"yce", "rime", "solitude", "coldsnap", "shatter", "frigid",
+		"fjord", "burrrg", "berrrg", "shiver", "weald", "bite", "fjord", "thaw", "frost"
 	};
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= SUN =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 //	private static final String[] START_SUN =
@@ -158,21 +158,21 @@ public class ProvinceNames
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= SWAMP =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_MOON =
 	{
-		"salt", "blight", "swamp", "peat", "peats", "corpse", "rot", "weap", "stilt", "pitch", "copse", "death", "bleak", "dead",
+		"ash", "salt", "blight", "swamp", "peat", "peats", "corpse", "rot", "weap", "stilt", "pitch", "copse", "death", "bleak", "dead",
 		"shamble", "ink", "soot", "wilt", "dark", "bog", "mud", "musk", "shadow", "ahsen", "bitter", "blight", "fog", "weeping",
-		"gilt", "black", "scar", "night", "luster", "ink", "mirk", "murk", "moor", "mourn", "marsh", "fen", "quag",
+		"gilt", "black", "scar", "night", "luster", "ink", "mirk", "murk", "moor", "mourn", "marsh", "fen", "quag", "barren",
 		"sump", "marsh", "sump", "glade", "slough", "musk", "gloom", "moon", "dusk", "shade", "wllow", "luster", "lily"
 		
 	};
 	
 	private static final String[] END_MOON =
 	{
-		"peak", "marsh", "burg", "fen", "fens", "basin", "borg", "cove", "quag", "basin", "pond", "keg", "well", "dam", "morg", "warg", "wail"
+		"smog", "marsh", "burg", "fen", "fens", "basin", "borg", "cove", "quag", "basin", "pond", "keg", "well", "dam", "morg", "warg", "wail"
 	};
 	
 	private static final String[] MOON =
 	{
-		"silt", "scythe", "end", "quiteus", "gloom", "hadean", "soot", "ruin", "woe", "weap", "ink",
+		"barren", "silt", "scythe", "end", "quiteus", "gloom", "hadean", "soot", "ruin", "woe", "weap", "ink",
 		"stygian", "lamen", "luster", "abyss", "wetlands", "fens", "fen", "ash", "willows", "scar",
 		"wilt", "shade", "blight", "hallow", "shamble", "will-o", "ghast", "dread", "lanquish"
 	};
@@ -186,14 +186,14 @@ public class ProvinceNames
 	 coal celt igar caste rly by water bul wer buck dyre hollow bright break brax bridge branch rellbolttyde grave thonfort banerose yrion
 	bark mor
 	polder marsh swale
-	barren alps pine blush
+	  blush
 	seed
 	wild verdant
 	"blak" "isle" "gray", "grey", ","murk","muck","moore","mire"
 	ore fay
 	acor knox hard
 	"melt"
-	decay bay deep whelm flood
+	decay bay deep  flood
 	shell
 	acres ash dark putri mush misty smog smogg smoggy sore mud mudd muddy
 	blanch
@@ -217,7 +217,7 @@ lin gold port maur it ania salus malazan iverin rich miry alven hime reven riven
 	leilon bul phan dalin  winter thunder tree llast Port lusk kan
 	horn ham wharf tide front  wind bourne ham run watch wallow
 	thorn, weed, flower
-	star tead ridge bury borne rift helm ford burg well burgh burg mont
+	star tead ridge bury borne rift  ford burg well burgh burg mont
 	 ridge vale stead bridge mond tead ten
 
 	HOUSE MYTHRIL - brown - mountain
@@ -229,18 +229,14 @@ lin gold port maur it ania salus malazan iverin rich miry alven hime reven riven
 	
 	"chill", "well", "port", "wave", "snow",
 
-	lumber moss pine tangle leaf primal green timber sage virid verdure moss green maple oak oaken ash willow elder emerald wilder elder
+	 moss tangle leaf primal green timber sage virid verdure moss green maple oak oaken ash willow elder emerald wilder elder
 	
 	thicket wood woods wilds wild shelter weald forest bark vine grove
 
 	
 	
 	"sun", 
-	dark bleak
-	
-	"stone"
-	
-	
+	 bleak
 
 	acre
 	sea
@@ -258,10 +254,6 @@ lin gold port maur it ania salus malazan iverin rich miry alven hime reven riven
 	
 	winter
 	wend
-	
-	yellow
-	
-	
 	
 	
 	*/

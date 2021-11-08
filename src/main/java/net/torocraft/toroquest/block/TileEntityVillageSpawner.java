@@ -1,40 +1,25 @@
 package net.torocraft.toroquest.block;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
-import net.minecraft.block.BlockBush;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
-import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.EnumDyeColor;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EntitySelectors;
 import net.minecraft.util.ITickable;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import net.torocraft.toroquest.entities.EntitySentry;
 import net.torocraft.toroquest.entities.EntityVillageLord;
-import scala.actors.threadpool.Arrays;
 
 public class TileEntityVillageSpawner extends TileEntity implements ITickable
 {
@@ -83,6 +68,8 @@ public class TileEntityVillageSpawner extends TileEntity implements ITickable
 		entity.setRaidLocation((int)entity.posX, (int)entity.posZ);
 		
 		spawnEntityLiving((EntityLiving) entity, findSuitableSpawnLocation());
+		
+		this.markDirty();
 	}
 
 	public BlockPos findSuitableSpawnLocation()

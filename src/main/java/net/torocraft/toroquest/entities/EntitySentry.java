@@ -34,6 +34,7 @@ import net.minecraft.entity.item.EntityBoat;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.EntityHorse;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.projectile.EntityArrow;
@@ -87,6 +88,7 @@ import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.quests.QuestRecruit;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.ai.EntityAIBanditAttack;
 import net.torocraft.toroquest.entities.ai.EntityAIDespawn;
 import net.torocraft.toroquest.entities.ai.EntityAIRaid;
@@ -96,10 +98,9 @@ import net.torocraft.toroquest.entities.render.RenderSentry;
 
 public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMob, IBandit
 {
-	// BOATS, flower pots? replace chests? XXX
 	protected ItemStack weaponMain = new ItemStack(Items.AIR, 1);
 	protected ItemStack weaponOff = new ItemStack(Items.AIR, 1);
-	protected final AIArcher<EntitySentry> aiArrowAttack = new AIArcher<EntitySentry>(this, 0.45D, 40, 40.0F);
+	protected final AIArcher<EntitySentry> aiArrowAttack = new AIArcher<EntitySentry>(this, 0.6D, 40, 40.0F);
     protected boolean inCombat = false;
     public boolean forceFleeing = false;
     protected double randPosX;
@@ -117,6 +118,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	protected boolean blocking = false;
 	protected int blockingTimer = 0;
 	protected boolean despawn = false;
+	public int climbingTimer = 0;
 	protected boolean canTalk = true;
 	public short potionImmunity = 0;
     private int potionUseTimer;
@@ -132,7 +134,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
     public int limitPotions = rand.nextInt(3);
 	public double renderSizeXZ = 0.9D + rand.nextDouble()/12.0D;
 	public double renderSizeY =  renderSizeXZ * (1.025D + rand.nextFloat()/16.0D);
-	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 0.6D, 16, 32);
+	protected final EntityAIRaid areaAI = new EntityAIRaid(this, 0.65D, 16, 32);
 	private ResourceLocation banditSkin = new ResourceLocation(ToroQuest.MODID + ":textures/entity/bandit/bandit_" + rand.nextInt(ToroQuestConfiguration.banditSkins) + ".png");
 	protected static final UUID MODIFIER_UUID = UUID.fromString("5CD17E52-A79A-43D3-A529-90FDE04B181E");
 	protected static final AttributeModifier MODIFIER = (new AttributeModifier(MODIFIER_UUID, "Drinking speed penalty", -0.34D, 0)).setSaved(false);
@@ -174,10 +176,12 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		});
 	}
 	
+    //private static final AttributeModifier SPRINTING_SPEED_BOOST = (new AttributeModifier(SPRINTING_SPEED_BOOST_ID, "Sprinting speed boost", 10.30000001192092896D, 2)).setSaved(false);
+
 	@Override
 	public void setSprinting( boolean b )
 	{
-		if ( this.getAttackTarget() != null && !this.fleeing && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) ) this.faceEntitySmart(this.getAttackTarget());
+		if ( this.getAttackTarget() != null && !this.isFleeing() && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
 		super.setSprinting(b);
 	}
 	
@@ -266,7 +270,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public float getEyeHeight()
 	{
-	    return 1.9F;
+	    return 1.89F;
 	}
 	
 	@Override
@@ -284,7 +288,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	public EntitySentry(World worldIn)
 	{
 		super(worldIn);
-        this.setSize(0.59F, 1.85F);
+        this.setSize(0.6F, 1.95F);
         this.setCombatTask();
         
 		this.stepHeight = 2.05F;
@@ -321,8 +325,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		{
 			if ( this.getDistance(player) > 12 ) return;
 			
-			this.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
-			this.faceEntity(player, 20.0F, 20.0F);
+			this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
+			this.faceEntity(player, 30.0F, 30.0F);
 			
 			if ( player.world.isRemote )
 			{
@@ -382,8 +386,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		if ( !this.getTame() && this.getHealth() >= this.getMaxHealth() && !this.inCombat && this.getAttackTarget() == null && itemstack.getItem() == Items.EMERALD )
         {
 			itemstack.shrink(1);
-        	this.getLookHelper().setLookPositionWithEntity(player, 20.0F, 20.0F);
-        	this.faceEntity(player, 20.0F, 20.0F);
+        	this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
+        	this.faceEntity(player, 30.0F, 30.0F);
         	
         	
     		List<EntitySentry> bandits = this.world.<EntitySentry>getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32));
@@ -565,7 +569,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		}
 		this.replaceItemInInventory(100 + EntityEquipmentSlot.HEAD.getIndex(), ItemStack.EMPTY);
 		super.onDeath(cause);
-		this.dropLoot();
+		if ( this.getRevengeTarget() instanceof EntityPlayer ) this.dropLoot();
 	}
 	
 	protected void dropMask()
@@ -647,17 +651,32 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
     	this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.banditArmor);
     	this.getEntityAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(ToroQuestConfiguration.banditArmorToughness);
 		this.getEntityAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(40.0D);
-    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.395D+rand.nextDouble()/50.0D);
+    	this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.393D+rand.nextDouble()/50.0D);
+    	
+    	// this.getEntityAttribute(SharedMonsterAttributes.SPRINTING_SPEED_BOOST).setBaseValue(0.395D+rand.nextDouble()/50.0D);
+
     	this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
     }
 	
+	public boolean isFleeing()
+	{
+		if ( this.fleeing || this.forceFleeing )
+		{
+			super.setSprinting(true);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
 	//===================================================== Task AI =======================================================
 
 	protected void initEntityAI()
 	{
 		this.tasks.addTask(1, new EntityAISwimming(this));
 		this.tasks.addTask(2, new EntityAIRangedFlee(this, 0.7D));
-		this.tasks.addTask(2, new EntityAIFlee(this, 0.675D));
+		this.tasks.addTask(2, new EntityAIFlee(this, 0.7D));
         //this.tasks.addTask(4, new EntityAIBreakDoorBandit(this));
         this.tasks.addTask(4, new EntityAIOpenDoor(this, false));
         this.tasks.addTask(5, new EntityAIZombieLeap(this, 0.38D, true)
@@ -665,7 +684,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
         	@Override
 			public boolean shouldExecute()
 		    {
-		        if ( EntitySentry.this.isDrinkingPotion() ||  EntitySentry.this.fleeing ||  EntitySentry.this.blocking )
+		        if ( EntitySentry.this.isDrinkingPotion() || EntitySentry.this.isFleeing() || EntitySentry.this.flanking || EntitySentry.this.blocking || EntitySentry.this.getHeldItemMainhand().getItem() instanceof ItemBow )
 		        {
 			        return false;
 		        }
@@ -677,20 +696,42 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
         {
 	        this.tasks.addTask(6, new EntityAISmartTempt(this, 0.55D, Items.EMERALD)
 	        {
+//	        	@Override
+//				public boolean shouldExecute()
+//			    {
+//	        		super.shouldExecute();
+//			        if ( EntitySentry.this.getAttackTarget() != null || EntitySentry.this.isBurning() )
+//			        {
+//				        return false;
+//			        }
+//			        return super.shouldExecute();
+//			    }
+	        	
 	        	@Override
-				public boolean shouldExecute()
-			    {
-	        		super.shouldExecute();
-			        if ( EntitySentry.this.inCombat || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.isBurning() )
-			        {
-				        return false;
-			        }
-			        return super.shouldExecute();
-			    }
+	            public boolean shouldExecute()
+	            {
+	        		if ( EntitySentry.this.flanking || EntitySentry.this.isRiding() || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.isFleeing() )
+	        		{
+	        			return false;
+	        		}
+	        		return super.shouldExecute();
+	            }
+	        	
 			});
         }
 	    this.tasks.addTask(8, new EntityAIWanderAvoidWater(this, 0.6D)
 	    {
+	    	
+	    	@Override
+            public boolean shouldExecute()
+            {
+	    		if ( EntitySentry.this.flanking || EntitySentry.this.isRiding() || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.isFleeing() )
+        		{
+        			return false;
+        		}
+        		return super.shouldExecute();
+            }
+	    	
 	    	@Nullable
     	    protected Vec3d getPosition()
     	    {
@@ -717,7 +758,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
         	@Override
             public boolean shouldExecute()
             {
-        		if ( EntitySentry.this.isRiding() || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.fleeing )
+        		if ( EntitySentry.this.flanking || EntitySentry.this.isRiding() || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.isFleeing() )
         		{
         			return false;
         		}
@@ -729,7 +770,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
         	@Override
             public boolean shouldExecute()
             {
-        		if ( EntitySentry.this.isRiding() || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.fleeing )
+        		if ( EntitySentry.this.flanking || EntitySentry.this.isRiding() || EntitySentry.this.getAttackTarget() != null || EntitySentry.this.isFleeing() )
         		{
         			return false;
         		}
@@ -778,96 +819,113 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
     protected float getWaterSlowDown()
     {
-        return this.isHandActive()?0.8F:0.9F;
+        return this.isHandActive()?0.81F:0.92F;
     }
 	
 	protected EntityBoat boat;
 	protected int boatTimer = 0;
-	
-	protected int aggroTimer = 0;
+	public int aggroTimer = 0;
+	public int flankingTimer = 0;
 	
 	@Override
 	public void onLivingUpdate() // aaa
 	{
-		if ( !this.world.isRemote && this.getRidingEntity() instanceof EntityBoat )
+		if ( !this.world.isRemote )
 		{
-			if ( this.getRidingEntity() == this.boat )
+			if ( this.getRidingEntity() instanceof EntityBoat )
 			{
-	   			if ( this.getAttackTarget() != null )
-	   			{
-	   				double d0 = this.getAttackTarget().posX - this.posX;
- 	                double d1 = this.getAttackTarget().posZ - this.posZ;
- 	                double f = 1+MathHelper.sqrt(d0 * d0 + d1 * d1);
-                    	   				
-	   				if ( f < 7 && this.getHeldItemMainhand().getItem() instanceof ItemBow )
-	   				{
-//	   					this.boat.setDead();
-//	   					this.boatTimer = 5;
-	   				}
-	   				else
-	   				{
-		   				this.boat.addVelocity(d0 / f * 0.05D, 0, d1 / f * 0.05D);
-	   				}
-	   			}
-	   			else
-	   			{
-	   				this.boat.addVelocity(this.boat.getHorizontalFacing().getFrontOffsetX()/32.0D+this.rand.nextGaussian()/32.0D, 0, this.boat.getHorizontalFacing().getFrontOffsetZ()/32.0D+this.rand.nextGaussian()/32.0D);
-	   			}
-	   			
-	   			this.boat.velocityChanged = true;
-	   			
-	   			try
-		    	{
-			    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-	
-			        double d0 = (p.x - this.boat.posX) * 2;
-			        double d2 = (p.z - this.boat.posZ) * 2;
-			        
-			        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-			        this.boat.rotationYaw = f*0.5F+this.rand.nextFloat()*0.05F;
-		    	}
-		    	catch ( Exception err ) {}
-	   			
-	   			// CAMERA
-	        	this.rotationPitch = 0.0F;
-	        	this.posX = this.boat.posX;
-	        	this.posY = this.boat.posY;
-	        	this.posZ = this.boat.posZ;
-	        	this.velocityChanged = true;
-	        	this.rotationYaw = this.boat.rotationYaw;
-	        	this.rotationYawHead = this.boat.rotationYaw;
-	        	
-	   			// if ( this.boat.collidedHorizontally || this.boat.collidedVertically ) this.boat.setDead(); // ( this.boat.isEntityInsideOpaqueBlock() ) this.boat.setDead();
-	   			if ( this.isEntityInsideOpaqueBlock(this.boat) || !this.boat.isInWater() )
-	   			{
-	   				this.boat.setDead();
-	    			this.boatTimer = 5;
-	   			}
-			}
-			else
-			{
-				if ( this.getRidingEntity().getPassengers().size() > 1 )
+				if ( this.getRidingEntity() == this.boat )
 				{
-
+		   			if ( this.getAttackTarget() != null )
+		   			{
+		   				double d0 = this.getAttackTarget().posX - this.posX;
+	 	                double d1 = this.getAttackTarget().posZ - this.posZ;
+	 	                double f = 1+MathHelper.sqrt(d0 * d0 + d1 * d1);
+	                    	   				
+		   				if ( f < 7 && this.getHeldItemMainhand().getItem() instanceof ItemBow )
+		   				{
+	//	   					this.boat.setDead();
+	//	   					this.boatTimer = 5;
+		   				}
+		   				else
+		   				{
+			   				this.boat.addVelocity(d0 / f * 0.05D, 0, d1 / f * 0.05D);
+		   				}
+		   			}
+		   			else
+		   			{
+		   				this.boat.addVelocity(this.boat.getHorizontalFacing().getFrontOffsetX()/32.0D+this.rand.nextGaussian()/32.0D, 0, this.boat.getHorizontalFacing().getFrontOffsetZ()/32.0D+this.rand.nextGaussian()/32.0D);
+		   			}
+		   			
+		   			this.boat.velocityChanged = true;
+		   			
+		   			try
+			    	{
+				    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
+		
+				        double d0 = (p.x - this.boat.posX) * 2;
+				        double d2 = (p.z - this.boat.posZ) * 2;
+				        
+				        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
+				        this.boat.rotationYaw = f*0.5F+this.rand.nextFloat()*0.05F;
+			    	}
+			    	catch ( Exception err ) {}
+		   			
+		   			// CAMERA
+		        	this.rotationPitch = 0.0F;
+		        	this.posX = this.boat.posX;
+		        	this.posY = this.boat.posY;
+		        	this.posZ = this.boat.posZ;
+		        	this.velocityChanged = true;
+		        	this.rotationYaw = this.boat.rotationYaw;
+		        	this.rotationYawHead = this.boat.rotationYaw;
+		        	
+		   			// if ( this.boat.collidedHorizontally || this.boat.collidedVertically ) this.boat.setDead(); // ( this.boat.isEntityInsideOpaqueBlock() ) this.boat.setDead();
+		   			if ( this.isEntityInsideOpaqueBlock(this.boat) || !this.boat.isInWater() )
+		   			{
+		   				this.boat.setDead();
+		    			this.boatTimer = 5;
+		   			}
 				}
 				else
 				{
-					this.boat = (EntityBoat) this.getRidingEntity();
+					if ( this.getRidingEntity().getPassengers().size() > 1 )
+					{
+	
+					}
+					else
+					{
+						this.boat = (EntityBoat) this.getRidingEntity();
+					}
 				}
 			}
+			else if ( this.getAttackTarget() != null )
+	    	{
+				if ( this.isFleeing() )
+				{
+					super.setSprinting(true);
+				}
+				else
+				{
+					if ( EntitySentry.this.getHeldItemMainhand().getItem() instanceof ItemBow )
+					{
+						
+					}
+					else
+					{
+			    		this.faceEntity( this.getAttackTarget(), 30.0F, 30.0F);
+					}
+		    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 30.0F, 30.0F);
+				}
+	    	}
 		}
-		else if ( this.getAttackTarget() != null && !this.fleeing )
-    	{
-			this.faceEntitySmart(this.getAttackTarget());
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    	}
-    	else if ( this.hasPath() )
-    	{
-        	this.faceMovingDirection();
-    	}
     	
 		super.onLivingUpdate(); // *** === *** === ***
-		
+				
+		if ( this.world.isRemote )
+		{
+			return;
+		}
 		
 		if ( this.getRidingEntity() instanceof EntityBoat )
 		{
@@ -880,47 +938,77 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
         	this.rotationYaw = this.getRidingEntity().rotationYaw;
         	this.rotationYawHead = this.getRidingEntity().rotationYaw;
 		}
-		else if ( this.getAttackTarget() != null && !this.fleeing )
+		else if ( this.getAttackTarget() != null && !this.isFleeing() )
     	{
-			this.faceEntitySmart(this.getAttackTarget());
-    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+			if ( EntitySentry.this.getHeldItemMainhand().getItem() instanceof ItemBow )
+			{
+				
+			}
+			else
+			{
+	    		this.faceEntity( this.getAttackTarget(), 30.0F, 30.0F);
+			}
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 30.0F, 30.0F);
     	}
-    	else
-    	{
-        	this.faceMovingDirection();
-    	}
-		
-		
-		if ( this.world.isRemote )
-		{
-			return;
-		}
 		
 		if ( this.potionImmunity > 0 ) this.potionImmunity--;
 		
 			// FLANKING
-			if ( this.flanking && (this.getNavigator().noPath() || (this.getAttackTarget() != null && this.getDistance(this.getAttackTarget()) >= 7.5 ) || this.blocking || (this.motionX*this.motionX + this.motionZ*this.motionZ <= 0.0012D)) )
+			if ( this.flanking )
 			{
-				if ( this.getAttackTarget() != null ) this.faceEntitySmart(this.getAttackTarget());
-				this.flanking = false;
-	    		//System.out.println("xxx");
+				if ( 
+					   this.getNavigator().noPath()
+					|| this.getNavigator().getPath().getFinalPathPoint() == null
+					|| this.getAttackTarget() == null
+					|| this.getDistance(this.getAttackTarget()) >= 7.5
+					|| this.blocking
+					|| this.isFleeing() 
+				)
+				{
+					this.flanking = false;
+					this.flankingTimer = 0;
+					this.getNavigator().clearPath();
+				}
+				else
+				{
+					this.flankingTimer++;
+					
+					if ( this.flankingTimer < 8 )
+					{
+						this.setSprinting(true);
+					}
+					else
+					{
+						this.setSprinting(false);
+						double speed = (Math.abs(this.motionX)+(Math.abs(this.motionZ)));
+						if ( this.flankingTimer > 64 || speed < 0.02D || this.getDistanceSq(this.getNavigator().getPath().getFinalPathPoint().x,this.getNavigator().getPath().getFinalPathPoint().y,this.getNavigator().getPath().getFinalPathPoint().z) < 3 - speed * 6 )
+						{
+							this.flanking = false;
+							this.flankingTimer = 0;
+							this.getNavigator().clearPath();
+						}
+					}
+				}
 			}
-			// ========
+			else
+			{
+				this.flankingTimer = 0;
+			}
 		
 		if ( this.ticksExisted % 100 == 0 )
     	{
     		this.heal(1.0f);
 	        this.setSprinting(false);
 	        
-	    	if ( this.getHealth() > this.fleeModifier*this.getMaxHealth() )
-	    	{
-	    		this.fleeing = false;
-	    	}
+//	    	if ( this.getHealth() > this.fleeModifier*this.getMaxHealth() )
+//	    	{
+//	    		this.fleeing = false;
+//	    	}
 	    	
-    		if ( this.despawnTimer < 100 && --this.despawnTimer <= 0 )
+    		if ( this.despawnTimer < 100 && --this.despawnTimer < 0 )
     		{
     			List<EntityPlayer> nearbyPlayers = world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32));
-				if ( nearbyPlayers.isEmpty() || world.getWorldTime() == 22000 )
+				if ( nearbyPlayers.isEmpty() || world.getWorldTime() == 22000 || this.despawnTimer < -100 )
 				{
 					this.despawn = true;
 	    			this.setHealth(0);
@@ -931,110 +1019,17 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
     		
     		if ( this.getAttackTarget() != null )
     		{
-    			
-    			
-    			
+        		if ( !this.climbUntilPlatform && rand.nextBoolean() )
+        		{
+        			this.climbingTimer = 0;
+        		}
+        		
     			// ==========================================================================================
     			// ==========================================================================================
-    			if ( !this.isDrinkingPotion() && !this.blocking && !this.fleeing && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) && this.getDistance(this.getAttackTarget()) <= 6.5 && !this.isInWater() ) // && this.rand.nextBoolean() // && this.getDistance(this.getAttackTarget()) > 2 )
+    			if ( !this.isDrinkingPotion() && !this.blocking && !this.isFleeing() && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) && this.getDistance(this.getAttackTarget()) <= 6.5 && !this.isInWater() ) // && this.rand.nextBoolean() // && this.getDistance(this.getAttackTarget()) > 2 )
     	        {
     	        	try
     	        	{
-    	        		
-//    	        		int x = 0;
-//    	        		int z = 0;
-//	    				
-//	    				int absX = MathHelper.abs(this.getAttackTarget().getPosition().getX()-this.getPosition().getX());
-//	    				int absZ = MathHelper.abs(this.getAttackTarget().getPosition().getZ()-this.getPosition().getZ());
-//	    				
-//	    				int i = this.rand.nextInt(4);
-//	    				
-//	    				// ( 3, 2 )
-//	    				if ( absX > absZ )
-//	    				{
-//	    					int dif = absX - absZ;
-//	    					dif *= 2;
-//	    					switch ( i )
-//		    				{
-//		    					case 0:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()+dif;
-//		    						z = this.getAttackTarget().getPosition().getZ()+absX;
-//		    						break;
-//		    					}
-//		    					case 1:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()+absX;
-//		    						z = this.getAttackTarget().getPosition().getZ()-dif;
-//		    						break;
-//		    					}
-//		    					case 2:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()-absX;
-//		    						z = this.getAttackTarget().getPosition().getZ()+dif;
-//		    						break;
-//		    					}
-//		    					case 3:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()-dif;
-//		    						z = this.getAttackTarget().getPosition().getZ()-absX;
-//		    						break;
-//		    					}
-//		    					default:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()-absX;
-//		    						z = this.getAttackTarget().getPosition().getZ()+dif;
-//		    						break;
-//		    					}
-//		    				}
-//	    				}
-//	    				else
-//	    				{
-//	    					int dif = absZ - absX;
-//	    					switch ( i )
-//		    				{
-//		    					case 0:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()+dif;
-//		    						z = this.getAttackTarget().getPosition().getZ()+absZ;
-//		    						break;
-//		    					}
-//		    					case 1:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()+dif;
-//		    						z = this.getAttackTarget().getPosition().getZ()-absZ;
-//		    						break;
-//		    					}
-//		    					case 2:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()-absZ;
-//		    						z = this.getAttackTarget().getPosition().getZ()+dif;
-//		    						break;
-//		    					}
-//		    					case 3:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()-absZ;
-//		    						z = this.getAttackTarget().getPosition().getZ()-dif;
-//		    						break;
-//		    					}
-//		    					default:
-//		    					{
-//		    						x = this.getAttackTarget().getPosition().getX()+absZ;
-//		    						z = this.getAttackTarget().getPosition().getZ()+dif;
-//		    						break;
-//		    					}
-//		    				}
-//	    				}
-//	    				
-//	    				System.out.println(i);
-	    				
-    	        		//System.out.println(i);
-
-    	        		//			(3,1)
-    	        		// (0,0)
-    	        		
-    	        		// 3
-    	        		
     	        		double x = this.getAttackTarget().getPositionVector().x;
     	        		double z = this.getAttackTarget().getPositionVector().z;
     	        		
@@ -1051,9 +1046,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    				double xratio = xdif / xz;
 	    				double zratio = zdif / xz;
 	    				
-//	    				double x = this.getAttackTarget().getPosition().getX();
-//	    				double z = this.getAttackTarget().getPosition().getZ();
-	    				
 	    				x += xratio*2;
 	    				z += zratio*2;
 	    				
@@ -1061,9 +1053,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    				
 	    				xratio *= dcap;
 	    				zratio *= dcap;
-	    				
-//	    				x += xratio;
-//	    				z += zratio;
 	    				
 	    				if ( xabs > zabs )
 	    				{
@@ -1073,39 +1062,28 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    				{
 	    					x += this.rand.nextBoolean()?zratio:-zratio;
 	    				}
-	
-	    				// use this v
 	    				
-//	    				if ( rand.nextBoolean() )
-//	    				{
-//	    					Vec3d pos = RandomPositionGenerator.findRandomTargetBlockTowards(this, 3, 3, new Vec3d(x,this.getAttackTarget().getPosition().getY(),z));
-//	    					if ( pos != null && this.getNavigator().tryMoveToXYZ(pos.x+0.5D, pos.y+0.5D, pos.z+0.5D, 0.7D) )
-//		    	        	{
-//		    	        		this.getMoveHelper().strafe(0.0F, 0.0F);
-//		    	        		this.setSprinting(true);
-//		    	        		this.flanking = true;
-//		    	        		System.out.println("?????????");
-//		    	        	}
-//	    				}
-//	    				else
-	    				{
-		    				BlockPos pos = EntityAIRaid.findValidSurface(this.getEntityWorld(), new BlockPos(x,this.getAttackTarget().getPosition().getY(),z), 4);
-		    				if ( pos != null && this.getNavigator().tryMoveToXYZ(pos.getX()+0.5D, pos.getY()+0.5D, pos.getZ()+0.5D, 0.65D) )
-		    	        	{
-		    			    	this.allStance(true);
-		    	        		this.getMoveHelper().strafe(0.2F, this.strafeHor);
-		    	        		this.setSprinting(false);
-		    	        		this.flanking = true;
-		    	        		//this.faceEntitySmart(this.getAttackTarget());
-		    	        		//System.out.println("!!!");
-		    	        		double dist = this.getDistanceSq(this.getAttackTarget());
-		    	        		Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-								double push = (8.0D+dist);
+	    				BlockPos pos = EntityAIRaid.findValidSurface(this.getEntityWorld(), new BlockPos(x,this.getAttackTarget().getPosition().getY(),z), 4);
+	    				
+	    				if ( pos != null && this.getNavigator().tryMoveToXYZ(pos.getX()+0.5D, pos.getY()+0.5D, pos.getZ()+0.5D, 0.65D) )
+	    	        	{
+	    			    	this.allStance(true);
+	    	        		this.getMoveHelper().strafe(0.2F, this.strafeHor);
+	    	        		this.setSprinting(false);
+	    	        		this.flanking = true;
+	    	        		//this.faceEntitySmart(this.getAttackTarget());
+	    	        		//System.out.println("!!!???");
+	    	        		double dist = this.getDistanceSq(this.getAttackTarget());
+	    	        		Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+	    	        		if ( velocityVector != null )
+	    	        		{
+		    	        		double push = (8.0D+dist);
 								this.addVelocity((velocityVector.x)/push, -0.01D, (velocityVector.z)/push);
 								this.velocityChanged = true;
-			    				//this.world.setBlockState(new BlockPos(x,this.posY-1,z), Blocks.GOLD_BLOCK.getDefaultState());
-		    	        	}
-	    				}
+
+	    	        		}
+		    				//this.world.setBlockState(new BlockPos(x,this.posY-1,z), Blocks.GOLD_BLOCK.getDefaultState());
+	    	        	}
     	        	}
     	        	catch ( Exception e )
     	        	{
@@ -1115,29 +1093,39 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
     			// ==========================================================================================
     			// ==========================================================================================
     			
-    			if ( this.ticksExisted == 100 && this.getDistance(this.getAttackTarget()) > 16 )
-    			{
-    				this.setAttackTarget(null);
-    			}
-    			else if ( ++aggroTimer > 5 && this.getDistance(this.getAttackTarget()) > 12 )
+    			
+    			
+//    			if ( this.ticksExisted == 100 && this.getDistance(this.getAttackTarget()) > 16 )
+//    			{
+//    				this.setAttackTarget(null);
+//    				return;
+//    			}
+    			
+    			
+    			
+    			else if ( this.aggroTimer++ > 4 && !this.canEntityBeSeen(this.getAttackTarget() )) // && this.getDistance(this.getAttackTarget()) > 12 && !(this.getHeldItemMainhand().getItem() instanceof ItemBow) )
     			{
     				if ( this.getAttackTarget().getPositionVector() != null )
     				{
-	    				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
-			            if ( vec3d != null )
-			            {
-		    				this.setAttackTarget(null);
-					        this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D);
-			            }
+	    				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 16, 6, this.getAttackTarget().getPositionVector());
+			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D) )
+				        {
+				        	this.forceFleeing = true;
+					        this.setRevengeTarget(this.getAttackTarget());
+					        //if ( !(this.getAttackTarget() instanceof EntityPlayer) )
+				        	{
+					        	this.setAttackTarget(null);
+				        	}
+				        	this.aggroTimer = 0;
+				        	return;
+				        }
     				}
     			}
-    			
-    			
-    			
     		}
     		else
     		{
-    			aggroTimer = 0;
+    			//this.aggroTimer = 0;
+    			this.fleeing = false;
     		}
     		
     		if ( this.boat != null )
@@ -1153,7 +1141,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
     		{
 	    		if ( this.boatTimer < 1 )
 	    		{
-		    		if ( !this.isRiding() && this.isInWater() && !this.getNavigator().noPath() && !this.isDead ) // this.getAttackTarget() == null
+		    		if ( !this.isRiding() && this.isInWater() && this.motionY < 0.12D && this.motionY > -0.12D && !this.getNavigator().noPath() && !this.isDead ) // this.getAttackTarget() == null
 		       		{
 		       			this.motionX = 0;
 		       			this.motionY = 0;
@@ -1206,7 +1194,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 
 		if ( iStackO.getItem() instanceof ItemShield )
 		{
-			if ( !this.flanking && !this.fleeing ) this.sentryTypeTank( );
+			if ( !this.flanking && !this.isFleeing() ) this.sentryTypeTank( );
 		}
 		else if ( iStackM.getItem() instanceof ItemBow )
 		{
@@ -1214,7 +1202,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		}
 		else
 		{
-			if ( !this.flanking && !this.fleeing ) this.sentryTypeDPS( );
+			if ( !this.flanking && !this.isFleeing() ) this.sentryTypeDPS( );
 		}
 		
 		if ( this.isEntityAlive() && this.getHealth() > 0 )
@@ -1233,7 +1221,12 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 					{
 		            	float push = (float)(8.0F+(dist*dist)*6);
 						Vec3d velocityVector = new Vec3d(this.posX-this.getAttackTarget().posX, 0, this.posZ-this.getAttackTarget().posZ);
-						this.addVelocity(velocityVector.x/push,0,velocityVector.z/push);
+						if ( velocityVector != null )
+    	        		{
+							this.addVelocity(velocityVector.x/push,0,velocityVector.z/push);
+							this.velocityChanged = true;
+						}
+						
 						try
 						{
 							if ( !this.hasPath() )
@@ -1249,7 +1242,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 							}
 						}
 						catch ( Exception e ) {}
-						this.velocityChanged = true;
 					}
             	}
 	            
@@ -1305,8 +1297,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	        else if ( this.limitPotions > 0 && this.useHealingPotion && this.getHealth()/2.0F <= this.getMaxHealth() & this.getAttackTarget() != null && this.getDistance(this.getAttackTarget()) >= 3 )
 	        {
 	        	this.getNavigator().clearPath();
-	        	this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-	        	this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+	        	this.faceEntity(this.getAttackTarget(), 30.0F, 30.0F);
+	        	this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 30.0F, 30.0F);
 	            this.weaponMain = this.getHeldItemMainhand();
 	            this.weaponOff = this.getHeldItemOffhand();
 	            this.setHeldItem(EnumHand.MAIN_HAND, ItemStack.EMPTY);
@@ -1455,8 +1447,15 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			}
 			else
 			{
-				if ( this.getAttackTarget() == e ) this.setAttackTarget(null);
-				return false;
+				if ( this instanceof EntityOrc )
+				{
+					
+				}
+				else
+				{
+					if ( this.getAttackTarget() == e ) this.setAttackTarget(null);
+					return false;
+				}
 			}
 		}
 		
@@ -1506,8 +1505,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 						{
 							this.canShieldPush = true;
 							Vec3d velocityVector = new Vec3d(this.posX - e.posX, 0, this.posZ - e.posZ);
-							//if ( !this.world.isRemote )
-							{	
+							if ( velocityVector != null )
+	    	        		{	
 								this.addVelocity((velocityVector.x)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D), (0.22D-MathHelper.clamp(dist/100.0, 0.0D, 0.16D))*MathHelper.clamp(amount, 0.0D, 1.0D), (velocityVector.z)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D));
 			                	this.velocityChanged = true;
 							}
@@ -1525,22 +1524,31 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 							if ( this.canShieldPush )
 							{
 								this.canShieldPush = false;
-								
-								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
-								//if ( !this.world.isRemote )
-								{	
-									e.addVelocity((velocityVector.x)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D), (0.22D-MathHelper.clamp(dist/100.0, 0.0D, 0.16D))*MathHelper.clamp(amount, 0.0D, 1.0D), (velocityVector.z)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D));
-				                	e.velocityChanged = true;
-								}
+								this.knockBackSmart(((EntityLivingBase)e), (float) (0.25D-dist/100.0D));
+
+//								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
+//								if ( velocityVector != null )
+//		    	        		{
+//									e.addVelocity((velocityVector.x)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D), (0.22D-MathHelper.clamp(dist/100.0, 0.0D, 0.16D))*MathHelper.clamp(amount, 0.0D, 1.0D), (velocityVector.z)/( dist+1 )*MathHelper.clamp(amount, 0.0D, 1.2D));
+//				                	e.velocityChanged = true;
+//								}
 							}
 							else
-							{								
-								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
-								//if ( !this.world.isRemote )
-								{	
-									e.addVelocity((velocityVector.x)/( dist+8 )*MathHelper.clamp(amount, 0.0D, 1.0D), 0, (velocityVector.z)/( dist+8 )*MathHelper.clamp(amount, 0.0D, 1.0D));
-				                	e.velocityChanged = true;
+							{
+								if ( e.onGround && !e.isAirBorne )
+								{
+									this.knockBackSmart(((EntityLivingBase)e), 0.1F);
 								}
+								else
+								{
+									this.knockBackSmart(((EntityLivingBase)e), 0.0F);
+								}
+//								Vec3d velocityVector = new Vec3d(e.posX - this.posX, 0, e.posZ - this.posZ);
+//								if ( velocityVector != null )
+//		    	        		{
+//									e.addVelocity((velocityVector.x)/( dist+8 )*MathHelper.clamp(amount, 0.0D, 1.0D), 0, (velocityVector.z)/( dist+8 )*MathHelper.clamp(amount, 0.0D, 1.0D));
+//				                	e.velocityChanged = true;
+//								}
 							}
 						}
 						this.world.setEntityState(this, (byte)29);
@@ -1565,15 +1573,31 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			{
 				Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 16, 6, e.getPositionVector());
 				
-                if ( vec3d != null )
+                if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D) )
                 {
-                	this.setAttackTarget(null);
-                    this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D);
+                	this.setRevengeTarget(this.getAttackTarget());
+                    this.forceFleeing = true;
+			        this.aggroTimer = 0;
                 }
 			}
 			return true;
 		}
 		return false;
+	}
+	
+	public void knockBackSmart(EntityLivingBase entityIn, float strength)
+	{
+		try
+		{
+			Vec3d pos = this.getPositionVector();
+	        Vec3d targetPos = entityIn.getPositionVector();
+	        entityIn.knockBack(entityIn, strength, pos.x - targetPos.x, pos.z - targetPos.z);
+            entityIn.velocityChanged = true;
+	    }
+	    catch ( Exception e )
+	    {
+	    	
+	    }
 	}
 	
 	protected boolean canBlockDamageSource(DamageSource damageSourceIn)
@@ -1825,7 +1849,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	        this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.0D);
 	        mount.setHealth(10);
 	        mount.width = 0.9F;
-	        mount.stepHeight = 2.05F;
+	        mount.stepHeight = 1.55F;
 	        this.world.spawnEntity(mount);
 	        mount.removePassengers();
 	        this.startRiding(mount);
@@ -1834,126 +1858,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	        mount.velocityChanged = true;
 	    }
 	}
-	
-	
-//			 	@Override
-//			    public void onLivingUpdate()
-//			    {
-//		
-//			    	if ( this.getAttackTarget() != null )
-//			    	{
-//			    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    		//this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    	}
-//			    	else
-//			    	{
-//			        	this.faceMovingDirection();
-//			    	}
-//			    	super.onLivingUpdate();
-//			    	if ( this.getAttackTarget() != null )
-//			    	{
-//			    		this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    		//this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
-//			    	}
-//			    	else
-//			    	{
-//			        	this.faceMovingDirection();
-//			    	}
-//			    }
-//			    
-//				public void faceRidingDirection( EntityLiving e )
-//				{
-//					
-//					try
-//			    	{
-//				    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-//		
-//				        double d0 = (p.x - this.posX) * 2;
-//				        double d2 = (p.z - this.posZ) * 2;
-//				        double d1 = p.y - this.posY;
-//				
-//				        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-//				        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-//				        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-//				        this.rotationPitch = f1;
-//				        this.rotationYaw = f;
-//			    	}
-//			    	catch ( Exception err ) {}
-//					
-//					//if ( this.rotationPitch < 0.2F )
-//			        {
-//			        	this.rotationPitch = 0.0F;
-//			        }
-//					
-//			        if ( !this.getNavigator().noPath() )
-//			        {
-//						try
-//						{
-//					    	PathPoint p = e.getNavigator().getPath().getFinalPathPoint();
-//					
-//					        double d0 = (p.x - e.posX) * 2;
-//					        double d2 = (p.z - e.posZ) * 2;
-//					        double d1 = p.y - e.posY;
-//					        
-//					        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-//					        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-//					        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-//					        e.rotationPitch = f1;
-//					        e.rotationYaw = f;
-//						}
-//						catch ( Exception err ) {}
-//			        }
-//					
-//			        //if ( e.rotationPitch < 0.2F )
-//			        {
-//			        	e.rotationPitch = 0.0F;
-//			        }
-//				}
-				
-			 	public void faceEntitySmart(EntityLivingBase p)
-			    {
-//			    	if ( !this.getNavigator().noPath() )
-//			        {
-				    	try
-				    	{
-					    	//PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-			
-					        double d0 = (p.getPositionVector().x - this.getPositionVector().x) * 2;
-					        double d2 = (p.getPositionVector().z - this.getPositionVector().z) * 2;
-					        // double d1 = p.getPositionVector().y - this.getPositionVector().y;
-					
-					        // double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-					        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-					        // float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-					        // this.rotationPitch = f1;
-					        // this.prevRotationPitch = f1;
-					        this.rotationYaw = f;
-					        this.prevRotationYaw = f;
-				    	}
-				    	catch ( Exception e ) {}
-			    }
-	 
-			    public void faceMovingDirection()
-			    {
-			    	if ( !this.getNavigator().noPath() )
-			        {
-				    	try
-				    	{
-					    	PathPoint p = this.getNavigator().getPath().getFinalPathPoint();
-			
-					        double d0 = (p.x - this.posX) * 2;
-					        double d2 = (p.z - this.posZ) * 2;
-					        double d1 = p.y - this.posY;
-					
-					        double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
-					        float f = (float)(MathHelper.atan2(d2, d0) * (180D / Math.PI)) - 90.0F;
-					        float f1 = (float)(-(MathHelper.atan2(d1, d3) * (180D / Math.PI)));
-					        this.rotationPitch = f1;
-					        this.rotationYaw = f;
-				    	}
-				    	catch ( Exception e ) {}
-			        }
-			    }
 	
 	//===================================================== Ranged Attack =======================================================
 	
@@ -1964,6 +1868,8 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		{
 			return;
 		}
+		
+		this.aggroTimer = 0;
 		
 	    EntityArrow entityarrow = this.getArrow(distanceFactor);
 	
@@ -1979,6 +1885,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	    double d3 = (double)MathHelper.sqrt(d0 * d0 + d2 * d2);
 	    entityarrow.shoot( d0, d1 + d3 * 0.2D, d2, 2.2F, 2.0F );
 	    this.playSound(SoundEvents.ENTITY_SKELETON_SHOOT, 1.0F, 1.0F / (this.getRNG().nextFloat() * 0.5F + 0.8F));
+	    //entityarrow.setDamage(this.attack);
 	    this.world.spawnEntity(entityarrow);
 	}
 	
@@ -2013,7 +1920,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public void writeEntityToNBT(NBTTagCompound compound)
 	{
-		if ( this.raidX != null && this.raidZ != null )
+		if ( this.raidX != null && this.raidZ != null && !( this.raidX == 0 && this.raidZ == 0 ) )
 		{
 			compound.setInteger("raidX", this.raidX);
 			compound.setInteger("raidZ", this.raidZ);
@@ -2030,6 +1937,10 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		this.tasks.removeTask(this.areaAI);
 		if ( x != null && z != null )
 		{
+			if ( x == 0 && z == 0 )
+			{
+				return;
+			}
 			this.raidX = x;
 			this.raidZ = z;
 			this.areaAI.setCenter(x, z);
@@ -2147,14 +2058,15 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	{
 		this.stance = this.rand.nextInt(6)+5;
 		this.strafeHor = this.getStrafe(this.stance);
-		if ( faceTarget && !this.fleeing ) this.faceEntitySmart(this.getAttackTarget());
+		if ( faceTarget && !this.isFleeing() ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
+
 	}
 	
 	public void allStance(boolean faceTarget)
 	{
 		this.stance = this.rand.nextInt(8)+3;
 		this.strafeHor = this.getStrafe(this.stance);
-		if ( faceTarget && !this.fleeing ) this.faceEntitySmart(this.getAttackTarget());
+		if ( faceTarget && !this.isFleeing() ) AIHelper.faceEntitySmart(this, this.getAttackTarget());
 	}
 	
 	//===================================================== DPS =======================================================
@@ -2202,9 +2114,12 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 								if ( this.onGround )
 								{
 									Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-									double push = (1.0D+dist*2.0D);
-									this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
-				                	this.velocityChanged = true;
+									if ( velocityVector != null )
+			    	        		{
+										double push = (1.0D+dist*2.0D);
+										this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+					                	this.velocityChanged = true;
+			    	        		}
 								}
 								if ( this.splashPotionTimer < 0 )
 								{
@@ -2230,22 +2145,26 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 				}
 			}
 			
-			// if ( !blocking )
+			if ( !this.isFleeing() && !this.flanking )
 			{
 				float strafeMod = 1.0F;
 				
 				if ( this.stance < 5 )
 				{
+					// BACKPEDDLE
 					this.setSprinting(false);
-					if ( dist <= 30 )
+					if ( dist <= 32 && dist > 2 )
 					{
 						if ( this.onGround )
 						{
-							this.faceEntitySmart(this.getAttackTarget());
+				    		//AIHelper.faceEntitySmart(this, this.getAttackTarget());
 							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-							double push = (1.0D+5.0D*dist);
-							this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
-		                	this.velocityChanged = true;
+							if ( velocityVector != null )
+	    	        		{
+								double push = (1.0D+3.8D*dist);
+								this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
+			                	this.velocityChanged = true;
+	    	        		}
 						}
 						this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), 0.4F); // bau
 						this.getMoveHelper().strafe( -1.0F, this.strafeHor );
@@ -2265,17 +2184,17 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 				}
 				else if ( dist <= 4 )
 				{
-					this.strafeVer = 0.7F;
+					this.strafeVer = 0.8F;
 					strafeMod = 0.9F;
 				}
 				else if ( dist <= 9 )
 				{
-					this.strafeVer = 0.8F;
+					this.strafeVer = 0.9F;
 					strafeMod = 0.8F;
 				}
 				else
 				{
-					this.strafeVer = 0.9F;
+					this.strafeVer = 1.0F;
 					strafeMod = 0.7F;
 				}
 							
@@ -2290,9 +2209,12 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 						if ( this.onGround && !this.isSprinting() )
 						{
 							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-							double push = (1.0D+dist*dist);
-							this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
-		                	this.velocityChanged = true;
+							if ( velocityVector != null )
+	    	        		{
+								double push = (1.0D+dist*dist);
+								this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+			                	this.velocityChanged = true;
+	    	        		}
 						}
 					}
 					
@@ -2310,17 +2232,37 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 						this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*strafeMod );
 					}
 				}
-				else
+				else if ( this.getAttackTarget().onGround && !this.getAttackTarget().isAirBorne && this.onGround && !this.isAirBorne && !this.climbUntilPlatform )
 				{
-					this.getMoveHelper().strafe( 0.0F, 0.0F );
-					
-					Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
-		            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
+		        	// System.out.println("NONE");
+
+					Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 16, 6, this.getAttackTarget().getPositionVector());
+		            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D) )
 		            {
 				        this.forceFleeing = true;
+				        this.setRevengeTarget(this.getAttackTarget());
+				        this.aggroTimer = 0;
 				        return;
 		            }
 				}
+//				else if ( this.getAttackTarget().onGround && !this.getAttackTarget().isAirBorne )
+//				{
+//					this.getMoveHelper().strafe( 0.0F, 0.0F );
+//					
+//					if ( !( (this.getAttackTarget().posY-this.posY)*2.0D > this.getDistance(this.getAttackTarget()) ) && !this.collidedHorizontallyWide(this.posY+this.height) )
+//					{
+//						Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
+//			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
+//			            {
+//					        this.forceFleeing = true;
+//					        return;
+//			            }
+//			            else if ( this.onGround && !this.isAirBorne ) 
+//			            {
+//			            	this.getNavigator().clearPath();
+//			            }
+//					}
+//				}
 			}
 			//this.blockingTimer--;
 		}
@@ -2347,7 +2289,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	
 	private void sentryTypeTank( )
 	{
-		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() && this.getAttackTarget().getClass() != this.getClass() )
+		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() )
 		{
 			List<EntityArrow> arrows = this.world.getEntitiesWithinAABB(EntityArrow.class, new AxisAlignedBB(this.getPosition()).grow(8, 8, 8), new Predicate<EntityArrow>()
 			{
@@ -2366,6 +2308,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			if ( !arrows.isEmpty() )
 			{
 				this.forwardStance(false);
+	    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
 				if ( dist <= 12 )
 				{
 					this.blockingTimer = 25;
@@ -2391,7 +2334,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 				this.forwardStance(false);
 	        }
 			
-			if ( !this.blocking && !this.isSprinting() && dist <= 12 && this.blockingTimer <= -(int)(this.stance*5+dist+20) && this.getRevengeTarget() != null && this.getRevengeTarget().isEntityAlive() )
+			if ( !this.blocking && !this.isSprinting() && dist <= 12 && this.blockingTimer <= -(int)(this.stance*5+dist+20) && !(this.getAttackTarget() instanceof EntityVillager) )
 			{
 				this.allStance(true);
 				this.blockingTimer = (int)MathHelper.clamp((rand.nextInt(70)+20-dist), 20, 80);
@@ -2442,132 +2385,149 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 				}
 			}
 			
-			if ( !this.blocking ) // TODO
+			if ( !this.isFleeing() && !this.flanking )
 			{
-				float strafeMod = 1.0F;
-				
-				if ( this.stance < 5 )
+				if ( !this.blocking ) // TODO
 				{
-					this.setSprinting(false);
-					if ( dist <= 30 )
+					float strafeMod = 1.0F;
+					
+					if ( this.stance < 5 )
 					{
-						if ( this.onGround )
+						this.setSprinting(false);
+						if ( dist <= 30 )
 						{
-							this.faceEntitySmart(this.getAttackTarget());
-							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-							double push = (1.0D+5.0D*dist);
-							this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
-		                	this.velocityChanged = true;
+							if ( this.onGround )
+							{
+								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+	
+								if ( velocityVector != null )
+		    	        		{
+									double push = (1.0D+5.0D*dist);
+									this.addVelocity((velocityVector.x)/push, -0.002D, (velocityVector.z)/push);
+				                	this.velocityChanged = true;
+		    	        		}
+							}
+							this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), 0.4F); // bau
+							this.getMoveHelper().strafe( -1.0F, this.strafeHor );
 						}
-						this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), 0.4F); // bau
-						this.getMoveHelper().strafe( -1.0F, this.strafeHor );
+						else
+						{
+							this.forwardStance(true);
+							this.getNavigator().clearPath();
+					    	this.getMoveHelper().strafe( 0.0F, 0.0F );
+						}
+						if ( this.rand.nextBoolean() ) this.blockingTimer--;
+						return;
+					}
+					else if ( dist <= 2 )
+					{
+						this.strafeVer = 0.4F;
+					}
+					else if ( dist <= 4 )
+					{
+						this.strafeVer = 0.8F;
+						strafeMod = 0.9F;
+					}
+					else if ( dist <= 9 )
+					{
+						this.strafeVer = 0.9F;
+						strafeMod = 0.8F;
 					}
 					else
 					{
-						this.forwardStance(true);
-						this.getNavigator().clearPath();
-				    	this.getMoveHelper().strafe( 0.0F, 0.0F );
+						this.strafeVer = 1.0F;
+						strafeMod = 0.7F;
 					}
-					if ( this.rand.nextBoolean() ) this.blockingTimer--;
-					return;
-				}
-				else if ( dist <= 2 )
-				{
-					this.strafeVer = 0.4F;
-				}
-				else if ( dist <= 4 )
-				{
-					this.strafeVer = 0.7F;
-					strafeMod = 0.9F;
-				}
-				else if ( dist <= 9 )
-				{
-					this.strafeVer = 0.8F;
-					strafeMod = 0.8F;
-				}
-				else
-				{
-					this.strafeVer = 0.9F;
-					strafeMod = 0.7F;
-				}
-							
-				if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) ) // ttt
-				{
-					if ( dist >= 12 )
+								
+					if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) ) // ttt
 					{
-						this.blockingTimer--;
-//						if ( this.onGround && this.rand.nextInt(64) == 0 )
-//						{
-//							this.addVelocity(0.0D, 0.32D, 0.0D);
-//		                	this.velocityChanged = true;
-//						}
+						if ( dist >= 12 )
+						{
+							this.blockingTimer--;
+	//						if ( this.onGround && this.rand.nextInt(64) == 0 )
+	//						{
+	//							this.addVelocity(0.0D, 0.32D, 0.0D);
+	//		                	this.velocityChanged = true;
+	//						}
+						}
+						else if ( dist <= 3 )
+						{
+							if ( this.onGround && !this.isSprinting() )
+							{
+								Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+								if ( velocityVector != null )
+								{
+									double push = (1.0D+dist*dist);
+									this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+				                	this.velocityChanged = true;
+								}
+							}
+						}
+	//					else if ( this.onGround && this.rand.nextInt(64) == 0 )
+	//					{
+	//						this.addVelocity(0.0D, 0.32D, 0.0D);
+	//	                	this.velocityChanged = true;
+	//					}
+						
+						if ( this.posY + 1.5D < this.getAttackTarget().posY )
+						{
+							this.getMoveHelper().strafe( this.strafeVer, 0.0F );
+							if ( this.onGround && this.rand.nextInt(20) == 0 )
+							{
+								this.addVelocity(0.0D, 0.38D, 0.0D);
+			                	this.velocityChanged = true;
+							}
+						}
+						else
+						{
+							this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*strafeMod );
+						}
 					}
-					else if ( dist <= 3 )
+					else if ( this.getAttackTarget().onGround && !this.getAttackTarget().isAirBorne && this.onGround && !this.isAirBorne && !this.climbUntilPlatform )
 					{
-						if ( this.onGround && !this.isSprinting() )
+			        	// System.out.println("NONE");
+	
+						Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 16, 6, this.getAttackTarget().getPositionVector());
+			            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.65D) )
+			            {
+					        this.forceFleeing = true;
+					        this.setRevengeTarget(this.getAttackTarget());
+					        this.aggroTimer = 0;
+					        return;
+			            }
+					}
+				}
+				else // is blocking
+				{
+		    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+	
+					if ( this.strafeVer < 0.4F )
+					{
+						if ( !this.world.isRemote && this.onGround )
 						{
 							Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-							double push = (1.0D+dist*dist);
-							this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
-		                	this.velocityChanged = true;
+							if ( velocityVector != null )
+							{
+								double push = (1.0D+dist*dist);
+								this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
+			                	this.velocityChanged = true;
+							}
+		                	
 						}
 					}
-//					else if ( this.onGround && this.rand.nextInt(64) == 0 )
-//					{
-//						this.addVelocity(0.0D, 0.32D, 0.0D);
-//	                	this.velocityChanged = true;
-//					}
-					
-					if ( this.posY + 1.5D < this.getAttackTarget().posY )
+					else if ( this.strafeVer > 0.4F )
 					{
-						this.getMoveHelper().strafe( this.strafeVer, 0.0F );
-						if ( this.onGround && this.rand.nextInt(20) == 0 )
-						{
-							this.addVelocity(0.0D, 0.38D, 0.0D);
-		                	this.velocityChanged = true;
-						}
+						this.strafeVer = 0.4F;
+					}
+					
+					if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
+					{
+						this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*1.5F);
 					}
 					else
 					{
-						this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*strafeMod );
+						this.getMoveHelper().strafe( this.strafeVer*0.5F, this.strafeHor*0.5F );
 					}
-				}
-				else
-				{
-					this.getMoveHelper().strafe( 0.0F, 0.0F );
-					
-					Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this, 12, 6, this.getAttackTarget().getPositionVector());
-		            if ( vec3d != null && this.getNavigator().tryMoveToXYZ(vec3d.x, vec3d.y, vec3d.z, 0.5D) )
-		            {
-				        this.forceFleeing = true;
-				        return;
-		            }
-				}
-			}
-			else // is blocking
-			{
-				if ( this.strafeVer < 0.4F )
-				{
-					if ( !this.world.isRemote && this.onGround )
-					{
-						Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
-						double push = (1.0D+dist*dist);
-						this.addVelocity((velocityVector.x)/push, 0.0D, (velocityVector.z)/push);
-	                	this.velocityChanged = true;
-					}
-				}
-				else if ( this.strafeVer > 0.4F )
-				{
-					this.strafeVer = 0.4F;
-				}
-				
-				if ( this.getNavigator().tryMoveToEntityLiving(this.getAttackTarget(), this.strafeVer) )
-				{
-					this.getMoveHelper().strafe( this.strafeVer, this.strafeHor*1.5F);
-				}
-				else
-				{
-					this.getMoveHelper().strafe( this.strafeVer*0.5F, this.strafeHor*0.5F );
 				}
 			}
 			this.blockingTimer--;
@@ -2616,7 +2576,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 //			this.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.392D+rand.nextDouble()/50.0D);
 //		}
 		
-		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() && this.getAttackTarget().getClass() != this.getClass() )
+		if ( this.getAttackTarget() != null && this.getAttackTarget().isEntityAlive() )
 		{  
 			if ( !this.onGround )
 			{
@@ -2659,14 +2619,18 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public boolean attackEntityAsMob(Entity victim) // atttack
 	{
-		if ( victim == null || !victim.isEntityAlive() || victim.getClass() == this.getClass() )
+		if ( victim == null || !victim.isEntityAlive() || victim.getClass().equals(this.getClass()) )
 		{
-			setAttackTarget(null);
+			this.setAttackTarget(null);
 			return false;
 		}
 		else
 		{
-			this.flanking = false;
+//			if ( this.flanking )
+//			{
+//				this.flanking = false;
+//				this.getNavigator().clearPath();
+//			}
 			this.aggroTimer = 0;
 			this.attackTargetEntityWithCurrentItem(victim);
 			this.setSprinting(false);
@@ -2676,7 +2640,7 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	
 	public void attackTargetEntityWithCurrentItem(Entity targetEntity)
 	{
-		
+
 		if ( !(this instanceof EntityOrc) && rand.nextInt(5) == 0 )
         {
         	this.playSound( SoundEvents.VINDICATION_ILLAGER_AMBIENT, 1.0F, 0.9F + rand.nextFloat()/5.0F );
@@ -2884,35 +2848,35 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		{
 			case 3:
 			{
-				return -0.3F;
+				return -0.32F;
 			}
 			case 4:
 			{
-				return 0.3F;
+				return 0.32F;
 			}
 			case 5:
 			{
-				return -0.29F;
+				return -0.31F;
 			}
 			case 6:
 			{
-				return 0.29F;
+				return 0.31F;
 			}
 			case 7:
 			{
-				return -0.28F;
+				return -0.3F;
 			}
 			case 8:
 			{
-				return 0.28F;
+				return 0.3F;
 			}
 			case 9:
 			{
-				return -0.27F;
+				return -0.29F;
 			}
 			case 10:
 			{
-				return 0.27F;
+				return 0.29F;
 			}
 		}
 		return 0.0F;
@@ -2922,50 +2886,204 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 
 	protected boolean climbUntilPlatform = false;
 	
+	public boolean collidedHorizontallyWide(double d)
+	{
+		try
+		{
+			IBlockState block = this.world.getBlockState(new BlockPos(this.posX+0.6D,d,this.posZ));
+
+			if ( block.isFullCube() )
+			{
+				return true;
+			}
+			
+			block = this.world.getBlockState(new BlockPos(this.posX,d,this.posZ+0.6D));
+			if ( block.isFullCube() )
+			{
+				return true;
+			}
+			
+			block = this.world.getBlockState(new BlockPos(this.posX-0.6D,d,this.posZ));
+			if ( block.isFullCube() )
+			{
+				return true;
+			}
+			
+			block = this.world.getBlockState(new BlockPos(this.posX,d,this.posZ-0.6D));
+			if ( block.isFullCube() )
+			{
+				return true;
+			}
+		}
+		catch ( Exception e )
+		{
+			
+		}
+		
+		return false;
+	}
+	
+//	public boolean collidedDiagnoally(double d)
+//	{
+//		try
+//		{
+//			IBlockState block = this.world.getBlockState(new BlockPos(((int)this.posX)+1.5D,d,((int)this.posZ)+0.5D));
+//			if ( block.isFullCube() )
+//			{
+//				return true;
+//			}
+//			block = this.world.getBlockState(new BlockPos(((int)this.posX)+0.5D,d,((int)this.posZ)+1.5D));
+//			if ( block.isFullCube() )
+//			{
+//				return true;
+//			}
+//			block = this.world.getBlockState(new BlockPos(((int)this.posX)-0.5D,d,((int)this.posZ)+0.5D));
+//			if ( block.isFullCube() )
+//			{
+//				return true;
+//			}
+//			block = this.world.getBlockState(new BlockPos(((int)this.posX)+0.5D,d,((int)this.posZ)-0.5D));
+//			if ( block.isFullCube() )
+//			{
+//				return true;
+//			}
+//		}
+//		catch ( Exception e )
+//		{
+//			
+//		}
+//		return false;
+//	}
+	
+	public boolean collidedVerticallySmart(double d)
+	{
+		try
+		{
+			IBlockState block = this.world.getBlockState(new BlockPos(this.posX,d,this.posZ));
+			if ( block.isFullCube() )
+			{
+				return true;
+			}
+		}
+		catch ( Exception e )
+		{
+			
+		}
+		return false;
+	}
+		
     @Override
     public void onUpdate()
     {
         if ( !this.world.isRemote )
         {
-        	if ( this.collidedHorizontally && this.getAttackTarget() != null )
+        	if ( this.getAttackTarget() != null )
         	{
-    			this.setSwingingArms(false);
-                ItemStack iStackM = this.getHeldItemMainhand();
+        		boolean ch = false;
         		
-        		if ( !(iStackM.getItem() != null && iStackM.getItem() instanceof ItemBow) && (this.getAttackTarget().posY - 0.1D > this.posY || this.climbUntilPlatform) ) // && this.canEntityBeSeen(this.getAttackTarget())) )
+            	if ( this.motionY < -0.12D && this.collidedHorizontallyWide(this.posY+this.height-0.5D)?ch=true:false )
         		{
-        			this.climbUntilPlatform = true;
-        			//this.stance = rand.nextInt(6)+5; // tight strafe
-        			this.faceEntitySmart(this.getAttackTarget());
-    				this.motionX = 0.0F;
-    				this.motionZ = 0.0F;
-					this.getMoveHelper().strafe( this.strafeVer*0.5F, 0.0F );
-    		    	//this.faceEntity(this.getAttackTarget(), 20.0F, 20.0F);
-    				this.blockingTimer = 20;
-        			this.setBesideClimbableBlock(true);
-        			this.setSwingingArms(true);
-        			this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(2.0D);
+        			this.motionY = -0.12D;
+        			this.velocityChanged = true;
         		}
-        		else
-				{
-        			this.climbUntilPlatform = false;
-					this.setBesideClimbableBlock(false);
-	    			if ( !this.blocking ) this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
-				}
+            	
+	        	if ( this.climbUntilPlatform )
+	        	{
+	        		boolean cd = this.collidedHorizontallyWide(((int)this.posY)+this.height+0.5D); // DIAGNAL
+	        		if ( !ch ) ch = this.collidedHorizontallyWide(this.posY+this.height-0.5D);
+	        		boolean cv = this.collidedVerticallySmart(((int)this.posY)+this.height+0.5D);
+	        		
+	        		if ( cd || ch || cv || this.collidedHorizontally )
+	        		{
+	        			if ( cv || ( cd && !ch ) )
+	        			{
+	            			this.doClimbing(true);
+	        			}
+	        			else
+	        			{
+	            			this.doClimbing(false);
+	        			}
+	        		}
+	        		else
+	        		{
+		    			this.endClimbing();
+	        		}
+	        	}
+	        	else if ( this.collidedHorizontally )
+	        	{
+	        		this.doClimbing(false);
+	        	}
+	        	else
+	        	{
+	    			this.endClimbing();
+	        	}
         	}
         	else
         	{
-    			this.climbUntilPlatform = false;
-        		this.setBesideClimbableBlock(false);
-        		
-    			if ( !this.blocking )
-    			{
-    				this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
-    			}
+        		this.endClimbing();
         	}
         }
         super.onUpdate();
-
+    }
+        
+        
+    private void doClimbing(boolean backwards)
+    {		
+		if ( this.climbingTimer <= 320 && !( this.getHeldItemMainhand() != null && this.getHeldItemMainhand().getItem() instanceof ItemBow) && (this.getAttackTarget().posY - 1.0D > this.posY || this.climbUntilPlatform) ) // && this.canEntityBeSeen(this.getAttackTarget())) )
+		{
+	        this.climbUntilPlatform = true;
+	        this.climbingTimer++;
+			this.aggroTimer = 0;
+	        
+	    	this.faceEntity(this.getAttackTarget(), 30.0F, 30.0F);
+			
+			if ( backwards ) // && this.getDistanceSq(this.getAttackTarget()) < 16 )
+			{
+				this.getMoveHelper().strafe( 0.0F, 0.0F );
+				Vec3d velocityVector = new Vec3d(this.posX - this.getAttackTarget().posX, 0, this.posZ - this.getAttackTarget().posZ);
+				if ( velocityVector != null )
+				{
+					double push = (8.0D+this.getDistanceSq(this.getAttackTarget()));
+					this.motionX = (velocityVector.x)/push;
+					this.motionZ = (velocityVector.z)/push;
+					if ( this.motionY < 0.3F )
+					{
+						this.motionY = 0.3F;
+					}
+					this.velocityChanged = true;
+				}
+			}
+			else
+			{
+				this.getMoveHelper().strafe( this.strafeVer*0.5F, 0.0F );
+				Vec3d velocityVector = new Vec3d(this.getAttackTarget().posX-this.posX , 0,this.getAttackTarget().posZ-this.posZ);
+				if ( velocityVector != null )
+				{
+					this.motionX = (velocityVector.x);
+					this.motionZ = (velocityVector.z);
+					this.velocityChanged = true;
+				}
+			}
+			
+			
+	    	//this.faceEntity(this.getAttackTarget(), 30.0F, 30.0F);
+			this.blockingTimer = 20;
+			this.setBesideClimbableBlock(true);
+			//this.setSwingingArms(true);
+			this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(2.0D);
+		}
+		else
+		{
+			this.endClimbing();
+		}
+    }
+    
+    private void endClimbing()
+    {
+	    this.climbUntilPlatform = false;
+		this.setBesideClimbableBlock(false);
+		//this.setSwingingArms(false);
+		if ( !this.blocking && this.onGround ) this.getEntityAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(0.25D);
     }
     
 	//===================================================== Climbing =======================================================
@@ -3184,19 +3302,27 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	@Override
 	public void setAttackTarget(EntityLivingBase e)
 	{
-		if ( e == null || e.isDead )
+		if ( e == null || !e.isEntityAlive() )
 		{
+			this.setSprinting(false);
 			super.setAttackTarget(null);
+			return;
 		}
-		else if ( e.getClass() != this.getClass() )
+		else if ( !e.getClass().equals(this.getClass()) )
 		{
 			super.setAttackTarget(e);
+			return;
 		}
 	}
 	
     protected void callForHelp(EntityLivingBase attacker)
 	{
-		List<EntitySentry> help = world.getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(getPosition()).grow(20, 12, 20), new Predicate<EntitySentry>()
+    	if ( attacker == null || !attacker.isEntityAlive() )
+		{
+			return;
+		}
+    	
+		List<EntitySentry> help = this.world.getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(getPosition()).grow(20, 12, 20), new Predicate<EntitySentry>()
 		{
 			public boolean apply(@Nullable EntitySentry entity)
 			{

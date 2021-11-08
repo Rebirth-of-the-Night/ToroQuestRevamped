@@ -11,7 +11,7 @@ public class QuestDelegator
 
 	public QuestDelegator(QuestData data)
 	{
-		setData(data);
+		this.setData(data);
 	}
 
 	public Quest getTypedQuest(QuestData data)

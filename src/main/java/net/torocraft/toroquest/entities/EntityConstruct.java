@@ -55,6 +55,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.torocraft.toroquest.SoundHandler;
 import net.torocraft.toroquest.ToroQuest;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.ai.AIHelper;
 import net.torocraft.toroquest.entities.render.RenderConstruct;
 
 public class EntityConstruct extends EntityGolem implements IMob
@@ -310,8 +311,19 @@ public class EntityConstruct extends EntityGolem implements IMob
 
     public void onLivingUpdate()
     {
-        super.onLivingUpdate();
-        
+    	super.onLivingUpdate();
+		
+		if ( this.world.isRemote )
+		{
+			return;
+		}
+		
+		if ( this.getAttackTarget() != null )
+    	{
+    		AIHelper.faceEntitySmart(this, this.getAttackTarget());
+    		this.getLookHelper().setLookPositionWithEntity(this.getAttackTarget(), 20.0F, 20.0F);
+    	}
+		
         if (this.motionX * this.motionX + this.motionZ * this.motionZ > 2D && this.rand.nextInt(5) == 0)
         {
             int i = MathHelper.floor(this.posX);
@@ -343,10 +355,10 @@ public class EntityConstruct extends EntityGolem implements IMob
 //        	this.world.newExplosion(this, this.posX, this.posY, this.posZ, 3.0F, false, true);
 //        }
         
-    	if ( this.world.isRemote )
-    	{
-    		return;
-    	}
+//    	if ( this.world.isRemote )
+//    	{
+//    		return;
+//    	}
     	
     	if ( this.getAttackTarget() instanceof EntityConstruct )
 		{

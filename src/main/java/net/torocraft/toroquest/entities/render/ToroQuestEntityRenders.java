@@ -4,7 +4,6 @@ import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
-import net.torocraft.toroquest.entities.EntityAdventurer;
 import net.torocraft.toroquest.entities.EntityBanditLord;
 import net.torocraft.toroquest.entities.EntityBas;
 import net.torocraft.toroquest.entities.EntityConstruct;
@@ -41,7 +40,7 @@ public class ToroQuestEntityRenders
 		EntityOrc.registerRenders();
 		EntityConstruct.registerRenders();
 		EntityConstructQuest.registerRenders();
-		EntityAdventurer.registerRenders();
+		//EntityAdventurer.registerRenders();
 	}
 	
 	public static void registerMageRenderer()

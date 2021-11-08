@@ -1,6 +1,11 @@
 package net.torocraft.toroquest;
 
 
+
+// export JAVA_HOME=$(/usr/libexec/java_home -v 1.8)
+
+
+
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;

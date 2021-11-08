@@ -49,7 +49,7 @@ public class EntityAIZombieLeap extends EntityAIBase
                 }
                 else
                 {
-                    return ( this.leaper.getRNG().nextInt(96) == 0 || this.leaper.getNavigator().getPathToEntityLiving(this.leapTarget) == null );
+                    return ( this.leaper.getNavigator().getPathToEntityLiving(this.leapTarget) == null );
                 }
             }
             else

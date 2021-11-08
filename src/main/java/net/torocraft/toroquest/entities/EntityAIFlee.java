@@ -56,10 +56,10 @@ public class EntityAIFlee extends EntityAIBase
     	if ( this.creature.getRevengeTarget() != null && !this.creature.isInWater() && ( this.creature.forceFleeing || ( this.creature.getHealth() <= this.creature.fleeModifier * this.creature.getMaxHealth() + ((this.runningTimer>0)?1.5F:0.0F) ) ) )
 		{
 			//this.attacker = victim;
-			this.creature.resetActiveHand();
 			
             boolean flag = this.findRandomPosition(this.creature.getRevengeTarget());
             int i = 0;
+            
             while ( !flag || i < 8 )
             {
             	flag = this.findRandomPosition(this.creature.getRevengeTarget());
@@ -68,15 +68,19 @@ public class EntityAIFlee extends EntityAIBase
             
             if ( flag )
             {
-            	this.creature.setAttackTarget(null);
-            	this.creature.fleeing = true;
-                this.creature.setSprinting(true);
+    			this.creature.resetActiveHand();
+
                 this.creature.faceAwayEntity(this.creature.getRevengeTarget());
+            	this.creature.setAttackTarget(null);
+            	
+            	this.creature.fleeing = true;
+                this.creature.forceFleeing = false;
+
+                this.creature.setSprinting(true);
                 if ( this.runningTimer < 1 )
                 {
                 	this.runningTimer = 25 + this.creature.world.rand.nextInt(25);
                 }
-                this.creature.forceFleeing = false;
                 return true;
             }
 		}
@@ -127,11 +131,16 @@ public class EntityAIFlee extends EntityAIBase
         		this.creature.setAttackTarget(this.creature.getRevengeTarget());
                 this.creature.faceEntity(this.creature.getRevengeTarget(), 20.0F, 20.0F);
         	}
-    		this.creature.useHealingPotion = true;
-    		this.creature.setSprinting(false);
-            this.runningTimer = 0;
-            this.creature.fleeing = false;
-            this.creature.getNavigator().clearPath();
+        	
+        	if ( this.creature.getHealth() < this.creature.getMaxHealth()*0.75D )
+        	{
+	    		this.creature.useHealingPotion = true;
+	    		this.creature.setSprinting(false);
+	            this.runningTimer = 0;
+	            this.creature.fleeing = false;
+	            this.creature.getNavigator().clearPath();
+        	}	
+            
         	return false;        	
         }
         else
@@ -163,16 +172,20 @@ public class EntityAIFlee extends EntityAIBase
     
     protected boolean findRandomPosition( EntityLivingBase attacker )
     {
-    	if ( attacker == null || attacker.getPositionVector() == null )
+    	if ( attacker == null ) // || attacker.getPositionVector() == null )
     	{
     		return false;
     	}
+    	
     	Vec3d enemyPos = attacker.getPositionVector();
+    	
     	if ( enemyPos == null )
     	{
     		return false;
     	}
+    	
         Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 16, 8, enemyPos);
+        
         if ( vec3d == null )
         {
             return false;

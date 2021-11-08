@@ -24,8 +24,8 @@ public class AIArcher<T extends EntityLiving & IRangedAttackMob> extends EntityA
     private boolean strafingBackwards;
     private int strafingTime = -1;
     private Random rand = new Random();
-    private float hStrafeMod = (rand.nextInt(6)+1)/16.0F;
-    private float vStrafeMod = (rand.nextInt(3)+1)/16.0F;
+    private float hStrafeMod = (rand.nextInt(6)+1)/14.0F;
+    private float vStrafeMod = (rand.nextInt(3)+1)/14.0F;
     // private EntityLivingBase attackTarget = null;
 
     
@@ -108,6 +108,7 @@ public class AIArcher<T extends EntityLiving & IRangedAttackMob> extends EntityA
     {
         if ( shouldExecute() )
         {
+        	
             double d0 = this.entity.getDistance(this.entity.getAttackTarget());
             boolean canSee = this.entity.getEntitySenses().canSee(this.entity.getAttackTarget());
             boolean seeTimeIsGreaterThanZero = this.seeTime > 0;
@@ -199,9 +200,9 @@ public class AIArcher<T extends EntityLiving & IRangedAttackMob> extends EntityA
 
             if ( this.entity.isRiding() )
             {
-            	hAmount += 0.2F;
-            	vAmount += 0.2F;
-            	sChance /= 2.0D;
+//            	hAmount += 0.2F;
+//            	vAmount += 0.2F;
+            	sChance = 0.1F;
             }
             
             if (this.strafingTime >= 20)
@@ -230,7 +231,7 @@ public class AIArcher<T extends EntityLiving & IRangedAttackMob> extends EntityA
                     this.strafingBackwards = true;
                 }
                 
-                if ( this.attackTime != 0 || this.entity.isRiding() )
+                if ( this.attackTime != 0 )
                 {
                     this.entity.getMoveHelper().strafe(this.strafingBackwards ? -vAmount/2.0F : vAmount, this.strafingClockwise ? -hAmount : hAmount);
                 }

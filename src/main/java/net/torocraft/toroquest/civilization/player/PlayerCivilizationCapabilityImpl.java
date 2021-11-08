@@ -87,6 +87,7 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 			{
 											possibleQuests.add(QuestFarm.INSTANCE);
 			}
+			
 			if ( rep >= 10 )
 			{
 											possibleQuests.add(QuestMine.INSTANCE);
@@ -464,7 +465,7 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 		
 		int rep = getReputation(province.civilization);
 		
-		if (removeQuest(data))
+		if ( removeQuest(data) )
 		{
 			int loss = ToroQuestConfiguration.abandonQuestRepLoss;
 			if (rep >= loss)

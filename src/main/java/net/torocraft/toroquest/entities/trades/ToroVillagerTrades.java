@@ -30,6 +30,7 @@ import net.torocraft.toroquest.entities.EntityToroVillager;
 
 public class ToroVillagerTrades
 {
+	@SuppressWarnings("deprecation")
 	public static MerchantRecipeList trades( EntityToroVillager villager, EntityPlayer player, int rep, CivilizationType civ, String jobName, String varient )
 	{
 		
@@ -193,10 +194,16 @@ public class ToroVillagerTrades
 				{
 					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 8), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
 				}
-				else villager.treasureMap = TreasureMapForEmeralds(villager, player, "Mansion", MapDecoration.Type.MANSION);
-				if ( villager.treasureMap != null )
+				else
 				{
-					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 8), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+					villager.treasureMap = TreasureMapForEmeralds(villager, player, "Mansion", MapDecoration.Type.MANSION);
+					
+					if ( villager.treasureMap != null )
+					{
+						// villager.treasureMap.setStackDisplayName("Map to Woodland Mansion");
+
+						recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 8), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+					}
 				}
 			}
 			else if ( varient.equals("1") )
@@ -205,24 +212,35 @@ public class ToroVillagerTrades
 				{
 					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
 				}
-				else villager.treasureMap = TreasureMapForEmeralds(villager, player, "Monument", MapDecoration.Type.MONUMENT);
-				if ( villager.treasureMap != null )
+				else
 				{
-					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+					villager.treasureMap = TreasureMapForEmeralds(villager, player, "Monument", MapDecoration.Type.MONUMENT);
+				
+					if ( villager.treasureMap != null )
+					{
+						// villager.treasureMap.setStackDisplayName("Map to Ocean Monument");
+
+						recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+					}
 				}
 			}
 			else
 			{
+				// BlockPos blockpos = player.world.findNearestStructure("Village", player.getPosition(), true);
+
+				
 				if ( villager.treasureMap != null )
 				{
-					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 6), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
-				}
-				//BlockPos blockpos = player.world.findNearestStructure("Village", player.getPosition(), true);
-				else villager.treasureMap = CivMapForEmeralds(villager, player, "Village", MapDecoration.Type.MANSION);
-				if ( villager.treasureMap != null )
-				{
-					villager.treasureMap.setTranslatableName("Map to Village");
 					recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 4), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+				}
+				else
+				{
+					villager.treasureMap = civMapForEmeralds(villager, player, "Village", MapDecoration.Type.MANSION);
+					
+					if ( villager.treasureMap != null )
+					{
+						recipeList.add( new MerchantRecipe( new ItemStack(Items.EMERALD, 4), new ItemStack(Items.COMPASS, 1), villager.treasureMap, 0, 99999 ) );
+					}
 				}
 			}
 		}
@@ -242,40 +260,62 @@ public class ToroVillagerTrades
             itemstack.setTranslatableName("filled_map." + destination.toLowerCase(Locale.ROOT));
             return itemstack;
         }
-		return null; // TODO
+		return null;
     }
 	
-    public static ItemStack CivMapForEmeralds( EntityToroVillager villager, EntityPlayer player, String destination, MapDecoration.Type destinationType )
+    public static ItemStack civMapForEmeralds( EntityToroVillager villager, EntityPlayer player, String destination, MapDecoration.Type destinationType )
 	{
-        if ( villager.treasureMap != null )
+    	World world = villager.world;
+    	
+    	BlockPos pos = villager.getPosition();
+    	
+    	Village village = null;
+    	
+    	if ( pos == null )
+    	{
+    		return null;
+    	}
+    	
+    	pos = pos.add((world.rand.nextBoolean()?1:-1)*world.rand.nextInt(40)*16,0,(world.rand.nextBoolean()?1:-1)*world.rand.nextInt(40)*16);
+    	
+    	if ( pos == null )
+    	{
+    		pos = villager.getPosition();
+    	}
+    	else
+    	{
+    		village = world.villageCollection.getNearestVillage(pos, 704);
+    	}
+        
+    	if ( village == null )
         {
-            return villager.treasureMap;
+            village = world.villageCollection.getNearestVillage(villager.getPosition(), 704);
         }
-        else
+        
+        if ( village == null )
         {
+            return null;
+        }
+        
+    	ItemStack itemstack = ItemMap.setupNewMap(world, (double)village.getCenter().getX(), (double)village.getCenter().getZ(), (byte)4, true, true);
+        
+    	ItemMap.renderBiomePreviewMap(world, itemstack);
+        
+    	MapData.addTargetDecoration(itemstack, village.getCenter(), "+", destinationType);
 
-        	World world = player.world;
-            Village village = world.villageCollection.getNearestVillage(player.getPosition(), 704);
-            if ( village == null )
-            {
-            	return null;
-            }
-        	ItemStack itemstack = ItemMap.setupNewMap(world, (double)village.getCenter().getX(), (double)village.getCenter().getZ(), (byte)4, true, true);
-            ItemMap.renderBiomePreviewMap(world, itemstack);
-            MapData.addTargetDecoration(itemstack, village.getCenter(), "+", destinationType);
-            //itemstack.setTranslatableName("filled_map." + destination.toLowerCase(Locale.ROOT));
-            Province province = CivilizationUtil.getProvinceAt(world, village.getCenter().getX()/16, village.getCenter().getZ()/16);
-            if ( province != null )
-			{
-				itemstack.setTranslatableName("Map to " + province.name);
-			}
-			else
-			{
-				itemstack.setTranslatableName("Map to Village");
-			}
-            villager.treasureMap = itemstack;
-            return itemstack;
-        }
+    	Province province = CivilizationUtil.getProvinceAt( villager.world, villager.chunkCoordX, villager.chunkCoordZ);
+
+		if ( province == null || province.getCiv() == null )
+		{
+			villager.treasureMap.setStackDisplayName("Map to Village");
+		}
+		else
+		{
+			villager.treasureMap.setStackDisplayName("Map to " + province.getCiv().getDisplayName(player) );
+		}
+		
+        villager.treasureMap = itemstack;
+        return itemstack;
     }
 		
 	// LEFT >
@@ -328,75 +368,75 @@ public class ToroVillagerTrades
 	
 	
 	
-	
-	
-	
-	
-	
-	private static ItemStack enchantedbook_luckofthesea()
-	{
-		ItemStack stack = new ItemStack(Items.FISHING_ROD);
-		stack.setStackDisplayName("Nat Pagle's Lucky Pole");
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(61), 1);
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(62), 1);
-		return stack;
-	}
-	
-	private static ItemStack level2Sword() {
-		ItemStack stack = new ItemStack(Items.IRON_SWORD);
-		stack.setStackDisplayName("Sol Sword");
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 3);
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 3);
-		return stack;
-	}
-	
-	private static ItemStack level3Sword() {
-		ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
-		stack.setStackDisplayName("Helios Sword");
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 2);
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 2);
-		return stack;
-	}
-	
-	private static ItemStack level4Sword() {
-		ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
-		stack.setStackDisplayName("Amaterasu Sword");
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 3);
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 3);
-		return stack;
-	}
-	
-	private static ItemStack level5Sword() {
-		ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
-		stack.setStackDisplayName("Ra Sword");
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 5);
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 5);
-		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(70), 1);
-		return stack;
-	}
-
-	private static ItemStack level1BlastProtection() {
-		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
-		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 1));
-		return stack;
-	}
-
-	private static ItemStack level2BlastProtection() {
-		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
-		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 2));
-		return stack;
-	}
-
-	private static ItemStack level3BlastProtection() {
-		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
-		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 3));
-		return stack;
-	}
-
-	private static ItemStack level4BlastProtection() {
-		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
-		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 4));
-		return stack;
-	}
+//	
+//	
+//	
+//	
+//	
+//	private static ItemStack enchantedbook_luckofthesea()
+//	{
+//		ItemStack stack = new ItemStack(Items.FISHING_ROD);
+//		stack.setStackDisplayName("Nat Pagle's Lucky Pole");
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(61), 1);
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(62), 1);
+//		return stack;
+//	}
+//	
+//	private static ItemStack level2Sword() {
+//		ItemStack stack = new ItemStack(Items.IRON_SWORD);
+//		stack.setStackDisplayName("Sol Sword");
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 3);
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 3);
+//		return stack;
+//	}
+//	
+//	private static ItemStack level3Sword() {
+//		ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
+//		stack.setStackDisplayName("Helios Sword");
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 2);
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 2);
+//		return stack;
+//	}
+//	
+//	private static ItemStack level4Sword() {
+//		ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
+//		stack.setStackDisplayName("Amaterasu Sword");
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 3);
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 3);
+//		return stack;
+//	}
+//	
+//	private static ItemStack level5Sword() {
+//		ItemStack stack = new ItemStack(Items.DIAMOND_SWORD);
+//		stack.setStackDisplayName("Ra Sword");
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(17), 5);
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(16), 5);
+//		stack.addEnchantment(Enchantment.REGISTRY.getObjectById(70), 1);
+//		return stack;
+//	}
+//
+//	private static ItemStack level1BlastProtection() {
+//		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
+//		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 1));
+//		return stack;
+//	}
+//
+//	private static ItemStack level2BlastProtection() {
+//		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
+//		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 2));
+//		return stack;
+//	}
+//
+//	private static ItemStack level3BlastProtection() {
+//		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
+//		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 3));
+//		return stack;
+//	}
+//
+//	private static ItemStack level4BlastProtection() {
+//		ItemStack stack = new ItemStack(Items.ENCHANTED_BOOK);
+//		ItemEnchantedBook.addEnchantment(stack, new EnchantmentData(Enchantment.REGISTRY.getObjectById(3), 4));
+//		return stack;
+//	}
 	
 }

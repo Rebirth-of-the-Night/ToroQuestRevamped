@@ -133,6 +133,37 @@ public class EntityToroMob extends EntityCreature implements IMob
 	{
 		if ( super.attackEntityFrom(source, amount) )
 		{
+			if ( source != null )
+			{
+				if ( source.getTrueSource() instanceof EntitySentry )
+				{
+					if ( source.getTrueSource() instanceof EntityOrc )
+					{
+						if ( this instanceof EntityOrc )
+						{
+	//						if ( this.getAttackTarget() == e ) this.setAttackTarget(null);
+	//						return false;
+						}
+						else
+						{
+							this.setHealth(this.getHealth()-amount);
+						}
+					}
+					else
+					{
+						if ( this instanceof EntityOrc )
+						{
+							this.setHealth(this.getHealth()-amount);
+						}
+						else
+						{
+	//						if ( this.getAttackTarget() == e ) this.setAttackTarget(null);
+	//						return false;
+						}
+					}
+				}
+			}
+
 			if ( ToroQuestConfiguration.enableBloodParticles )
 			{
 				int a = (int)MathHelper.clamp(Math.sqrt(amount-1), 0, 8);

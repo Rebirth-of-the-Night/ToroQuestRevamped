@@ -46,7 +46,7 @@ item.toro_armor_leggings.name=Heavy Leather Leggings
 item.toro_armor_chestplate.name=Heavy Leather Chestplate
 
 item.bandit_helmet.name=Bandit Mask
-item.bandit_helmet.description=Give this item to a Village Lord for reputation §7[put the mask in donate box]§r, or disguise yourself as a Bandit.
+item.bandit_helmet.description=§rGive this item to a Village Lord for reputation §7[put this item in top-right box]§r, or disguise yourself as a Bandit.
 item.city_key.name=Key to the City
 item.scroll_null.name=Blank Teleport Scroll
 item.recruitment_papers.name=Recruitment Papers
@@ -206,20 +206,20 @@ quests.rejectreturnitem=Return the tool I gave you, or 5 emeralds to pay for it.
 
 ################## QUEST COURIER ##################
 
-quests.courier.notetooltip=§7[put the note in donate box]§r
+quests.courier.notetooltip=§7[put this item in top-right box]§r
 quests.courier.notename=Deliver to the Lord of 
 quests.courier.title=§lCourier§r
 quests.courier.description=§lDeliver§r this letter to %s%s and return his reply%s§lReward:§r %s%s Reputation
 quests.courier.accept=I need this letter sent to the lord of @e immediately. Be swift, @p.
 quests.courier.complete=Ah yes, thank you for the reply note, @p.
 quests.courier.incomplete=I need the reply note, @p. §7[put the note in left column]
-quests.courier.description=The lord of @e and I have much to discuss. Make sure this letter gets to him.
+quests.courier.description=The lord of %s and I have much to discuss. Make sure this letter gets to him%s§lReward:§r %s%s Reputation
 quests.courier.reject=You reject my request? Surely your actions will not bode well for your reputation.
 
 ################## QUEST BANDIT CAMP ##################
 
 quests.enemy_encampment.title=§lClear Encampment§r
-quests.enemy_encampment.description=§lClear§r the %s encampment %s§lReward:§r %s%s Reputation
+quests.enemy_encampment.description=§lClear§r the %s encampment%s§lReward:§r %s%s Reputation
 quests.enemy_encampment.nokills=Do you take me for a fool? You haven't killed any bandits yet!
 quests.enemy_encampment.incomplete=My scouts report the bandits have not yet been done away with!
 quests.enemy_encampment.help=Not all bandits kills have been accounted for, you must have scared them off!
@@ -379,7 +379,7 @@ quests.mine.diamondresource.incomplete=I need @e more diamonds! §7[put the item
 
 quests.mine.dirt.accept=My farmers need fertile soil for their crops. Gather some fresh dirt and return the supplies to me.
 
-quests.mine.wood.accept=My builders need wood to repair several houses after the last storm. Take to the forest and bring back the supplies.
+quests.mine.log.accept=My builders need wood to repair several houses after the last storm. Take to the forest and bring back the supplies.
 
 quests.mine.stone.accept=My builders need stone to repair several houses after the last bandit raid. Take to the mines and bring back the supplies!
 

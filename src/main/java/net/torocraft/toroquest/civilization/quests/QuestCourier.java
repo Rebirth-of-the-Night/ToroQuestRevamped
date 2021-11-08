@@ -86,7 +86,7 @@ public class QuestCourier extends QuestBase implements Quest
 			}
 			else
 			{
-				data.setChatStack("courier.incomlete", data.getPlayer(), deliverToProvince.name);
+				data.setChatStack("courier.incomplete", data.getPlayer(), deliverToProvince.name);
 			}
 			this.setData(data);
 			return null;
@@ -118,7 +118,7 @@ public class QuestCourier extends QuestBase implements Quest
 		{
 			in.addAll(rewards);
 		}
-		data.setChatStack("courier.comlete", data.getPlayer(), deliverToProvince.name);
+		data.setChatStack("courier.completeete", data.getPlayer(), deliverToProvince.name);
 		this.setData(data);
 		return in;
 	}
@@ -178,13 +178,13 @@ public class QuestCourier extends QuestBase implements Quest
 			return "";
 		}
 		Province deliverToProvince = getDeliverToProvince(data);
-		BlockPos from = data.getPlayer().getPosition();
-		BlockPos to = new BlockPos(deliverToProvince.chunkX * 16, from.getY(), deliverToProvince.chunkZ * 16);
+		//BlockPos from = data.getPlayer().getPosition();
+		//BlockPos to = new BlockPos(deliverToProvince.chunkX * 16, from.getY(), deliverToProvince.chunkZ * 16);
 
 		StringBuilder s = new StringBuilder();
 		s.append("quests.courier.description");
 		s.append("|").append(deliverToProvince.name);
-		s.append("|").append( " at §lLocation:§r [" + getDirections(from, to) + "]" );
+//		s.append("|").append( " at §lLocation:§r [" + getDirections(from, to) + "]" );
 		s.append("|").append( "\n\n" );
 		s.append("|").append(listItems(getRewardItems(data))  + ",\n" );
 		s.append("|").append(getRewardRep(data));
