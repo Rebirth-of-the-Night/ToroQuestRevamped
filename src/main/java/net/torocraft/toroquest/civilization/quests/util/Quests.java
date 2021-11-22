@@ -62,7 +62,6 @@ public class Quests {
 		QuestCourier.init(++id);
 		QuestEnemySpiderPit.init(++id);
 		QuestEnemyEncampment.init(++id);
-		// LEGENDARY QUESTS
 		QuestKillBossGraveTitan.init(++id);
 		QuestKillBossBanditLord.init(++id);
 		QuestKillBossZombiePig.init(++id);

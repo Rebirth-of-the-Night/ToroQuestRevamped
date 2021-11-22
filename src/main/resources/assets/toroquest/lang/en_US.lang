@@ -64,7 +64,7 @@ item.artifact_brown.name=§eAncient Artifact§r
 
 entity.toroquest_monolitheye.name=K'Varn, the Obsidian Horror
 quests.legendary_monolith.title=§6§lThe Obsidian Horror§r
-quests.legendary_monolith.map=the Obsidian Rift
+quests.legendary_monolith.map=§lMap to the Obsidian Rift
 quests.legendary_monolith.description=§lSlay§r the legendary Obsidian Horror%s§lReward:§r %s%s Reputation
 quests.legendary_monolith.incomplete=My scouts report the Horror has not yet been slain!
 quests.legendary_monolith.accept=Please help us, @p! A tear in reality has materialized an Obsidian Horror in our plane of existence... we must destroy it before it grows in power and consumes the life of every living thing here! I have marked the location of the rift on this map for you, go at once!
@@ -76,7 +76,7 @@ quests.legendary_monolith.slain=§lThe Obsidian Horror has been slain!
 
 entity.toroquest_mage.name=Grandorf, the Archmage
 quests.legendary_mage.title=§6§lThe Archmage's Tower§r
-quests.legendary_mage.map=the Archmage's Tower§r
+quests.legendary_mage.map=§lMap to the Archmage's Tower§r
 quests.legendary_mage.description=§lSlay§r the legendary Archmage%s§lReward:§r %s%s Reputation
 quests.legendary_mage.complete=You have done us a great service protecting our people from evil magics and mages. We thank you, @p.
 quests.legendary_mage.incomplete=My scouts report the Archmage still lives!
@@ -88,7 +88,7 @@ quests.legendary_mage.slain=The Archmage has been slain!
 
 entity.toroquest_spider_lord.name=Elise, the Spider Queen
 quests.legendary_spider.title=§6§lThe Spider's Nest§r
-quests.legendary_spider.map=the Spider's Nest§r
+quests.legendary_spider.map=§lMap to the Spider's Nest§r
 quests.legendary_spider.description=§lSlay§r the legendary Spider Queen%s§lReward:§r %s%s Reputation
 quests.legendary_spider.accept=A spider queen and her nest have been spotted near our province! Slay this creature before it spawns more young and becomes an even greater danger to us all. Be careful, @p, the mercenaries I hired were all found dead... bodies splattered across the ground. Take this map, my scouts have marked its location for you.
 quests.legendary_spider.reject=I understand your unease. I can only hope this monstrosity will not be the end of us in a few weeks time.
@@ -100,7 +100,7 @@ quests.legendary_spider.slain=§lThe Spider Queen has been slain!
 
 entity.toroquest_bas.name=Zarovich, the Vampire Lord
 quests.legendary_skeleton.title=§6§lThe Vampire's Lair§r
-quests.legendary_skeleton.map=the Vampire's Lair§r
+quests.legendary_skeleton.map=§lMap to the Vampire's Lair§r
 quests.legendary_skeleton.description=§lSlay§r the legendary Vampire%s§lReward:§r %s%s Reputation
 quests.legendary_skeleton.incomplete=My scouts report the Vampire has not yet been slain!
 quests.legendary_skeleton.complete=You are a true hero, @p! You have slain Zarovich! Our people are forever in your debt.
@@ -112,7 +112,7 @@ quests.legendary_skeleton.slain=§lThe Vampire Lord has been slain!
 
 entity.toroquest_pig_lord.name=Nago, the Demon-Pig
 quests.legendary_pig.title=§6§lThe Demon-Pig's Portal§r
-quests.legendary_pig.map=the Demon-Pig's Portal§r
+quests.legendary_pig.map=§lMap to the Demon-Pig's Portal§r
 quests.legendary_pig.description=§lSlay§r the legendary Demon-Pig%s§lReward:§r %s%s Reputation
 quests.legendary_pig.incomplete=My scouts report the Demon-Pig has not yet been slain!
 quests.legendary_pig.complete=You have slain the Demon-Pig! Our people are forever in your debt.
@@ -123,8 +123,8 @@ quests.legendary_pig.slain=§lThe Demon-Pig has been slain!
 ################## LEGENDARY BANDIT QUEST ##################
 
 entity.toroquest_bandit_lord.name=Sledge, the Bandit Boss
-quests.legendary_bandit.title=§6§lThe Bandit's Hideout§r
-quests.legendary_bandit.map=the Bandit's Underground Hideout§r
+quests.legendary_bandit.title=§6§lThe Underground Hideout§r
+quests.legendary_bandit.map=§lMap to the Underground Hideout§r
 quests.legendary_bandit.description=§lSlay§r the legendary Bandit%s§lReward:§r %s%s Reputation
 quests.legendary_bandit.incomplete=My scouts report the bandit has not yet been slain!
 quests.legendary_bandit.complete=You have saved us, @p! I will tell the people of your heroic deeds!
@@ -136,7 +136,7 @@ quests.legendary_bandit.slain=§lThe Bandit Boss has been slain!
 
 entity.toroquest_grave_titan.name=Grave Titan
 quests.grave_titan.title=§6§lThe Titan's Grave§r
-quests.grave_titan.map=the Titan's Grave§r
+quests.grave_titan.map=§lMap to the Titan's Grave§r
 quests.grave_titan.description=§lSlay§r the legendary Grave Titan%s§lReward:§r %s%s Reputation
 quests.grave_titan.accept=An unusually large number of zombie hoards have been making their way to our village... I am afraid a Grave Titan has amassed and is responsible for the severity these zombie sieges. Take this map, @p, my scouts have reported the hoards are coming from this direction. Slay this monstrosity, and put an end to its unholy existence!
 quests.grave_titan.reject=But @p, the monstrosity will only grow stronger and stronger with each day that passes...
@@ -148,14 +148,13 @@ quests.grave_titan.slain=§lThe Grave Titan has been slain!
 
 entity.toroquest_construct_quest.name=Dwarven Colossus
 quests.steam_golem.title=§6§lLost Secrets§r
-quests.steam_golem.map=the Dwarven Ruins§r
+quests.steam_golem.map=Map to the Dwarven Ruins§r
 quests.steam_golem.description=§lExplore§r ancient Dwarven ruins%s§lReward:§r %s%s Reputation
 quests.steam_golem.accept=I wish to learn more about the secrets of ancient Dwarven technology. My scouts found what appears to be Dwarven ruins. I have marked the location on a map, see what you can uncover and return to me.
 quests.steam_golem.reject=Ah, I understand. A task too difficult for you then?
 quests.steam_golem.complete=Ah, magnificent! This is truly fascinating, @p.
-entity.steam_golem.incomplete=Have you found anything yet, @p?
+quests.steam_golem.incomplete=Have you found anything yet, @p?
 quests.steam_golem.slain=§lThe Dwarven Colossus has been slain!
-quests.legendary_monolith.slain=§lThe Obsidian Horror has been slain!
 
 ################## REPUTATION ##################
 
@@ -230,6 +229,8 @@ quests.enemy_encampment.accept=3
 quests.enemy_encampment.accept0=Bandits have established a camp not far from here. Wipe them out before they prepare their raid on our village.
 quests.enemy_encampment.accept1=My scouts have discovered a bandit encampment nearby. Put an end to them before they reach us!
 quests.enemy_encampment.accept2=Bandits have set up an outpost and are attacking one of our trade routes. I can trust you to take care of this matter, @p.
+
+quests.bandit_camp.map=§lMap to Bandit Encampment
 
 ################## QUEST FUGITIVES ##################
 
@@ -347,7 +348,7 @@ quests.coal.itemname=Coal
 quests.redstone.itemname=Redstone Dust
 quests.obsidian.itemname=Obsidian
 quests.glowstone.itemname=Glowstone Dust
-quests.diamond.itemname=Diamonds
+quests.diamond.itemname=Diamond
 
 quests.mine.loggathered.incomplete=This wood is rotten! I'll need you to cut down trees with healthier wood, then, return to me with the new resources.
 
@@ -365,7 +366,7 @@ quests.mine.glowstonegathered.incomplete=This glowstone dust does not look vibra
 
 quests.mine.lapisgathered.incomplete=This lapis is void of any magical properties... do you mind mining a new vein of lapis?
 
-quests.mine.diamondgathered.incomplete=These diamonds are not quite large enough for my crown. Go find a new vein that will yield diamonds large enough.
+quests.mine.diamondgathered.incomplete=This diamond is not quite large enough for my crown. Go find a new vein that will yield a diamond large enough.
 
 quests.mine.logresource.incomplete=My builders need @e more of the resource requested! §7[put the items in left column]
 quests.mine.dirtresource.incomplete=My farmers need still needs fertile soil for their crops! §7[put the items in left column]
@@ -393,7 +394,7 @@ quests.mine.glowstone.accept=My alchemists are low on glowstone dust for their p
 
 quests.mine.lapis.accept=The enchanters are low on supplies. I'll need you to mine some lapis and bring it to me.
 
-quests.mine.diamond.accept=I wish to replace my crown with larger gemstones. Go mining for diamonds and return to me the largest 3 you can find!
+quests.mine.diamond.accept=I wish to replace my crown's gemstone with larger one. Go mining for diamonds and return to me the largest you can find!
 
 quests.mine.complete=Thank you for the resources, @p. We will put them to good use.
 
@@ -405,7 +406,7 @@ quests.spider_pit.complete=Ah, magnificent! This is just what I was looking for,
 quests.spider_pit.incomplete=Have you found the heirloom yet, @p? §7[put the item in left column]
 quests.spider_pit.reject=Ah, I understand. A task too difficult for you then?
 quests.spider_pit.accept=I wish to recover an ancient heirloom to learn more about the history of our people. This heirloom was from a civilization lost long ago... buried deep beneath the surface. I have marked the location on a map for you.
-
+quests.spider_pit.map=§lMap to Buried Heirloom
 ################## QUEST TRADE ##################
 
 quests.trade_villagers.title=§lTools of the Trade§r
@@ -471,6 +472,7 @@ civilization.yellow.name=Dawn
 civilization.teal.name=Glacier
 
 civilization.null.name=our village
+civilization.house.name=House
 
 ################## GUARD INVISIBLE ##################
 
@@ -601,7 +603,7 @@ entity.toroquest.guard.pickaxe0=Mining for some diamonds now, are we?"
 entity.toroquest.guard.pickaxe1=May you find many diamonds!
 entity.toroquest.guard.pickaxe2=What are you mining for, exactly?
 entity.toroquest.guard.pickaxe3=Off to the mines, eh?
-entity.toroquest.guard.pickaxe4=Mining again, are we? How many diamonds have you found?"
+entity.toroquest.guard.pickaxe4=Mining again, are we? How many diamonds have you found?
 
 entity.toroquest.guard.spade=4
 entity.toroquest.guard.spade0=You off to play in the dirt?
@@ -1041,7 +1043,7 @@ entity.toroquest.guard.bandit14=Back to the Nether with you, bandit!
 
 ################## GUARD CRIME GRIEFING ##################
 
-entity.toroquest.guard.grief=29
+entity.toroquest.guard.grief=30
 entity.toroquest.guard.grief0=Stop! That was valuable!
 entity.toroquest.guard.grief1=Stop, criminal!
 entity.toroquest.guard.grief2=Fithy criminal!
@@ -1071,6 +1073,7 @@ entity.toroquest.guard.grief25=Stealing is not tolerated!
 entity.toroquest.guard.grief26=Griefing is not allowed!
 entity.toroquest.guard.grief27=Stop griefing our village, immediately!
 entity.toroquest.guard.grief28=I saw that, criminal scum!
+entity.toroquest.guard.grief29=You stupid blockhead, stop!
 
 ################## GUARD CRIME STEALING ##################
 

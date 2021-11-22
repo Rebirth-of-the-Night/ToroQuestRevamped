@@ -106,7 +106,7 @@ public class CivilizationGeneratorHandlers
 		}
 		
 		int x = (event.getChunkX())*16;
-		int y = 56; // BASE
+		int y = CivilizationHandlers.MIN_SPAWN_HEIGHT; // BASE
 		int z = (event.getChunkZ())*16;
 		
 		boolean destroyedVillage = ( ToroQuestConfiguration.destroyedVillagesNearSpawnDistance > 0 && Math.abs(x) < ToroQuestConfiguration.destroyedVillagesNearSpawnDistance && Math.abs(z) < ToroQuestConfiguration.destroyedVillagesNearSpawnDistance );
@@ -115,7 +115,7 @@ public class CivilizationGeneratorHandlers
 		
 		if ( destroyedVillage )
 		{
-			List<EntityVillager> villagers = event.getWorld().getEntitiesWithinAABB(EntityVillager.class, new AxisAlignedBB(x-16,y,z-16,x+16,CivilizationHandlers.SPAWN_HEIGHT,z+16));
+			List<EntityVillager> villagers = event.getWorld().getEntitiesWithinAABB(EntityVillager.class, new AxisAlignedBB(x-16,y,z-16,x+16,CivilizationHandlers.MAX_SPAWN_HEIGHT,z+16));
 			
 			for ( EntityVillager villager : villagers )
 			{
@@ -132,7 +132,7 @@ public class CivilizationGeneratorHandlers
 		{
 			for ( int zz = 0; zz < 16; zz++ )
 			{
-				for ( int yy = CivilizationHandlers.SPAWN_HEIGHT; yy >= y; yy-- )
+				for ( int yy = CivilizationHandlers.MAX_SPAWN_HEIGHT; yy >= y; yy-- )
 				{
 					pos = new BlockPos(new BlockPos(x+xx,yy,z+zz));
 					b = event.getWorld().getBlockState(pos).getBlock();

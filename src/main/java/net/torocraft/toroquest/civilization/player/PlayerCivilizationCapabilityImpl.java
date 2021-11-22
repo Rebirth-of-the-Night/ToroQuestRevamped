@@ -72,7 +72,7 @@ public class PlayerCivilizationCapabilityImpl extends PlayerCivilization impleme
 //				possibleQuests.add(QuestKillBossBastion.INSTANCE);
 //				possibleQuests.add(QuestKillBossGraveTitan.INSTANCE);
 //			}
-			
+
 			if ( rep >= 100 )
 			{
 				if ( rep < 300 )

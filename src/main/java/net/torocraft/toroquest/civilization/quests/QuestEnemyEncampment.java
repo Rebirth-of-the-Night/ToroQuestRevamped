@@ -44,6 +44,7 @@ import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
@@ -289,8 +290,8 @@ public class QuestEnemyEncampment extends QuestBase implements Quest {
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)3, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to Bandit Encampment§r");
-			itemstack.setStackDisplayName("§lMap to Bandit Encampment§r");
+			//itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.bandit_camp.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName(TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.bandit_camp.map", new Object[0]).getFormattedText() + "§r");
 			addToroSpawner(data, data.getPlayer().getEntityWorld(), getSpawnPosition(data), getEnemyType(data));
 			in.add(itemstack);
 			data.setChatStack("enemy_encampment.accept", data.getPlayer(), null);

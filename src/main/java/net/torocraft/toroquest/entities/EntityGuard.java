@@ -35,6 +35,7 @@ import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.entity.projectile.EntityArrow;
+import net.minecraft.entity.projectile.EntityLlamaSpit;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
@@ -1080,6 +1081,18 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
     	return super.isOnLadder();
     }
 	
+//    public void spit(EntityLivingBase target)
+//    {
+//        EntityLlamaSpit entityllamaspit = new EntityLlamaSpit(this.world);
+//        double d0 = target.posX - this.posX;
+//        double d1 = target.getEntityBoundingBox().minY + (double)(target.height / 3.0F) - entityllamaspit.posY;
+//        double d2 = target.posZ - this.posZ;
+//        float f = MathHelper.sqrt(d0 * d0 + d2 * d2) * 0.2F;
+//        entityllamaspit.shoot(d0, d1 + (double)f, d2, 1.5F, 10.0F);
+//        this.world.playSound((EntityPlayer)null, this.posX, this.posY, this.posZ, SoundEvents.ENTITY_LLAMA_SPIT, this.getSoundCategory(), 1.0F, 1.0F + (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F);
+//        this.world.spawnEntity(entityllamaspit);
+//    }
+    
 //	public void faceEntitySmart(EntityLivingBase p)
 //    {
 ////    	if ( !this.getNavigator().noPath() )
@@ -2103,6 +2116,62 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 				}
 			}
 		}
+		else
+		{
+			try
+			{
+				ItemStack itemstack = player.getHeldItem(hand);
+				Item item = itemstack.getItem();
+				
+				if ( item.equals(Item.getByNameOrId("toroquest:recruitment_papers") ) && this.postReady )
+		        {
+	    			this.postReady = false;
+		        	if ( !this.inCombat && this.getAttackTarget() == null && this.isFriendly(player, rep) )
+		    		{
+		        		if ( player.isSneaking() )
+		        		{
+							BlockPos pos = findSpawnSurface(world, this.getPosition().up(), 32);
+							if ( pos != null )
+							{
+								this.setPositionAndUpdate(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5);
+								this.raidX = pos.getX();
+								//this.raidY = pos.getY();
+								this.raidZ = pos.getZ();
+								this.writeEntityToNBT(new NBTTagCompound());
+					        	this.playSound(SoundEvents.BLOCK_DISPENSER_LAUNCH, 1.0F, 1.0F);
+			        			this.playTameEffect(false);
+			                    this.world.setEntityState(this, (byte)6);
+								player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
+					        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+							}
+							else
+							{
+								player.sendStatusMessage(new TextComponentString( "§oInvalid post location!§r" ), true);
+								player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+							}
+						}
+		        		else
+		        		{
+		        			this.raidX = (int)this.posX;
+		        			//this.raidY = (int)this.posY;
+		        			this.raidZ = (int)this.posZ;
+							this.writeEntityToNBT(new NBTTagCompound());
+							player.sendStatusMessage(new TextComponentString( "§oGuard posted at [" + this.raidX + ", " + this.raidZ + "]§r" ), true);
+				        	this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
+		        		}
+		    		}
+		        	else
+		        	{
+						player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.BLOCK_NOTE_BASS, SoundCategory.AMBIENT, 3.0F, 0.6F);
+		        	}
+		        	return true;
+		        }
+			}
+			catch ( Exception e )
+			{
+				
+			}
+		}
 		
 		if ( this.getAttackTarget() == null && !this.inCombat && ( this.actionReady() || this.interactTalkReady ) ) // && this.postReady )
 		{
@@ -2126,6 +2195,7 @@ public class EntityGuard extends EntityToroNpc implements IRangedAttackMob, Toro
 	
 	public void chat( EntityPlayer player, String message, @Nullable String extra )
 	{
+		// this.spit(player);
 		if ( ToroQuestConfiguration.guardsHaveDialogue )
 		{
 			

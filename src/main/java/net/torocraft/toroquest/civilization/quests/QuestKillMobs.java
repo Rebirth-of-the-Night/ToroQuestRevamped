@@ -123,18 +123,18 @@ public class QuestKillMobs extends QuestBase implements Quest
 			return false;
 		}
 
-		if ( !(quest.data.getQuestType() == ID) )
+		if ( !(quest.getData().getQuestType() == ID) )
 		{
 			return false;
 		}
 		
 		quest.setCurrentAmount(quest.getCurrentAmount()+1);
-		quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+		quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 
-		if ( !quest.data.getCompleted() && quest.getCurrentAmount() >= quest.getTargetAmount() )
+		if ( !quest.getData().getCompleted() && quest.getCurrentAmount() >= quest.getTargetAmount() )
 		{
-			quest.data.setCompleted(true);
-			chatCompletedQuest(quest.data);
+			quest.getData().setCompleted(true);
+			chatCompletedQuest(quest.getData());
 		}
 
 		return true;
@@ -282,7 +282,7 @@ public class QuestKillMobs extends QuestBase implements Quest
 		}
 
 		s.append("|").append(q.getCurrentAmount() + "\n\n" );
-		s.append("|").append(listKillMobItems(getRewardItems(q.data)) + ",\n" );
+		s.append("|").append(listKillMobItems(getRewardItems(q.getData())) + ",\n" );
 		s.append("|").append(getRewardRep(data));
 		
 		return s.toString();
@@ -323,12 +323,12 @@ public class QuestKillMobs extends QuestBase implements Quest
 		Random rand = new Random();
 
 		DataWrapper q = new DataWrapper();
-		q.data.setCiv(province.civilization);
-		q.data.setPlayer(player);
-		q.data.setProvinceId(province.id);
-		q.data.setQuestId(UUID.randomUUID());
-		q.data.setQuestType(ID);
-		q.data.setCompleted(false);
+		q.getData().setCiv(province.civilization);
+		q.getData().setPlayer(player);
+		q.getData().setProvinceId(province.id);
+		q.getData().setQuestId(UUID.randomUUID());
+		q.getData().setQuestType(ID);
+		q.getData().setCompleted(false);
 		
 		int roll = rand.nextInt(8)*4+12;
 		int em = (int)Math.round((double)roll/3)+4;
@@ -395,17 +395,17 @@ public class QuestKillMobs extends QuestBase implements Quest
 			em = em/9;
 			List<ItemStack> rewardItems = new ArrayList<ItemStack>(1);
 			rewardItems.add(new ItemStack(Blocks.EMERALD_BLOCK, em));
-			setRewardItems(q.data, rewardItems);
+			setRewardItems(q.getData(), rewardItems);
 		}
 		else
 		{
 			ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward
 			List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 			rewardItems.add(emeralds);
-			setRewardItems(q.data, rewardItems);
+			setRewardItems(q.getData(), rewardItems);
 		}
-		this.setData(q.data);
-		return q.data;
+		this.setData(q.getData());
+		return q.getData();
 	}
 
 	public static class DataWrapper

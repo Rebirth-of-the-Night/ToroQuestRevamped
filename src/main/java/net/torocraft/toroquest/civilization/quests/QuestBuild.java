@@ -101,17 +101,17 @@ public class QuestBuild extends QuestBase implements Quest
 	
 	public boolean perform(DataWrapper quest)
 	{
-		if ( !quest.data.getCompleted() )
+		if ( !quest.getData().getCompleted() )
 		{
 			quest.setCurrentAmount(quest.getCurrentAmount() + 1);
 			
-			quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+			quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 			
 			if ( quest.getCurrentAmount() >= quest.getTargetAmount() )
 			{
 				quest.setCurrentAmount(quest.getTargetAmount());
-				quest.data.setCompleted(true);
-				chatCompletedQuest(quest.data);
+				quest.getData().setCompleted(true);
+				chatCompletedQuest(quest.getData());
 			}
 		}
 		return true;
@@ -146,12 +146,12 @@ public class QuestBuild extends QuestBase implements Quest
 	{
 		Random rand = new Random();
 		DataWrapper q = new DataWrapper();
-		q.data.setCiv(province.civilization);
-		q.data.setPlayer(player);
-		q.data.setProvinceId(province.id);
-		q.data.setQuestId(UUID.randomUUID());
-		q.data.setQuestType(ID);
-		q.data.setCompleted(false);
+		q.getData().setCiv(province.civilization);
+		q.getData().setPlayer(player);
+		q.getData().setProvinceId(province.id);
+		q.getData().setQuestId(UUID.randomUUID());
+		q.getData().setQuestType(ID);
+		q.getData().setCompleted(false);
 
 		int roll = rand.nextInt(3)*64+128;
 		int em = (int)Math.round((double)roll/32)+6;

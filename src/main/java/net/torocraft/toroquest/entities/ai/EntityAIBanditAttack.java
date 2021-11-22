@@ -11,7 +11,6 @@ import com.google.common.base.Predicate;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
@@ -23,6 +22,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationType;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
@@ -181,35 +181,35 @@ public class EntityAIBanditAttack extends EntityAITarget
 				if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.EARTH) < totalRep )
 				{
 					totalRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.EARTH);
-					bandit = I18n.format("civilization.earth.name");
+					bandit = TextComponentHelper.createComponentTranslation(player, "civilization.earth.name", new Object[0]).toString();
 				}
 				if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.FIRE) < totalRep )
 				{
 					totalRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.FIRE);
-					bandit = I18n.format("civilization.fire.name");
+					bandit = TextComponentHelper.createComponentTranslation(player, "civilization.fire.name", new Object[0]).toString();
 				}
 				if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.MOON) < totalRep )
 				{
 					totalRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.MOON);
-					bandit = I18n.format("civilization.moon.name");
+					bandit = TextComponentHelper.createComponentTranslation(player, "civilization.moon.name", new Object[0]).toString();
 				}
 				if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.WATER) < totalRep )
 				{
 					totalRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.WATER);
-					bandit = I18n.format("civilization.water.name");
+					bandit = TextComponentHelper.createComponentTranslation(player, "civilization.water.name", new Object[0]).toString();
 				}
 				if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.SUN) < totalRep )
 				{
 					totalRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.SUN);
-					bandit = I18n.format("civilization.sun.name");
+					bandit = TextComponentHelper.createComponentTranslation(player, "civilization.sun.name", new Object[0]).toString();
 				}
 				if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.WIND) < totalRep )
 				{
 					totalRep = PlayerCivilizationCapabilityImpl.get(player).getReputation(CivilizationType.WIND);
-					bandit = I18n.format("civilization.wind.name");
+					bandit = TextComponentHelper.createComponentTranslation(player, "civilization.wind.name", new Object[0]).toString();
 				}
 				
-				((EntitySentry)(taskOwner)).chat(player, "outlaw", "House " + bandit);
+				((EntitySentry)(taskOwner)).chat(player, "outlaw", TextComponentHelper.createComponentTranslation(player, "civilization.house.name", new Object[0]).toString() + " " + bandit);
 				return false;
 			}
 			

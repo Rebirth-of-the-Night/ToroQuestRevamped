@@ -78,7 +78,8 @@ public class ToroQuestConfiguration
 	// a bandit with 50HP over their default base health (20) would have a damage multiplier of...   
 	//1 * ( banditDamageMultiplier + banditDamageBasedOnHealthModifier )  ->  1 * (1.25 * 0.5)  -> 1.75
 	
-	public static int spawnHeight = 96;
+	public static int maxSpawnHeight = 150;
+	public static int minSpawnHeight = 50;
 	
 	public static int toroVillagerMateChance = 1200;
 	public static float villageDoorsModifier = 0.4F;
@@ -167,7 +168,7 @@ public class ToroQuestConfiguration
 	public static boolean useDefaultVillagers = false;
 	public static boolean villagesSpawnGolems = false;
 
-	public static int banditMountChance = 3;
+	public static int banditMountChance = 10;
 	public static int orcMountChance = 0;
 	public static boolean orcsAreNeutral = false;
 
@@ -538,10 +539,10 @@ public class ToroQuestConfiguration
 			//
 			
 			
-			banditMountChance = config.getInt("banditMountChance", CATEGORY_MOBS, 0, 0, 10,
+			banditMountChance = config.getInt("banditMountChance", CATEGORY_MOBS, 10, 0, 100,
 					"The chance (out of 10) for a group of non-village-raiding bandits to spawn as archers on horse mounts. Set to 0 to disable.");
 			
-			orcMountChance = config.getInt("orcMountChance", CATEGORY_MOBS, 0, 0, 10,
+			orcMountChance = config.getInt("orcMountChance", CATEGORY_MOBS, 0, 0, 100,
 					"The chance (out of 10) for a group of non-village-raiding orcs to spawn as archers on horse mounts. Set to 0 to disable.");
 			
 			banditAndOrcFleeHealthPercentBase = config.getInt("banditAndOrcFleeHealthPercentBase", CATEGORY_MOBS, 15, 0, 100,
@@ -552,8 +553,11 @@ public class ToroQuestConfiguration
 			
 			// SPAWNING =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 			
-			spawnHeight = config.getInt("spawnHeight", CATEGORY_MOBS, 96, -2560, 2560,
-					"***You probably don't want to touch this setting. Max spawn height of toroquest entities. Have this number be ~32 blocks higher than what the y-axis that terrain generates at. Vanilla is 63.");
+			maxSpawnHeight = config.getInt("maxSpawnHeight", CATEGORY_MOBS, 150, -2560, 2560,
+					"Max spawn height of toroquest entities and ender idol teleport, also used for checking villagers and structures for ruined villages.");
+			
+			minSpawnHeight = config.getInt("minSpawnHeight", CATEGORY_MOBS, 50, -2560, 2560,
+					"Min spawn height of toroquest entities and ender idol teleport, also used for checking villagers and structures for ruined villages.");
 			
 			disableMobSpawningNearVillage = config.getInt("disableMobSpawningNearVillage", CATEGORY_SPAWNING, 104, 0, 208,
 					"Disable mob spawns within X blocks from the village center. The higher the number, the further from the center of a province mobs will spawn. 208 blocks is the max distance of a province. Setting this to 208 means mobs can NOT spawn anywhere in a province. Setting this to 0 disables this feature and mobs can spawn anywhere - RIP villages!");
