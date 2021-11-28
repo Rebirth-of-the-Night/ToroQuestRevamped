@@ -35,6 +35,7 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.potion.PotionUtils;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.SoundCategory;
@@ -445,6 +446,10 @@ public class EventHandlers
 	@SubscribeEvent
 	public void crystalProjectileImpact(ProjectileImpactEvent event)
 	{
+		// already in game : damage blazes & endermen
+		
+		// lava to obsidian / extinguish entity / extinguish flames
+		
 		if ( event == null || event.getEntity() == null )
 		{
 			return;
@@ -460,6 +465,8 @@ public class EventHandlers
 //			{
 //				
 //			}
+			
+        	EntityPotion p = (EntityPotion)event.getEntity();
 			
 			BlockPos pos = event.getRayTraceResult().getBlockPos();
 			
@@ -477,7 +484,7 @@ public class EventHandlers
 						event.setCanceled(true);
 					}
 				}
-				else if ( ((EntityPotion)event.getEntity()).getThrower() instanceof EntitySentry )
+				else if ( p.getThrower() instanceof EntitySentry )
 				{
 					AxisAlignedBB axisalignedbb = new AxisAlignedBB(pos).grow(4.0D, 2.0D, 4.0D);
 			        List<EntitySentry> list = event.getEntity().world.<EntitySentry>getEntitiesWithinAABB(EntitySentry.class, axisalignedbb);
@@ -488,18 +495,82 @@ public class EventHandlers
 		            }
 					return;
 				}
-				else if ( ((EntityPotion)event.getEntity()).getThrower() instanceof EntityPlayer )
+				else if ( p.getThrower() instanceof EntityPlayer || p.getThrower() == null )
 				{
-					AxisAlignedBB axisalignedbb = new AxisAlignedBB(pos).grow(4.0D, 2.0D, 4.0D);
-			        List<EntityGuard> guards = event.getEntity().world.<EntityGuard>getEntitiesWithinAABB(EntityGuard.class, axisalignedbb);
-		            
-			        Province province = CivilizationUtil.getProvinceAt(event.getEntity().world, pos.getX()/16, pos.getZ()/16);
+					Province province = CivilizationUtil.getProvinceAt(event.getEntity().world, pos.getX()/16, pos.getZ()/16);
 
 			        if ( province == null )
 					{
 						return;
 					}
+			        
+					EntityPlayer player = (EntityPlayer)p.getThrower();
 					
+					if ( player == null )
+					{
+						player = p.world.getClosestPlayerToEntity(p, 12);
+						if ( player == null )
+						{
+							return;
+						}
+					}
+					
+					String potion = p.getPotion().getTextComponent().toString();
+
+					if ( potion.contains("water") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("healing") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("regeneration") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("invisibility") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("vision") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("leaping") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("resistance") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("strength") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("swiftness") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("breathing") )
+		            {
+		            	return;
+		            }
+		            if ( potion.contains("luck") )
+		            {
+		            	return;
+		            }
+					
+					/* PotionType */
+//					for ( PotionEffect potioneffect : PotionUtils.getEffectsFromStack(p.getPotion()) )
+//			        {
+//			        }
+					
+					AxisAlignedBB axisalignedbb = new AxisAlignedBB(pos).grow(4.0D, 2.0D, 4.0D);
+					
+			        List<EntityGuard> guards = event.getEntity().world.<EntityGuard>getEntitiesWithinAABB(EntityGuard.class, axisalignedbb);
+		            					
 		            CivilizationType civ = province.getCiv();
 		            
 		    		if ( civ == null )
@@ -507,32 +578,32 @@ public class EventHandlers
 		    			return;
 		    		}
 		    		
-			        if (!guards.isEmpty())
-			        {
+			        if ( !guards.isEmpty() )
+			        {			        	
 			            for (EntityLivingBase guard : guards)
 			            {
 			            	if ( guard instanceof EntityToroVillager )
 			    			{
-			    				((EntityToroVillager)guard).setUnderAttack(((EntityPotion)event.getEntity()).getThrower());
+			    				((EntityToroVillager)guard).setUnderAttack(p.getThrower());
 			    			}
 			            }
 			    		
-			    		CivilizationHandlers.adjustPlayerRep((EntityPlayer)((EntityPotion)event.getEntity()).getThrower(), civ, -guards.size()*10);
+			    		CivilizationHandlers.adjustPlayerRep((EntityPlayer)p.getThrower(), civ, -guards.size()*10);
 			        }
 			        
 			        List<EntityVillager> villagers = event.getEntity().world.<EntityVillager>getEntitiesWithinAABB(EntityVillager.class, axisalignedbb);
 
-			        if (!villagers.isEmpty())
+			        if ( !villagers.isEmpty() )
 			        {
 			            for (EntityLivingBase villager : villagers)
 			            {
 			            	if ( villager instanceof EntityToroVillager )
 			    			{
-			    				((EntityToroVillager)villager).setUnderAttack(((EntityPotion)event.getEntity()).getThrower());
+			    				((EntityToroVillager)villager).setUnderAttack(p.getThrower());
 			    			}
 			            }
 			            
-			    		CivilizationHandlers.adjustPlayerRep((EntityPlayer)((EntityPotion)event.getEntity()).getThrower(), civ, -villagers.size()*10);
+			    		CivilizationHandlers.adjustPlayerRep((EntityPlayer)(p).getThrower(), civ, -villagers.size()*10);
 			        }
 					return;
 				}

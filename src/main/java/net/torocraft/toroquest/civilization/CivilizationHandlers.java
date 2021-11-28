@@ -1786,7 +1786,7 @@ public class CivilizationHandlers
 						{
 							if ( rand.nextBoolean() )
 							{
-								EntityGuard g = new EntityGuard(world, null, true);
+								EntityGuard g = new EntityGuard(world, province, true);
 								g.setPosition(banditSpawnPos.getX() + 0.5,banditSpawnPos.getY()+0.1, banditSpawnPos.getZ() + 0.5 );
 								g.setHeldItem(EnumHand.MAIN_HAND, new ItemStack(Items.IRON_SWORD, 1));
 								ItemStack istack = new ItemStack(Item.getByNameOrId("spartanshields:shield_tower_wood"));
@@ -1800,7 +1800,6 @@ public class CivilizationHandlers
 								}
 					    		g.tasks.addTask(0, new EntityAIDespawnGuard(g));
 								world.spawnEntity(g);
-					    		g.setCivilizationCaravan(province.civilization);
 								g.getNavigator().tryMoveToEntityLiving(player, 0.6);
 								g.setAttackTarget(player);
 								g.setAttackTarget(null);

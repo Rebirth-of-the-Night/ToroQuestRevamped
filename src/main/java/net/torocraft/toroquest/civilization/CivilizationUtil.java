@@ -11,6 +11,6 @@ public class CivilizationUtil
 	
 	public static Province registerNewCivilization(World world, int chunkX, int chunkZ)
 	{
-		return CivilizationsWorldSaveData.get(world).register(chunkX, chunkZ);
+		return CivilizationsWorldSaveData.get(world).register(chunkX, chunkZ, true);
 	}
 }

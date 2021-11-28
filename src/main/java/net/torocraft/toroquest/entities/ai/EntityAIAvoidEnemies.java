@@ -7,38 +7,42 @@ import javax.annotation.Nullable;
 import com.google.common.base.Predicate;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIBase;
 import net.minecraft.entity.ai.RandomPositionGenerator;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.pathfinding.Path;
 import net.minecraft.pathfinding.PathNavigate;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
+import net.torocraft.toroquest.civilization.CivilizationType;
+import net.torocraft.toroquest.civilization.CivilizationUtil;
+import net.torocraft.toroquest.civilization.Province;
+import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.EntityToroVillager;
 
-public class EntityAIAvoidEnemies<T extends Entity> extends EntityAIBase
+public class EntityAIAvoidEnemies extends EntityAIBase
 {
     /** The entity we are attached to */
-    protected EntityCreature entity;
+    protected EntityToroVillager entity;
     private final double farSpeed;
     private final double nearSpeed;
-    private final double avoidDistance;
-    protected EntityLiving closestLivingEntity;
+    protected EntityLivingBase closestLivingEntity;
     /** The PathEntity of our entity */
     private Path path;
     /** The PathNavigate of our entity */
     private final PathNavigate navigation;
     /** Class of entity this behavior seeks to avoid */
 
-    public EntityAIAvoidEnemies(EntityCreature entityIn, float avoidDistanceIn, double farSpeedIn, double nearSpeedIn)
+    public EntityAIAvoidEnemies(EntityToroVillager entityIn, double farSpeedIn, double nearSpeedIn)
     {
         this.entity = entityIn;
         this.farSpeed = farSpeedIn;
         this.nearSpeed = nearSpeedIn;
-        this.avoidDistance = avoidDistanceIn;
         this.navigation = entityIn.getNavigator();
         this.setMutexBits(1);
     }
@@ -48,16 +52,17 @@ public class EntityAIAvoidEnemies<T extends Entity> extends EntityAIBase
      */
     public boolean shouldExecute()
     {
-        if ( this.entity.getRNG().nextInt(20) != 0 )
+        if ( this.entity.getRNG().nextInt(30) != 0 )
         {
         	return false;
         }
 
-    	List<EntityLiving> list = this.entity.world.getEntitiesWithinAABB(EntityLiving.class, new AxisAlignedBB(this.entity.getPosition()).grow(this.avoidDistance, this.avoidDistance/2.0D, this.avoidDistance), new Predicate<EntityLiving>()
+        /* MONSTERS */
+    	List<EntityLiving> list = this.entity.world.getEntitiesWithinAABB(EntityLiving.class, new AxisAlignedBB(this.entity.getPosition()).grow(12.0D, 6.0D, 12.0D), new Predicate<EntityLiving>()
 		{
 			public boolean apply(@Nullable EntityLiving enemy )
 			{
-				if ( ( enemy instanceof IMob || enemy instanceof EntityMob ) && entity.canEntityBeSeen(enemy) )
+				if ( enemy instanceof IMob || enemy instanceof EntityMob )
 				{
 					return true;
 				}
@@ -68,27 +73,69 @@ public class EntityAIAvoidEnemies<T extends Entity> extends EntityAIBase
         {
             this.closestLivingEntity = e;
             
-            if ( ToroQuestConfiguration.iMobAttackVillagers && this.closestLivingEntity.getAttackTarget() != null )
+            if ( ToroQuestConfiguration.iMobAttackVillagers && e.getAttackTarget() != null )
             {
-            	this.closestLivingEntity.setAttackTarget(this.entity);
+            	e.setAttackTarget(this.entity);
             }
             
-            Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.entity, 16, 7, new Vec3d(this.closestLivingEntity.posX, this.closestLivingEntity.posY, this.closestLivingEntity.posZ));
+            Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.entity, 16, 8, new Vec3d(e.posX, e.posY, e.posZ));
 
-            if (vec3d == null)
+            if ( vec3d == null || e.getDistanceSq(vec3d.x, vec3d.y, vec3d.z) < e.getDistanceSq(this.entity) )
             {
-                return false;
+            	vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.entity, 16, 8, new Vec3d(e.posX, e.posY, e.posZ));
             }
-            else if (this.closestLivingEntity.getDistanceSq(vec3d.x, vec3d.y, vec3d.z) < this.closestLivingEntity.getDistanceSq(this.entity))
+            
+            if ( vec3d == null )
             {
-                return false;
+            	return false;
             }
-            else
-            {
-                this.path = this.navigation.getPathToXYZ(vec3d.x, vec3d.y, vec3d.z);
-                return this.path != null;
-            }
+            
+            this.path = this.navigation.getPathToXYZ(vec3d.x, vec3d.y, vec3d.z);
+            return this.path != null;
         }
+        
+        /* PLAYER */
+        EntityPlayer player = this.entity.world.getClosestPlayerToEntity(this.entity, 12);
+        
+        if ( player != null )
+        {
+        	this.closestLivingEntity = player;
+        	
+    		Province province = CivilizationUtil.getProvinceAt(player.world, player.chunkCoordX, player.chunkCoordZ);
+
+    		if ( province == null )
+    		{
+    			return false;
+    		}
+
+    		CivilizationType civ = province.getCiv();
+
+    		if ( civ == null )
+    		{
+    			return false;
+    		}
+    		
+    		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(civ) > -50 )
+    		{
+    			return false;
+    		}
+    		
+            Vec3d vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.entity, 16, 8, new Vec3d(player.posX, player.posY, player.posZ));
+
+            if ( vec3d == null || player.getDistanceSq(vec3d.x, vec3d.y, vec3d.z) < player.getDistanceSq(this.entity) )
+            {
+            	vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.entity, 16, 8, new Vec3d(player.posX, player.posY, player.posZ));
+            }
+            
+            if ( vec3d == null )
+            {
+            	return false;
+            }
+            
+            this.path = this.navigation.getPathToXYZ(vec3d.x, vec3d.y, vec3d.z);
+            return this.path != null;
+        }
+        
         return false;
     }
 

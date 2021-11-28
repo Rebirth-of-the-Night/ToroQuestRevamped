@@ -34,6 +34,8 @@ public class ToroVillagerTrades
 	public static MerchantRecipeList trades( EntityToroVillager villager, EntityPlayer player, int rep, CivilizationType civ, String jobName, String varient )
 	{
 		
+		// could limit trades by per villager, replace 999999
+		
 		MerchantRecipeList recipeList = new MerchantRecipeList();
 		
 		for ( Trade trade : ToroQuestConfiguration.trades )

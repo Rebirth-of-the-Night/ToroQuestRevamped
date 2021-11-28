@@ -157,171 +157,19 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 	}
 
 	@Override
-	public synchronized Province register(int chunkX, int chunkZ)
+	public synchronized Province register(int chunkX, int chunkZ, boolean worldGenerated)
 	{
 		Province province = atLocation(chunkX, chunkZ);
 
-		if (province != null)
+		if ( province != null )
 		{
 			updateExistingProvince(province, chunkX, chunkZ);
 		}
 		else
 		{
-			province = buildNewProvince(chunkX, chunkZ);
+			province = buildNewProvince(chunkX, chunkZ, worldGenerated);
 		}
 		markDirty();
-		return province;
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	// CROWN
-	
-	public synchronized Province registerCrown(int chunkX, int chunkZ)
-	{
-		Province province = atLocation(chunkX, chunkZ);
-
-		if (province != null)
-		{
-			updateExistingProvince(province, chunkX, chunkZ);
-		}
-		else
-		{
-			province = buildNewProvince(chunkX, chunkZ);
-		}
-		markDirty();
-		return province;
-	}
-	
-	protected Province buildNewProvinceCrown(int chunkX, int chunkZ)
-	{
-//		if ( this.world.isRemote )
-//		{
-//			return null;
-//		}
-		
-		if ( this.world.getBiomeProvider() == null )
-		{
-			return null;
-		}
-		
-		BlockPos block = new BlockPos(chunkX*16, 0, chunkZ*16);
-
-		
-//		if ( ToroQuestConfiguration.unregisterDestroyedVillages )
-//		{
-//			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
-//			
-//			if ( i > 0 && Math.abs(block.getX()) < i && Math.abs(block.getZ()) < i )
-//			{
-//				return null;
-//			}
-//		}
-		
-		Province province;
-		province = new Province();
-		province.id = UUID.randomUUID();
-		
-		if ( ToroQuestConfiguration.useBiomeSpecificProvinces ) // 
-		{
-//			Chunk chunk = new Chunk(this.world, chunkX, chunkZ);
-//			Biome biome = chunk.getBiome(block, this.world.getBiomeProvider());
-			Biome biome = this.world.getBiome(block);
-			Set<Type> biomeType = BiomeDictionary.getTypes(biome);
-//			List<EntityPlayer> players = world.playerEntities;
-//			for ( EntityPlayer player : players )
-//			{
-//				player.sendMessage( new TextComponentString(biome.getBiomeName()) );
-//				player.sendMessage( new TextComponentString(biome.getRegistryName().toString()) );
-//				player.sendMessage( new TextComponentString(BiomeDictionary.getTypes(biome).toString()) );
-//			}
-			if ( biomeType.contains(Type.SNOWY) || biome.isSnowyBiome() )
-			{
-				province.civilization=CivilizationType.WATER;
-			}
-			else if ( biomeType.contains(Type.JUNGLE) )
-			{
-				if ( biomeType.contains(Type.DENSE) )
-				{
-					province.civilization=CivilizationType.EARTH;
-				}
-				else
-				{
-					province.civilization=CivilizationType.SUN;
-				}
-			}
-			else if ( biomeType.contains(Type.MOUNTAIN) )
-			{
-				province.civilization=CivilizationType.WIND;
-			}
-			else if ( biomeType.contains(Type.SWAMP) || biome.decorator.waterlilyPerChunk > 0 || biomeType.contains(Type.MUSHROOM) || biome.decorator.bigMushroomsPerChunk > 0 || biomeType.contains(Type.DEAD) || biomeType.contains(Type.WASTELAND) || biomeType.contains(Type.SPOOKY) || (biomeType.contains(Type.WET) && biomeType.contains(Type.LUSH)) )
-			{
-				province.civilization=CivilizationType.MOON;
-			}
-			else if ( (biomeType.contains(Type.MESA) || biomeType.contains(Type.PLAINS) || biomeType.contains(Type.BEACH) || biomeType.contains(Type.SANDY) || biomeType.contains(Type.SAVANNA)) && biomeType.contains(Type.HOT) )
-			{
-				province.civilization=CivilizationType.SUN;
-			}
-			else if ( biomeType.contains(Type.FOREST) || biomeType.contains(Type.DENSE) )
-			{
-				province.civilization=CivilizationType.EARTH;
-			}
-			else if ( biomeType.contains(Type.HOT) || biomeType.contains(Type.MESA) )
-			{
-				province.civilization=CivilizationType.SUN;
-			}
-			else if ( biome.getDefaultTemperature() < 0.4F && ( biomeType.contains(Type.BEACH) || biomeType.contains(Type.OCEAN) || biomeType.contains(Type.RIVER) || biomeType.contains(Type.WATER) ) )
-			{
-				province.civilization=CivilizationType.WATER;
-			}
-			else if ( biomeType.contains(Type.HILLS) ) //( biome.getHeightVariation() >= 0.3F || biome.getBaseHeight() >= 0.3F )
-			{
-				province.civilization=CivilizationType.WIND;
-			}
-			else if ( biomeType.contains(Type.PLAINS) )
-			{
-				province.civilization=CivilizationType.FIRE;
-			}
-			else if ( biome.getDefaultTemperature() > 0.7F )
-			{
-				province.civilization=CivilizationType.SUN;
-			}
-			else if ( biome.getDefaultTemperature() < 0.4F  )
-			{
-				province.civilization=CivilizationType.WATER;
-			}
-			else
-			{
-				province.civilization=CivilizationType.MOON;
-			}
-		}
-		// ============================== BACKUP =======================================
-		if ( province.civilization == null )
-		{
-			province.civilization = randomCivilizationType();
-		}
-		
-		province.chunkX = chunkX;
-		province.chunkZ = chunkZ;
-		province.name = ProvinceNames.random(new Random(), province.civilization);
-		province.hasLord = false;
-		
-		province.lowerVillageBoundX = chunkX - RADIUS/2;
-		province.upperVillageBoundX = chunkX + RADIUS/2;
-		province.lowerVillageBoundZ = chunkZ - RADIUS/2;
-		province.upperVillageBoundZ = chunkZ + RADIUS/2;
-		
-		province.computeSize();
-
-		addProvinceToSaveData(province);
-
 		return province;
 	}
 	
@@ -587,12 +435,12 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 		return false;
 	}
 
-	protected Province buildNewProvince(int chunkX, int chunkZ)
+	protected Province buildNewProvince( int chunkX, int chunkZ, boolean worldGenerated )
 	{
-//		if ( this.world.isRemote )
-//		{
-//			return null;
-//		}
+		if ( this.world.isRemote )
+		{
+			return null;
+		}
 		
 		if ( this.world.getBiomeProvider() == null )
 		{
@@ -600,9 +448,8 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 		}
 		
 		BlockPos block = new BlockPos(chunkX*16, 0, chunkZ*16);
-
 		
-		if ( ToroQuestConfiguration.unregisterDestroyedVillages )
+		if ( worldGenerated && ToroQuestConfiguration.unregisterDestroyedVillages )
 		{
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			
@@ -612,23 +459,13 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 			}
 		}
 		
-		Province province;
-		province = new Province();
-		province.id = UUID.randomUUID();
-		
-		if ( ToroQuestConfiguration.useBiomeSpecificProvinces ) // 
+		Province province = new Province();
+				
+		if ( ToroQuestConfiguration.useBiomeSpecificProvinces )
 		{
-//			Chunk chunk = new Chunk(this.world, chunkX, chunkZ);
-//			Biome biome = chunk.getBiome(block, this.world.getBiomeProvider());
 			Biome biome = this.world.getBiome(block);
 			Set<Type> biomeType = BiomeDictionary.getTypes(biome);
-//			List<EntityPlayer> players = world.playerEntities;
-//			for ( EntityPlayer player : players )
-//			{
-//				player.sendMessage( new TextComponentString(biome.getBiomeName()) );
-//				player.sendMessage( new TextComponentString(biome.getRegistryName().toString()) );
-//				player.sendMessage( new TextComponentString(BiomeDictionary.getTypes(biome).toString()) );
-//			}
+
 			if ( biomeType.contains(Type.SNOWY) || biome.isSnowyBiome() )
 			{
 				province.civilization=CivilizationType.WATER;
@@ -689,16 +526,25 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 				province.civilization=CivilizationType.MOON;
 			}
 		}
-		// ============================== BACKUP =======================================
+		
+		// =========================== BACKUP ============================
+		
 		if ( province.civilization == null )
 		{
-			province.civilization = randomCivilizationType();
+			province.civilization = this.randomCivilizationType();
 		}
 		
+		// ===============================================================
+		
+		province.id = UUID.randomUUID();
+		
+		Random rand = new Random();
+		rand.setSeed(province.id.getMostSignificantBits());
+		
+		province.name = ProvinceNames.random(rand, province.civilization);
+
 		province.chunkX = chunkX;
 		province.chunkZ = chunkZ;
-		province.name = ProvinceNames.random(new Random(), province.civilization);
-		province.hasLord = false;
 		
 		province.lowerVillageBoundX = chunkX - RADIUS/2;
 		province.upperVillageBoundX = chunkX + RADIUS/2;
@@ -710,12 +556,10 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 		addProvinceToSaveData(province);
 
 		return province;
-	}
-
+	}	
 	protected CivilizationType randomCivilizationType()
 	{
-		Random rand = world.rand;
-		return CivilizationType.values()[rand.nextInt(CivilizationType.values().length)];
+		return CivilizationType.values()[this.world.rand.nextInt(CivilizationType.values().length)];
 	}
 
 	private synchronized void updateExistingProvince(Province province, int chunkX, int chunkZ)
@@ -833,7 +677,4 @@ public class CivilizationsWorldSaveData extends WorldSavedData implements Civili
 			}
 		}
 	}
-
-	
-
 }

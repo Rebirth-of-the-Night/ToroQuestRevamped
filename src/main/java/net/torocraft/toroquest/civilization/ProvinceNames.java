@@ -35,7 +35,7 @@ public class ProvinceNames
 	
 	private static final String[] END_X =
 	{
-		"mend", "lock", "herst", "vvast", "vast", "gar", "ggar", "garr", "hook", "ille", "ath", "kath", "thal", "end", "tome", "crown", "mare", "song", "foss", "ghost", "gost", "clod", "cloud", "azan", "wall", "aron", "aslahti", "pridd", "iston", "kirkey", "might", "age", "spirit", "ison", "odon", "ury", "brine", "ax", "axe", "barrow", "bell", "bend", "bert", "borne", "brand",
+		"mend", "lot", "lock", "herst", "vvast", "vast", "gar", "ggar", "garr", "hook", "ille", "ath", "kath", "thal", "end", "tome", "crown", "mare", "song", "foss", "ghost", "gost", "clod", "cloud", "azan", "wall", "aron", "aslahti", "pridd", "iston", "kirkey", "might", "age", "spirit", "ison", "odon", "ury", "brine", "ax", "axe", "barrow", "bell", "bend", "bert", "borne", "brand",
 		"brawn", "break", "bridge", "burg", "burgh", "bury", "bus", "by", "bydder",
 		"caste", "castle", "cast", "caster", "cester", "chester", "glen", "eglos", "cost", "crest", "cry", "dale", "deep", "deft",
 		"del", "bell", "dell", "delve", "den", "dyn", "dence", "denfel", "dew", "diff", "ding", "don", "down",
@@ -61,20 +61,19 @@ public class ProvinceNames
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= LEAF =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_EARTH =
 	{
-			
-		"green", "wild", "maple", "pine", "oak", "oaken", "willow", "tangle", "primal",
-		"thrag", "strong", "elder", "verdure", "moss", "ash", "emerald", "wilder",
-		"copse", "summer", "vvild", "copse", "elm", "willow", "birch", "ashen", "lumber"
+		"green", "wild", "maple", "pine", "oak", "oaken", "willow", "tangle", "primal", "brush", "lumber",
+		"thrag", "strong", "elder", "verdure", "virid", "emerald", "moss", "ash", "emerald", "wilder", "timber", "tangle",
+		"summer", "vvild", "copse", "elm", "willow", "birch", "ashen", "lumber", "mid"
 	};
 	
 	private static final String[] END_EARTH =
 	{
-		"weald", "glade", "thicket", "clave", "garden", "fern", "wood", "woods", "bark", "forest", "leaf", "peak", "vale"
+		"weald", "glade", "lush", "copse", "thicket", "clave", "garden", "fern", "wood", "woods", "bark", "forest", "leaf", "peak", "vale", "glade", "lot", "land", "grove", "stand", "wilds"
 	};
 	
 	private static final String[] EARTH =
 	{
-		"lumber", "arbor", "arbour", "alcove", "arborvitae", "bower", "labyrinth", "lombardy", "viburnum",
+		"leilon", "orchard", "lumber", "timber", "arbor", "arbour", "alcove", "arborvitae", "bower", "labyrinth", "lombardy", "viburnum",
 		"arrowwood", "sycamore", "laurel", "sequoia", "maidenhair", "maple", "adansonia", "cordata",
 		"caprea", "tilia", "quercus", "hemlock", "camphor", "yggdrassil"
 	};
@@ -82,59 +81,66 @@ public class ProvinceNames
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= MOUNTAIN =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_WIND =
 	{		
-		"steel", "sunder", "thunder", "sky", "boulder", "high", "bronze", "clay",
-		"grey", "gray", "white", "brow", "stone", "iron", "tin", "copper", "silver",
-		"shale", "granite", "coal", "slate", "flint", "silt", "high", "sulfur", "grey"
+		"oxen", "steel", "sunder", "smolder", "thunder", "sky", "boulder", "high", "bronze", "clay",
+		"grey", "gray", "white", "brow", "stone", "iron", "tin", "copper", "silver", "slate",
+		"shale", "granite", "coal", "slate", "flint", "silt", "high", "sulfur", "grey", "ash"
 	};
 	
 	private static final String[] END_WIND =
 	{
-		"brow", "crown", "ridge", "heights", "pinnacle", "rise", "bluff", "summit", "slopes", "land", "planes", "smith", "fall", "forge", "reach",
+		"smith", "smoke", "brow", "crown", "ridge", "heights", "pinnacle", "rise", "bluff", "summit", "slopes", "land", "planes", "smith", "fall", "forge", "reach",
 		"clif", "cliff", "peak", "cliffe", "rock", "brick", "bleak", "break", "hill", "hills", "mont", "ryse", "rize", "rise"
 	};
 	
 	private static final String[] WIND =
 	{
-		"alps", "zenith", "summit", "shale", "brick", "chisel", "quarry", "grotto", "forge", "apex", "bronn", "sunder", "skyreach", "thunder", "flint", "hammer", "haven", "forge"
+		"anvil", "adamantine", "agate", "boulder", "alps", "zenith", "summit", "shale", "brick", "chisel", "quarry", "grotto", "forge", "apex", "bronn", "sunder", "skyreach", "thunder", "flint", "hammer", "haven", "forge"
 	};
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= ROSE =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_FIRE =
 	{
-		"spring", "seed", "vine", "vyne", "red", "spring", "clover", "thorn", "petal", "flora", "floral", "bloom", "rose"
+		"spring", "tangle", "vine", "vyne", "red", "spring", "clover", "thorn", "petal", "flora", "floral", "bloom", "rose", "lila", "aloe", "aster", "calla", "crimson", "anther", "prim", "flax", "sweet", "fox", "far", "vast"
 	};
 	
 	private static final String[] END_FIRE =
 	{
-		"thorn", "glade", "garden", "grove", "bloom", "meadow", "meadows", "fern", "field", "fields",
-		"briar", "land", "brier", "valley", "aloe", "acer", "shrub", "acre", "bloom", "blossom"
+		"thorn", "glade", "garden", "grove", "cone", "seed", "stem", "bloom", "meadow", "meadows", "fern", "field", "fields", "glen", "dale", "vale", "plains", "crown", "reath",
+		"briar", "land", "brier", "valley", "acer", "shrub", "acre", "bloom", "blossom", "haven", "heath", "hearth", "garden", "flats"
 	};
 	
 	private static final String[] FIRE =
 	{
-		"virrose", "allium", "azela", "perennial", "avens", "yucca", "hawthorn", "crimson", "scarlet", "eglantine", "vera",
-		"hibiscus", "calluna", "lonicera", "malenocarpa", "weigela", "lantana", "daphne", "peony", "bloom", "acer", "aloe",
+		"edelweiss", "leilon", "amaranth", "hydrangea", "daffodil", "azalea", "virrose", "floret", "anther", "allium", "azela", "perennial", "avens", "yucca", "hawthorn", "crimson", "scarlet", "eglantine", "vera",
+		"hibiscus", "calluna", "heather", "lonicera", "malenocarpa", "weigela", "lantana", "daphne", "peony", "bloom", "acer", "aloe",
 		"talon", "sage", "yarrow", "aster", "iris", "lavender", "prim", "calla", "lily", "laurel", "silverleaf", "anemone",
 		"ivy", "amaryllis", "camellia", "maidenhair", "alstroemeria", "bleedingheart", "purslane", "coreopsis", "blossom",
-		"clematis", "vernal", "vinca", "weigela", "phlox", "alyssum", "dahlias", "forsythia", "foxglove", "spirea",
-		"lombardy", "thistle", "marigold"
+		"clematis", "vernal", "vinca", "weigela", "phlox", "alyssum", "dahlias", "forsythia", "foxglove", "spirea", "meadow",
+		"lombardy", "thistle", "marigold", "lilac", "coppice", "bosquet", "garent"
 	};
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= GLACIER =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_WATER =
 	{
-		"sno", "snow", "drift", "flur", "flurry", "bliz", "sleet", "storm", "bleak",
-		"white", "pale", "vvynter", "freeze", "frost", "cold", "winter", "river", "shiver",
-		"dew",  "sunken", "ice", "glace", "glacier", "bleak", "numb", "glacial", "thaw", "wolf", "polar"
+		"ivar", "sno", "snow", "drift", "flur", "bliz", "sleet", "storm", "bleak", "alf", "sleet", "hers", "ulf", "nov",
+		"white", "pale", "winter", "freeze", "frost", "cold", "winter", "river", "shiver", "kirk", "surj",
+		"dew", "sunken", "ice", "glace", "glacier", "bleak", "numb", "glacial", "wolf", "polar", "novi"
 	};
 	
 	private static final String[] END_WATER =
 	{
-		"weald", "bite", "fjord", "ford", "whelm", "post", "fort", "watch", "well", "rift", "run", "scape"
+		"stead", "sted", "burg", "jarl", "berg", "heim", "rime", "kir", "dner", "dnar", "grasp", "weald", "snap", "fall",
+		"gate", "watch", "bite", "fjord", "gard", "guard", "vik", "vin", "kild", "igrad", "graft", "hild", "hold",
+		"hearth", "ford", "weld", "whelm", "kyr", "thaw", "post", "fort", "watch", "well", "rift", "run", "scape", "ridge",
+		"igard"
 	};
 	
 	private static final String[] WATER =
 	{
-		"yce", "rime", "solitude", "coldsnap", "shatter", "frigid",
-		"fjord", "burrrg", "berrrg", "shiver", "weald", "bite", "fjord", "thaw", "frost"
+		"hindarsfjall", "bremervoord", "vallenkyr", "fyresdal", "undvik", "skillige", "aard", "yrden", "verglas", "myrkr", "forndom", "vaknan", "ivar", "herja", "domadagr", "skapanir", "munarvagr", "novigrad",
+		"velen", "ulfhednar", "odin", "thor", "loki", "hersir", "alfheim", "berserkir", "ice", "rime", "solitude",
+		"coldsnap", "shatter", "frigid", "solitude", "wintergrasp", "vigrar", "sapphire", "haithabu", "nidaros",
+		"bjorgvin", "dyflin", "vadrejford", "kirkjuvagr", "fjord", "vellir", "burrrg", "berrrg", "shiver", "weald",
+		"bite", "fjord", "thaw", "frost", "blizzard", "berksard", "birka", "roskilde", "reykjavik", "jorvik",
+		"brattahild", "leirvik"
 	};
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= SUN =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 //	private static final String[] START_SUN =
@@ -149,7 +155,7 @@ public class ProvinceNames
 	
 	private static final String[] SUN =
 	{
-		"ssol", "bllaze", "burrn", "ssand", "rajttle", "aarid", "ssun", "ssmolder", "sstar", "sspear", "ssnayke", "fyre", "qysous", "dhune", "dune", "qisbusir", "behretaten", "sett", "ra", "osiris", "thoth", "ptah", "hathor", "anubis",
+		"llux", "ssol", "igni", "bllaze", "burrn", "ssand", "rajttle", "aarid", "ssun", "smuolder", "sstar", "sspear", "snayyke", "fyyre", "qysous", "dhune", "dune", "qisbusir", "behretaten", "sett", "ra", "osiris", "thoth", "ptah", "hathor", "anubis",
 		"menso", "dehru", "qiszu", "acnudet", "eksoudos", "kuzutmaty", "medje", "apkhelzum", "bastet", "amon", "nefaru", "retzu", "djoser", "khufu", "ikhnaton", "vizier",
 		"dehno", "farsathis", "ahkn", "ashruzum", "gessyty", "clyssena", "sakrubenu", "shekha", "kizutjer", "besuthis", "hatshepsut", "thutmose", "amenhotep", "nefertiti",
 		"neknenutjer", "kerbezum", "nekhsaihdet", "sakdjuta", "hebsousut", "kusdjeris", "bbehdfu", "akso", "medtutaten", "akhenaten", "tutankhamun", "naphurureya",
@@ -158,7 +164,7 @@ public class ProvinceNames
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= SWAMP =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	private static final String[] START_MOON =
 	{
-		"ash", "salt", "blight", "swamp", "peat", "peats", "corpse", "rot", "weap", "stilt", "pitch", "copse", "death", "bleak", "dead",
+		"fallen", "soul", "ash", "salt", "blight", "swamp", "peat", "peats", "corpse", "rot", "weap", "stilt", "pitch", "copse", "death", "bleak", "dead",
 		"shamble", "ink", "soot", "wilt", "dark", "bog", "mud", "musk", "shadow", "ahsen", "bitter", "blight", "fog", "weeping",
 		"gilt", "black", "scar", "night", "luster", "ink", "mirk", "murk", "moor", "mourn", "marsh", "fen", "quag", "barren",
 		"sump", "marsh", "sump", "glade", "slough", "musk", "gloom", "moon", "dusk", "shade", "wllow", "luster", "lily"
@@ -167,12 +173,12 @@ public class ProvinceNames
 	
 	private static final String[] END_MOON =
 	{
-		"smog", "marsh", "burg", "fen", "fens", "basin", "borg", "cove", "quag", "basin", "pond", "keg", "well", "dam", "morg", "warg", "wail"
+		"mist", "deep", "smog", "marsh", "burg", "fen", "fens", "basin", "borg", "cove", "quag", "basin", "pond", "keg", "well", "dam", "morg", "warg", "wail"
 	};
 	
 	private static final String[] MOON =
 	{
-		"barren", "silt", "scythe", "end", "quiteus", "gloom", "hadean", "soot", "ruin", "woe", "weap", "ink",
+		"barren", "decay", "silt", "scythe", "end", "quiteus", "gloom", "hadean", "soot", "ruin", "woe", "weap", "ink",
 		"stygian", "lamen", "luster", "abyss", "wetlands", "fens", "fen", "ash", "willows", "scar",
 		"wilt", "shade", "blight", "hallow", "shamble", "will-o", "ghast", "dread", "lanquish"
 	};
@@ -214,7 +220,7 @@ lin gold port maur it ania salus malazan iverin rich miry alven hime reven riven
    sky west wick 's Outpost asradala Iron  silver moon Tel'Doras   light
     grave Deeps DDominion loch  dun morogh phen casterly drog skul acron bog sworm
      koor swym argor  hun see grim cliff rock	     
-	leilon bul phan dalin  winter thunder tree llast Port lusk kan
+	 bul phan dalin  winter thunder tree llast Port lusk kan
 	horn ham wharf tide front  wind bourne ham run watch wallow
 	thorn, weed, flower
 	star tead ridge bury borne rift  ford burg well burgh burg mont

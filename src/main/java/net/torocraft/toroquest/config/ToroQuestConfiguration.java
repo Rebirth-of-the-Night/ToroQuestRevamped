@@ -66,6 +66,11 @@ public class ToroQuestConfiguration
 	public static int minBaseHealthToBeConsideredBossMob = 500;
 	
 	public static int raiderSiegeChance = 40;
+	
+	public static boolean disableKeep = false;
+	public static boolean disableShop = false;
+	public static boolean disableGuardTower = false;
+	public static boolean disableBarracks = false;
 
 	public static boolean enableBloodParticles = false;
 	public static boolean betterKnockback = true;
@@ -80,6 +85,8 @@ public class ToroQuestConfiguration
 	
 	public static int maxSpawnHeight = 150;
 	public static int minSpawnHeight = 50;
+	
+	public static int villagerUniqueShopInventoryVarients = 4;
 	
 	public static int toroVillagerMateChance = 1200;
 	public static float villageDoorsModifier = 0.4F;
@@ -107,7 +114,7 @@ public class ToroQuestConfiguration
 	public static boolean cartographerMapTrade = true;
 	public static int banditsDropPotions = 6;
 	
-	public static boolean guardWatchClosestTask = false;
+	// public static boolean guardWatchClosestTask = false;
 	public static boolean guardLookIdleTask = false;
 
 	//public static boolean renderGuardCape = true;
@@ -358,6 +365,11 @@ public class ToroQuestConfiguration
 			enchantingTableResourceName = config.getString("enchantingTableResourceName", CATEGORY_GEN, "minecraft:enchanting_table",
 					"Resource string for Enchanting Tables that generate in villages.");
 			
+			disableKeep = config.getBoolean("disableKeep", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			disableShop = config.getBoolean("disableShop", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			disableGuardTower = config.getBoolean("disableGuardTower", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			disableBarracks = config.getBoolean("disableBarracks", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			
 			// MOBS =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 			toroVillagerMateChance = config.getInt("toroVillagerMateChance", CATEGORY_MOBS, 1200, 1, Integer.MAX_VALUE,
@@ -431,8 +443,8 @@ public class ToroQuestConfiguration
 			renderBanditMask = config.getBoolean("renderBanditMask", CATEGORY_MOBS, true,
 					"Enable to allow mask to be rendered/ visible on bandits.");
 			
-			guardWatchClosestTask = config.getBoolean("guardWatchClosestTask", CATEGORY_MOBS, false,
-					"Enable to add watch closest task to guards (they look at entities around them randomly). Disable to slightly improve performance.");
+//			guardWatchClosestTask = config.getBoolean("guardWatchClosestTask", CATEGORY_MOBS, false,
+//					"Enable to add watch closest task to guards (they look at entities around them randomly). Disable to slightly improve performance.");
 			
 			guardLookIdleTask = config.getBoolean("guardLookIdleTask", CATEGORY_MOBS, false,
 					"Enable to add look idle task to guards (they look around randomly). Disable to slightly improve performance.");
@@ -703,6 +715,9 @@ public class ToroQuestConfiguration
 			
 			cartographerMapTrade = config.getBoolean("cartographerMapTrade", CATEGORY, true,
 					"Set true to torovillager enable map trade.");
+			
+			villagerUniqueShopInventoryVarients = config.getInt("villagerUniqueShopInventoryVarients", CATEGORY, 4, 0 , 256,
+					"The number of unique inventory of trades that villagers can offer. If set to 4 - then for each profession there are 4 different inventories of trades that profession can offer. For example: a varient 0 and 1 blacksmith could sell iron swords, a varient 3 blacksmith could buy iron ingots, and a varient 4 blacksmith could sell shields. YOU MUST MANUALLY CONFIGURE TORO VILLAGER TRADES IF YOU PLAN ON CHANGING THIS SETTING!");
 			
 			tradeList = config.getStringList("tradeList", CATEGORY_TRADES,
 					

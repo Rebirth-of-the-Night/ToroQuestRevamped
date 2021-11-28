@@ -821,7 +821,7 @@ entity.toroquest.guard.lowrep55=What brings you to @e?
 
 ################## GUARD MEDIUM REP ##################
 
-entity.toroquest.guard.mediumrep=36
+entity.toroquest.guard.mediumrep=37
 entity.toroquest.guard.mediumrep0=Please, stay awhile and enjoy your welcome.
 entity.toroquest.guard.mediumrep1=You're, @p, aren't you?
 entity.toroquest.guard.mediumrep2=You're making quite the name for yourself around here.
@@ -858,6 +858,7 @@ entity.toroquest.guard.mediumrep32=You have my attention.
 entity.toroquest.guard.mediumrep33=What troubles you?
 entity.toroquest.guard.mediumrep34=What can I help you with?
 entity.toroquest.guard.mediumrep35=Enjoying your stay here in @e?
+entity.toroquest.guard.mediumrep36=@p, is it? Good to meet you.
 
 ################## GUARD HIGH REP ##################
 
@@ -922,7 +923,7 @@ entity.toroquest.guard.highrep57=The people of @e adore you, @p.
 
 ################## GUARD ANY REP ##################
 
-entity.toroquest.guard.anyrep=50
+entity.toroquest.guard.anyrep=53
 entity.toroquest.guard.anyrep0=Let me guess... someone stole your diamonds.
 entity.toroquest.guard.anyrep1=Everything alright?
 entity.toroquest.guard.anyrep2=For the king!
@@ -965,14 +966,17 @@ entity.toroquest.guard.anyrep38=Ever seen a bugbear? Me neither. Bet they don't 
 entity.toroquest.guard.anyrep39=I've heard Endermen were once humans long long ago... what do you think happened?
 entity.toroquest.guard.anyrep40=Anything the matter?
 entity.toroquest.guard.anyrep41=What seems to be the problem?
-entity.toroquest.guard.anyrep42=We will persevere
+entity.toroquest.guard.anyrep42=@e will persevere!
 entity.toroquest.guard.anyrep43=Well met.
 entity.toroquest.guard.anyrep44=How are you?
 entity.toroquest.guard.anyrep45=Safe travels.
 entity.toroquest.guard.anyrep46=Hail.
 entity.toroquest.guard.anyrep47=You wish to speak?
-entity.toroquest.guard.anyrep48=Do you know any magic spells? Like umm... any §ogrowth§r spells?
+entity.toroquest.guard.anyrep48=Do you know any magic spells? Like, umm... any §ogrowth§r spells?
 entity.toroquest.guard.anyrep49=If I eat a zombie... will I become a zombie?
+entity.toroquest.guard.anyrep50=Goblins are nasty little creatures, you best stay away from them.
+entity.toroquest.guard.anyrep51=You look... interesting..?
+entity.toroquest.guard.anyrep52=How many bandits have you killed? Lots, I bet.
 
 ################## GUARD MURDERER ##################
 
@@ -1344,6 +1348,7 @@ entity.toroquest.guard.nociv2=There have been reports of a bandit camp not too f
 
 entity.toroquest.lord.renameconsider=I would consider naming the province @e if your reputation was high enough.
 entity.toroquest.lord.rename=The province shall be renamed to @e.
+entity.toroquest.lord.incorrectname=What do you wish to rename my province to?
 
 entity.toroquest.lord.help=Help, guards!
 entity.toroquest.guard.help=Help, guards!
@@ -1379,6 +1384,7 @@ entity.toroquest.lord.annoyed10=You have broken my trust, @p.
 entity.toroquest.lord.annoyed11=No griefing allowed. You broke the law.
 entity.toroquest.lord.annoyed12=I don't allow griefers in @e...
 entity.toroquest.lord.annoyed13=Griefing has no place in @e. You are not welcome here.
+entity.toroquest.lord.annoyed14=I hope criminals like you rot in the Nether.
 entity.toroquest.lord.annoyed15=Your crimes have not gone unnoticed, @p.
 entity.toroquest.lord.annoyed16=Griefing? In MY village?! Your actions are unacceptable, @p.
 entity.toroquest.lord.annoyed17=You may return when your crimes have been forgiven, @p.

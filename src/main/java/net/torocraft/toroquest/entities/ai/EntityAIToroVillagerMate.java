@@ -19,6 +19,7 @@ import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.config.ToroQuestConfiguration;
+import net.torocraft.toroquest.entities.EntityShopkeeper;
 import net.torocraft.toroquest.entities.EntityToroVillager;
 
 public class EntityAIToroVillagerMate extends EntityAIBase
@@ -32,7 +33,6 @@ public class EntityAIToroVillagerMate extends EntityAIBase
 
     public EntityAIToroVillagerMate(EntityToroVillager villagerIn)
     {
-    	// super(villagerIn);
         this.villager = villagerIn;
         this.world = villagerIn.world;
         this.setMutexBits(1);
@@ -57,7 +57,7 @@ public class EntityAIToroVillagerMate extends EntityAIBase
 			return false;
 		}
         
-        if ( this.villager.getRNG().nextInt(this.toroVillagerMateChance) != 0 )
+        if ( this.villager.getRNG().nextInt(this.toroVillagerMateChance) != 0 || this.villager.isUnderAttack() )
         {
             return false;
         }
@@ -115,7 +115,7 @@ public class EntityAIToroVillagerMate extends EntityAIBase
 			{
 				public boolean apply(@Nullable EntityToroVillager entity)
 				{
-					return true;
+					return !(entity instanceof EntityShopkeeper);
 //					if ( entity != villager && entity.getGrowingAge() == 0 && !entity.isChild() && entity.underAttack == null && entity.blockedTrade < 1 )
 //					{
 //						return true;

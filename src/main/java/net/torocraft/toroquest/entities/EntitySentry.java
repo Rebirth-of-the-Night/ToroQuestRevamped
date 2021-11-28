@@ -12,7 +12,6 @@ import net.minecraft.block.BlockFire;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -141,6 +140,11 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	protected static final DataParameter<Boolean> IS_DRINKING = EntityDataManager.<Boolean>createKey(EntitySentry.class, DataSerializers.BOOLEAN);
 	protected static final DataParameter<Byte> CLIMBING = EntityDataManager.<Byte>createKey(EntitySentry.class, DataSerializers.BYTE);
 
+	public boolean inCombat()
+	{
+		return this.getAttackTarget() != null || this.getRevengeTarget() != null || this.inCombat;
+	}
+	
 	public static String NAME = "sentry";
 	static
 	{
@@ -337,7 +341,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			{
 				int i = player.world.rand.nextInt(Integer.parseInt( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.bandit."+message, new Object[0]).getUnformattedText() ));
 				String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.bandit."+message+i, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
-				//String s = I18n.format("entity.toroquest.bandit."+message+rand.nextInt(Integer.parseInt(I18n.format("entity.toroquest.bandit."+message)))).replace("@p", player.getName());
 				
 				if ( extra != null )
 				{
@@ -352,7 +355,6 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 			catch ( Exception e )
 			{
 				String s = TextComponentHelper.createComponentTranslation(player, "entity.toroquest.bandit."+message, new Object[0]).getUnformattedText().replace("@p", player.getDisplayNameString());
-				//String s = I18n.format("entity.toroquest.bandit."+message+rand.nextInt(Integer.parseInt(I18n.format("entity.toroquest.bandit."+message)))).replace("@p", player.getName());
 				
 				if ( extra != null )
 				{
@@ -382,13 +384,11 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 		ItemStack itemstack = player.getHeldItem(hand);
 		Item item = itemstack.getItem();
 		
-		// !this.world.isRemote
-		if ( !this.getTame() && this.getHealth() >= this.getMaxHealth() && !this.inCombat && this.getAttackTarget() == null && itemstack.getItem() == Items.EMERALD )
+		if ( !this.getTame() && this.getHealth() >= this.getMaxHealth() && !this.inCombat() && itemstack.getItem() == Items.EMERALD && CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ) == null )
         {
 			itemstack.shrink(1);
         	this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
         	this.faceEntity(player, 30.0F, 30.0F);
-        	
         	
     		List<EntitySentry> bandits = this.world.<EntitySentry>getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32));
     		{
@@ -429,72 +429,54 @@ public class EntitySentry extends EntityToroMob implements IRangedAttackMob, IMo
 	                }
 	            }
             }
-            return true;
         }
-		else if ( !this.inCombat && this.getAttackTarget() == null && ToroQuestConfiguration.recruitBandits && item.equals(Item.getByNameOrId("toroquest:recruitment_papers")) )
+		else if ( this.getTame() && !this.inCombat() && ToroQuestConfiguration.recruitBandits && item.equals(Item.getByNameOrId("toroquest:recruitment_papers")) )
         {
-			if ( this.getTame() )
+        	playSound(SoundEvents.ENTITY_ILLAGER_CAST_SPELL, 1.5F, 1.5F);
+        	playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.0F);
+        	player.setHeldItem(hand, new ItemStack(item, itemstack.getCount()-1 ));
+			EntityGuard newEntity = new EntityGuard(world);
+			newEntity.setPosition(this.posX, this.posY, this.posZ);
+			this.setDead();
+			newEntity.setPlayerGuard(player.getName());
+			newEntity.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(this.getPosition())), (IEntityLivingData) null);
+			newEntity.actionTimer = 1;
+			
+			List<EntitySentry> bandits = this.world.getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32), new Predicate<EntitySentry>()
+    		{
+    			public boolean apply(@Nullable EntitySentry entity)
+    			{
+    				return true;
+    			}
+    		});
+			
+			for ( EntitySentry b : bandits )
 			{
-	        	//if ( !world.isRemote )
-	        	{
-		        	playSound(SoundEvents.ENTITY_ILLAGER_CAST_SPELL, 1.5F, 1.5F);
-		        	playSound(SoundEvents.BLOCK_ANVIL_USE, 1.0F, 1.0F);
-		        	player.setHeldItem(hand, new ItemStack(item, itemstack.getCount()-1 ));
-					EntityGuard newEntity = new EntityGuard(world);
-					newEntity.setPosition(this.posX, this.posY, this.posZ);
-					this.setDead();
-					newEntity.setPlayerGuard(player.getName());
-					newEntity.onInitialSpawn(world.getDifficultyForLocation(new BlockPos(this.getPosition())), (IEntityLivingData) null);
-					newEntity.actionTimer = 1;
-					
-					List<EntitySentry> bandits = this.world.getEntitiesWithinAABB(EntitySentry.class, new AxisAlignedBB(this.getPosition()).grow(32, 16, 32), new Predicate<EntitySentry>()
-		    		{
-		    			public boolean apply(@Nullable EntitySentry entity)
-		    			{
-		    				return true;
-		    			}
-		    		});
-					
-					for ( EntitySentry b : bandits )
-					{
-						b.passiveTimer = 8;
-					}
-					
-					newEntity.spawnedNearBandits = true;
-
-					world.spawnEntity(newEntity);
-					newEntity.playTameEffect(false);
-        			newEntity.world.setEntityState(newEntity, (byte)6);
-					newEntity.setMeleeWeapon();
-					
-					Province province = CivilizationUtil.getProvinceAt(player.getEntityWorld(), player.chunkCoordX, player.chunkCoordZ);
-					
-					if ( province != null && province.getCiv() != null )
-					{
-						CivilizationHandlers.adjustPlayerRep(player, province.getCiv(), ToroQuestConfiguration.recruitGuardRepGain);
-						try
-						{
-							QuestRecruit.INSTANCE.onRecruit(player, province);
-						}
-						catch ( Exception e )
-						{
-							
-						}
-						newEntity.chat(newEntity, player, "civbanditrecruit", province.getCiv().getDisplayName(player));
-					}
-					else
-					{
-						newEntity.chat(newEntity, player, "nocivbanditrecruit", I18n.format("civilization.null.name"));
-					}
-		    	}
+				b.passiveTimer = 8;
 			}
-			else if ( this.canTalk )
-	    	{
-	    		this.canTalk = false;
-	    		this.chat(player, "moreemeralds", null);
-	        }
-	    }
-		return false;
+			
+			newEntity.spawnedNearBandits = true;
+			world.spawnEntity(newEntity);
+			newEntity.setMeleeWeapon();
+			
+			Province province = CivilizationUtil.getProvinceAt(player.getEntityWorld(), player.chunkCoordX, player.chunkCoordZ);
+			
+			if ( province != null && province.getCiv() != null )
+			{
+				newEntity.recruitGuard(player, province, "civbanditrecruit");
+			}
+			else
+			{
+				newEntity.chat(newEntity, player, "nocivbanditrecruit", TextComponentHelper.createComponentTranslation(player, "civilization.null.name", new Object[0]).getFormattedText());
+			}
+			
+		}
+		else if ( this.canTalk )
+    	{
+    		this.canTalk = false;
+    		this.chat(player, "moreemeralds", null);
+        }
+		return true;
 	}
 	
 	//===================================================== Potion =======================================================
