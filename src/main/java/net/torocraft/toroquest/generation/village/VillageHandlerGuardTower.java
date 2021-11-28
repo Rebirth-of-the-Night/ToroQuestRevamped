@@ -67,6 +67,7 @@ public class VillageHandlerGuardTower implements IVillageCreationHandler
 		
 		public static VillagePieceGuardTower createPiece(StructureVillagePieces.Start start, List<StructureComponent> structures, Random rand, int x, int y, int z, EnumFacing facing, int p_175850_7_)
 		{
+			if ( ToroQuestConfiguration.disableGuardTower ) return null;
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
 			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )
@@ -88,7 +89,7 @@ public class VillageHandlerGuardTower implements IVillageCreationHandler
 		{
 			super();
 		}
-
+		
 		@Override
 		protected boolean specialBlockHandling(World world, String c, int x, int y, int z)
 		{

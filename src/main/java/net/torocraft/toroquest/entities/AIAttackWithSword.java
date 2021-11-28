@@ -53,7 +53,7 @@ public class AIAttackWithSword extends EntityAIBase
     {
     	ItemStack iStack = this.attacker.getHeldItemMainhand();
     	
-		if (iStack != null && iStack.getItem() instanceof ItemBow)
+		if ( iStack.getItem() instanceof ItemBow )
 		{
     		return false;
     	}
@@ -111,7 +111,7 @@ public class AIAttackWithSword extends EntityAIBase
     		return false;
     	}
 		
-        if (this.attacker.getAttackTarget() == null)
+        if ( this.attacker.getAttackTarget() == null )
         {
             return false;
         }

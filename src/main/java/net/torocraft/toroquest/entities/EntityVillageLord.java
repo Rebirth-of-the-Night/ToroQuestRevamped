@@ -100,122 +100,6 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
         return false;
     }
 	
-	@Override
-    protected float getWaterSlowDown()
-    {
-        return 0.9F;
-    }
-	
-    public boolean startRiding(Entity entityIn, boolean force)
-    {
-    	return false;
-    }
-    
-	@Override
-	protected void updateLeashedState()
-    {
-	   this.clearLeashed(true, true);
-       return;
-    }
-	
-	@Override
-	public boolean canBeLeashedTo(EntityPlayer player)
-    {
-		return false;
-    }
-	
-	/**
-     * Handler for {@link World#setEntityState}
-     */
-	@Override
-    @SideOnly(Side.CLIENT)
-    public void handleStatusUpdate(byte id)
-    {
-		if (id == 8)
-        {
-            this.playTameEffect(id);
-        }
-        if (id == 7)
-        {
-            this.playTameEffect(id);
-        }
-        else if (id == 6)
-        {
-            this.playTameEffect(id);
-        }
-        super.handleStatusUpdate(id);
-    }
-	
-	@Override
-	protected boolean canDespawn()
-	{
-		return false;
-	}
-	
-	public void playTameEffect(byte id)
-    {
-        EnumParticleTypes enumparticletypes = EnumParticleTypes.HEART;
-
-        if (id == 6 )
-        {
-            enumparticletypes = EnumParticleTypes.SMOKE_NORMAL;
-        }
-        else if (id == 7)
-        {
-        	enumparticletypes = EnumParticleTypes.VILLAGER_ANGRY;
-        }
-
-        for (int i = 0; i < 7; ++i)
-        {
-            double d0 = this.rand.nextGaussian() * 0.02D;
-            double d1 = this.rand.nextGaussian() * 0.02D;
-            double d2 = this.rand.nextGaussian() * 0.02D;
-            this.world.spawnParticle(enumparticletypes, this.posX + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, this.posY + 0.5D + (double)(this.rand.nextFloat() * this.height), this.posZ + (double)(this.rand.nextFloat() * this.width * 2.0F) - (double)this.width, d0, d1, d2);
-        }
-    }
-	
-	// @Override
-	protected void pledgeAllegianceIfUnaffiliated(Province civ)
-	{
-		if ( getCivilization() != null && getProvince() != null )
-		{
-			return;
-		}
-
-		if (civ == null || civ.civilization == null)
-		{
-			return;
-		}
-		this.playTameEffect((byte)6);
-        this.world.setEntityState(this, (byte)6);
-		setProvince(civ.name);
-		if ( this.posY != 0 && this.posX != 0 && this.posZ != 0 )
-		{
-			if ( this.raidX == null && this.raidZ == null && this.ticksExisted > 202 )
-			{
-				this.raidX = this.getPosition().getX();
-				this.raidZ = this.getPosition().getZ();
-				this.setRaidLocation(this.raidX, this.raidZ);
-			}
-		}
-		setCivilization(civ.civilization);
-	}
-	
-	@Override
-	public CivilizationType getCivilization()
-	{
-		if (c != null)
-		{
-			return c;
-		}
-		return enumCiv(dataManager.get(CIV));
-	}
-	
-	CivilizationType c = null;
-	
-	//
-	
-	
 	public static void init(int entityId)
 	{
 		EntityRegistry.registerModEntity(new ResourceLocation(ToroQuest.MODID, NAME), EntityVillageLord.class, NAME, entityId, ToroQuest.INSTANCE, 80,
@@ -248,7 +132,6 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 
 	public void onLivingUpdate()
 	{
-		
 		super.onLivingUpdate();
 		
 		if ( this.world.isRemote )
@@ -292,26 +175,48 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
     				this.murderWitness = null;
     			}
     		}
-			
-    		//if ( this.raidX != null && this.raidZ != null )
-    		{
-    			BlockPos pos = EntityAIRaid.findValidSurface(this.world, new BlockPos(this.posX, this.posY, this.posZ), 8);
-    			if ( pos != null && !this.getNavigator().tryMoveToXYZ(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5, 0.25D))
-    			{
-    				this.returnToPost();
-    			}
-    		}
     		
-			if ( this.ticksExisted % 500 == 0 && isEntityAlive() )
+			BlockPos pos = EntityAIRaid.findValidSurface(this.world, new BlockPos(this.posX, this.posY, this.posZ), 8);
+			
+			if ( pos != null && !this.getNavigator().tryMoveToXYZ(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5, 0.25D))
 			{
-				this.currentPlayer = null;
-				Province province = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
-				this.setHasLord(true, province);
-				this.pledgeAllegianceIfUnaffiliated(province);
+				this.returnToPost();
+			}
+    		
+			if ( this.ticksExisted % 500 == 0 && this.isEntityAlive() )
+			{
+				this.talkingWith = null;
+				this.pledgeAllegianceIfUnaffiliated(true);
 			}
 		}
 	}
 	
+	// ============================= PLEDGE ==============================
+	// ======================== PLEDGE ALLEGIANCE =========================
+	/* returns TRUE if allegiance is set by this method */
+	protected boolean pledgeAllegianceIfUnaffiliated( boolean force )
+	{
+		if ( force || this.getProvince() == null || this.getUUID() == null || this.getCivilization() == null )
+		{
+			Province prov = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
+			
+			this.setHasLord(true, prov);
+
+			if ( this.pledgeAllegiance(prov) )
+			{
+				this.playTameEffect((byte)6);
+		        this.world.setEntityState(this, (byte)6);
+		        return true;
+			}
+		}
+		return false;
+	}
+	
+	@Override
+	public void onPledge( Province prov )
+	{
+		
+	}
 	
 	public boolean returnToPost()
 	{
@@ -401,7 +306,6 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 	{
 		super(world, null);
 		this.initInventories();
-		this.pledgeAllegianceIfUnaffiliated(CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ));
 	}
 
 	public IVillageLordInventory getInventory(UUID playerId)
@@ -455,178 +359,111 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 //		}
 		player.openGui(ToroQuest.INSTANCE, VillageLordGuiHandler.getGuiID(), this.world, getPosition().getX(), getPosition().getY(), getPosition().getZ());
 	}
-
-	public EntityPlayer currentPlayer = null;
 	
 	@Override
 	protected boolean processInteract(EntityPlayer player, EnumHand hand) 
 	{
-		if ( !this.isEntityAlive() || player == null )
+		if ( player == null || !this.isEntityAlive() || hand == null )
 		{
 			return false;
 		}
 		
 		this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
 		this.faceEntity(player, 30.0F, 30.0F);
-		this.currentPlayer = player;
+		this.talkingWith = player;
 		
 		if ( player.world.isRemote )
 		{
 			return false;
 		}
 		
-		if ( this.ticksExisted < 500 || player.isInvisible() )
+		if ( this.isChild() || this.recentlyHit > 0 )
 		{
 			return true;
 		}
 		
-		if ( this.isEntityAlive() && !this.isChild() )
+		if ( this.getCivilization() == null || this.getProvince() == null || this.getUUID() == null || player.isInvisible() )
 		{
-			Province lordProvince = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
-			
-			if ( lordProvince == null )
-			{
-				return true;
-			}
-
-			Province playerProvince = CivilizationUtil.getProvinceAt(player.world, player.chunkCoordX, player.chunkCoordZ);
-
-			if ( playerProvince == null )
-			{
-				return true;
-			}
-
-			int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(playerProvince.civilization);
-			
-			if ( rep > -50 && (this.murderWitness == null || this.murderWitness != player) && (this.underAttack == null || this.underAttack != player ) )
-			{
-				if ( this.isAnnoyed() )
-				{
-					if ( this.actionReady() )
-					{
-						this.setAnnoyed( player );
-						this.chatfriendly("annoyed", player, null);
-						return true;
-					}
-				}
-				else if ( this.recentlyHit < 1 )
-				{
-					ItemStack itemstack = player.getHeldItem(hand);
-					String name = itemstack.getDisplayName();
-			        if ( itemstack.getItem() == Item.getByNameOrId("toroquest:city_key") && !(name.equals("Key to the City")) )
-			        {
-			        	if ( rep >= 500 )
-			        	{	
-							CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(player.world);
-							if ( worldData == null )
-							{
-								return true;
-							}
-					        playerProvince.name = name;
-							worldData.setName(playerProvince.id, name);
-							this.chatfriendly("rename", player, name);
-							return true;
-			        	}
-			        	else
-			        	{
-			        		this.chatfriendly("renameconsider", player, name);
-			        		return true;
-			        	}
-			        }
-			        else
-			        {
-						this.openGUI(player);
-						return true;
-					}
-				}
-			}
-			else
-			{
-				this.setAnnoyed( player );
-
-				if ( !this.isAnnoyed() )
-				{
-					this.chat(this, player, "crime", null);
-					return true;
-				}
-				else if ( this.actionReady() )
-				{
-					this.chat(this, player, "crime", null);
-					return true;
-				}
-			}
+			return true;
 		}
-		return true;
-	}
-	
-	public boolean inCombat()
-	{
-		return this.inCombat;
-	}
-	
-	@Override
-	public void setAnnoyed( EntityPlayer player )
-	{
-		if ( this.isAnnoyed() )
+		
+		Province lordProvince = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
+		
+		if ( lordProvince == null )
 		{
-			this.isAnnoyedTimer = 8;
+			return true;
+		}
+		
+		Province playerProvince = CivilizationUtil.getProvinceAt(player.world, player.chunkCoordX, player.chunkCoordZ);
+
+		if ( playerProvince == null )
+		{
+			return true;
+		}
+		
+		if ( lordProvince != playerProvince )
+		{
+			return true;
+		}
+
+		int rep = PlayerCivilizationCapabilityImpl.get(player).getReputation(playerProvince.civilization);
+		
+		if ( rep < -50 || ( this.murderWitness != null && this.murderWitness == player ) || ( this.underAttack != null && this.underAttack == player ) )
+		{
+			this.setAnnoyed( player );
+			
+			if ( this.actionReady() )
+			{
+				this.chat(this, player, "crime", null);
+			}
+			return true;
+		}
+		if ( this.isAnnoyedAt(player) )
+		{
+			this.setAnnoyed( player );
+
+			if ( this.actionReady() )
+			{
+				this.chatfriendly("annoyed", player, null);
+			}
+			return true;
 		}
 		else
 		{
-			this.isAnnoyedTimer = 4;
+			ItemStack itemstack = player.getHeldItem(hand);
+			String name = itemstack.getDisplayName();
+	        if ( itemstack.getItem() == Item.getByNameOrId("toroquest:city_key") )
+	        {
+	        	if ( name.equals("Key to the City") )
+	        	{
+					this.chatfriendly("incorrectname", player, name);
+	        		return true;
+	        	}
+	        	else if ( rep >= 500 )
+	        	{
+					CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(player.world);
+					if ( worldData == null )
+					{
+						return true;
+					}
+			        playerProvince.setName(name);
+					worldData.setName(playerProvince.getUUID(), name);
+					this.chatfriendly("rename", player, name);
+					return true;
+	        	}
+	        	else
+	        	{
+	        		this.chatfriendly("renameconsider", player, name);
+	        		return true;
+	        	}
+	        }
+	        else
+	        {
+				this.openGUI(player);
+				return true;
+			}
 		}
-		this.annoyedAt = player;
 	}
-	
-	@Override
-	public boolean isAnnoyedAt( EntityPlayer player )
-	{
-		return ( this.isAnnoyed() && this.annoyedAt == player );
-	}
-	
-	public void setAnnoyed(int i)
-	{
-		this.isAnnoyedTimer = i + this.isAnnoyedTimer;
-		
-		if ( this.isAnnoyedTimer > 8 )
-		{
-			this.isAnnoyedTimer = 8;
-		}
-	}
-	
-	@Override
-	public void setUnderAttack( EntityPlayer player )
-	{
-		this.setAnnoyed( player );
-		this.underAttack = player;
-		this.underAttackTimer = 16;
-	}
-	
-	@Override
-	public void setMurder( EntityPlayer player )
-	{
-		this.setUnderAttack( player );
-		this.murderWitness = player;
-		this.murderTimer = 64;
-	}
-	
-	@Override
-	public EntityPlayer murderWitness()
-	{
-		return this.murderWitness;
-	}
-	
-	@Override
-	public EntityLivingBase underAttack()
-	{
-		return this.underAttack;
-	}
-
-//	public void chat(EntityPlayer player, String message)
-//	{
-//    	player.world.playSound((EntityPlayer)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_EVOCATION_ILLAGER_AMBIENT, SoundCategory.AMBIENT, 1.0F, 1.1F);
-//		player.sendMessage(new TextComponentString("§l" + this.toroName + "§r: " + message));
-//	}
 	
 	@Override
 	public boolean canBeHitWithPotion()
@@ -653,7 +490,7 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		{
 			this.getLookHelper().setLookPositionWithEntity(player, 30.0F, 30.0F);
 			this.faceEntity(player, 30.0F, 30.0F);
-			
+
 			if ( player.world.isRemote )
 			{
 				return;
@@ -751,9 +588,9 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 			@Override
 			public boolean shouldExecute()
 		    {
-		        if ( EntityVillageLord.this.currentPlayer != null )
+		        if ( EntityVillageLord.this.talkingWith != null )
 		        {
-		        	this.closestEntity = EntityVillageLord.this.currentPlayer;
+		        	this.closestEntity = EntityVillageLord.this.talkingWith;
 		        	return true;
 		        }
 		        else
@@ -765,7 +602,7 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 			@Override
 			public boolean shouldContinueExecuting()
 	        {
-	        	if ( EntityVillageLord.this.currentPlayer == null )
+	        	if ( EntityVillageLord.this.talkingWith == null )
 	        	{
 	        		return false;
 	        	}
@@ -777,35 +614,15 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		});
 		this.tasks.addTask(8, new EntityAILookIdle(this));
 	}
-	
-//	@Override
-//	public boolean canBePushed()
-//	{
-//		return false;
-//	}
-//	
-//	@Override
-//    protected void collideWithNearbyEntities()
-//    {
-//		return;
-//	}
-
-	protected boolean hitSafety = true;
-	
+		
 	@Nullable
 	@Override
 	public IEntityLivingData onInitialSpawn(DifficultyInstance difficulty, @Nullable IEntityLivingData livingdata)
 	{
 		livingdata = super.onInitialSpawn(difficulty, livingdata);
-		setCanPickUpLoot(false);
 		this.detachHome();
-		addArmor();
-		Province province = CivilizationUtil.getProvinceAt(this.world, this.chunkCoordX, this.chunkCoordZ);
-		this.setHasLord(true, province);
-		this.pledgeAllegianceIfUnaffiliated(province);
-		this.raidX = (int)this.posX;
-		this.raidZ = (int)this.posZ;
-		this.setRaidLocation(this.raidX, this.raidZ);
+		this.addArmor();
+		this.setLeftHanded(false);
 		return livingdata;
 	}
 	
@@ -1093,12 +910,10 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 			if ( this.getProvince() == null || getProvince().equals("") )
 			{
 				player.sendStatusMessage( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.lord.slaingeneric", new Object[0]), true);
-				//player.sendStatusMessage( new TextComponentString(I18n.format("entity.toroquest.lord.slaingeneric")), true);
 			}
 			else if ( getProvince() != null )
 			{
 				player.sendStatusMessage(   new TextComponentString(( TextComponentHelper.createComponentTranslation(player, "entity.toroquest.lord.slaincivilization", new Object[0]).getUnformattedText() ).replace("@e", getProvince())), true   );
-				//player.sendStatusMessage( new TextComponentString(I18n.format("entity.toroquest.lord.slaincivilization").replace("@e", getProvince())), true);
 			}
 		}
 	}
@@ -1119,50 +934,32 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		}
 	}
 
-	public static void registerFixesVillageLord(DataFixer fixer) {
+	public static void registerFixesVillageLord(DataFixer fixer)
+	{
 		EntityLiving.registerFixesMob(fixer, EntityVillageLord.class);
 		fixer.registerWalker(FixTypes.ENTITY, new ItemStackDataLists(EntityVillageLord.class, new String[] { "Items" }));
 	}
 
 	private void setHasLord(boolean hasLord, Province province)
 	{		
-		if (province == null)
+		if ( province == null )
 		{
 			return;
 		}
 		
-//		if ( province.getLord() != null && province.getLord() != this && province.getLord().isEntityAlive() )
-//		{
-//			System.out.println("ERROR: Duplicate lord found in village.");
-//			EntityGuard guard = new EntityGuard(this.world);
-//			BlockPos pos = this.getPosition();
-//			guard.setPosition(pos.getX()+0.5, pos.getY(), pos.getZ()+0.5);
-//			world.spawnEntity(guard);
-//			this.setDead();
-//			return;
-//		}
-//		else
-//		{
-//			province.setLord(this);
-//		}
-		
 		CivilizationDataAccessor worldData = CivilizationsWorldSaveData.get(world);
 		
-		if (worldData.provinceHasLord(province.id) == hasLord)
+		if ( worldData.provinceHasLord(province.id) == hasLord )
 		{
 			return;
 		}
 
-		if (!isEntityAlive() && hasLord)
+		if ( !isEntityAlive() && hasLord )
 		{
 			hasLord = false;
 		}
 		
-		if ( hasLord )
-		{
-			// this.getVillage();
-		}
-		else
+		if ( !hasLord )
 		{
 			worldData.setTrophyPig(province.id, false);
 			worldData.setTrophyMage(province.id, false);
@@ -1176,27 +973,6 @@ public class EntityVillageLord extends EntityToroNpc implements IInventoryChange
 		
 		worldData.setProvinceHasLord(province.id, hasLord);
 	}
-	
-   	public Integer raidX = null;
-	public Integer raidZ = null;
-	public Random rand = new Random();
-
-	/* Set the direction for bandits to move to */
-	
-	public void setRaidLocation(Integer x, Integer z)
-	{
-		if ( x == 0 && z == 0 )
-		{
-			return;
-		}
-		
-		if ( x != null && z != null )
-		{
-			this.raidX = x;
-			this.raidZ = z;
-			this.writeEntityToNBT(new NBTTagCompound());
-		}
-	}
 
 @Override
 public void writeEntityToNBT(NBTTagCompound compound)
@@ -1207,32 +983,21 @@ public void writeEntityToNBT(NBTTagCompound compound)
 		c.setTag(e.getKey().toString(), e.getValue().saveAllItems());
 	}
 	compound.setTag("Items", c);
-	if ( this.raidX != null && this.raidZ != null && !( this.raidX == 0 && this.raidZ == 0 ) )
-	{
-		compound.setInteger("raidX", this.raidX);
-		compound.setInteger("raidZ", this.raidZ);
-	}
 	super.writeEntityToNBT(compound);
 }
 
-@Override
-public void readEntityFromNBT(NBTTagCompound compound)
-{
-	NBTTagCompound c = compound.getCompoundTag("Items");
-	inventories = new HashMap<UUID, VillageLordInventory>();
-	for (String sPlayerId : c.getKeySet())
+	@Override
+	public void readEntityFromNBT(NBTTagCompound compound)
 	{
-		VillageLordInventory inv = new VillageLordInventory(this, "VillageLordInventory", getInventorySize());
-		inv.loadAllItems(c.getTagList(sPlayerId, 10));
-		inventories.put(UUID.fromString(sPlayerId), inv);
+		NBTTagCompound c = compound.getCompoundTag("Items");
+		inventories = new HashMap<UUID, VillageLordInventory>();
+		for (String sPlayerId : c.getKeySet())
+		{
+			VillageLordInventory inv = new VillageLordInventory(this, "VillageLordInventory", getInventorySize());
+			inv.loadAllItems(c.getTagList(sPlayerId, 10));
+			inventories.put(UUID.fromString(sPlayerId), inv);
+		}
+		super.readEntityFromNBT(compound);
 	}
-	if ( compound.hasKey("raidX") && compound.hasKey("raidZ") )
-    {
-    	this.raidX = compound.getInteger("raidX");
-    	this.raidZ = compound.getInteger("raidZ");
-    }
-	super.readEntityFromNBT(compound);
-	
-}
 
 }

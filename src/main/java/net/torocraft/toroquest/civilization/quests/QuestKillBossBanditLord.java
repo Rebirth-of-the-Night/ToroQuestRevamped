@@ -144,8 +144,8 @@ public class QuestKillBossBanditLord extends QuestBase implements Quest
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)4, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_bandit.map", new Object[0]).getFormattedText() + "§r");
-			itemstack.setStackDisplayName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_bandit.map", new Object[0]).getFormattedText() + "§r");
+			//itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_bandit.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName(TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.legendary_bandit.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
 			data.setChatStack( "legendary_bandit.accept", data.getPlayer(), null );
 			this.setData(data);

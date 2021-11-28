@@ -9,9 +9,28 @@ public class Province
 {
 
 	public UUID id;
+	
+	public UUID getUUID()
+	{
+		return id;
+	}
+	
 	public String name;
+
+	public String getName()
+	{
+		return this.name;
+	}
+	
+	public CivilizationType civilization;
+	
+	public CivilizationType getCiv()
+	{
+		return this.civilization;
+	}
+	
 	public boolean hasLord;
-//	public EntityVillageLord lord = null;
+
 	public int chunkX;
 	public int chunkZ;
 
@@ -24,7 +43,7 @@ public class Province
 	public int zLength;
 	public int area;
 
-	public CivilizationType civilization;
+	
 	
 //	public EntityVillageLord getLord()
 //	{
@@ -36,10 +55,7 @@ public class Province
 //		this.lord = v;
 //	}
 	
-	public CivilizationType getCiv()
-	{
-		return this.civilization;
-	}
+
 	
 	// =-=-=-=-=-=-= Trophy =-=-=-=-=-=-=-=-=
 	public boolean zombiepigTrophy;

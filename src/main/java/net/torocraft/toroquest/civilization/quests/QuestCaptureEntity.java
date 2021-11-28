@@ -1,45 +1,34 @@
 package net.torocraft.toroquest.civilization.quests;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityXPOrb;
-import net.minecraft.entity.passive.EntitySheep;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
-import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.ItemLead;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityChest;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.TextComponentString;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
-import net.minecraft.world.storage.MapData;
-import net.minecraft.world.storage.MapDecoration;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
-import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapability;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
-import net.torocraft.toroquest.civilization.quests.QuestCaptureFugitives.DataWrapper;
-import net.torocraft.toroquest.civilization.quests.util.ItemMapCentered;
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
+import net.torocraft.toroquest.entities.EntityFugitive;
 
 public class QuestCaptureEntity extends QuestBase implements Quest {
 	public static int ID;
@@ -157,7 +146,7 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 		{
 			data.setChatStack( "rejectreturnitem", data.getPlayer(), null);
 			this.setData(data);
-			data.getPlayer().closeScreen();
+			//data.getPlayer().closeScreen();
 			return null;
 		}
 		
@@ -195,7 +184,7 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 			}
 			this.setData(data);
 			ItemStack itemstack = new ItemStack(Items.LEAD, 1);
-			itemstack.setStackDisplayName( I18n.format("item.sheep_bindings.name") );
+			itemstack.setStackDisplayName(TextComponentHelper.createComponentTranslation(data.getPlayer(), "item.sheep_bindings.name", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
 		}
 		catch (Exception e)
@@ -373,16 +362,16 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 //			return false;
 //		}
 
-		if ( !quest.data.getCompleted() )
+		if ( !quest.getData().getCompleted() )
 		{
 			//quest.setCurrentAmount(quest.getCurrentAmount() + 1);
-			//quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+			//quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 			
 			//if (quest.getCurrentAmount() >= quest.getTargetAmount())
 			//{
-				quest.data.setCompleted(true);
 				quest.getData().setCompleted(true);
-				chatCompletedQuest(quest.data);
+				quest.getData().setCompleted(true);
+				chatCompletedQuest(quest.getData());
 			//}
 			return true;
 		}
@@ -394,12 +383,12 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 	public QuestData generateQuestFor(EntityPlayer player, Province province)
 	{
 		DataWrapper q = new DataWrapper();
-		q.data.setCiv(province.civilization);
-		q.data.setPlayer(player);
-		q.data.setProvinceId(province.id);
-		q.data.setQuestId(UUID.randomUUID());
-		q.data.setQuestType(ID);
-		q.data.setCompleted(false);
+		q.getData().setCiv(province.civilization);
+		q.getData().setPlayer(player);
+		q.getData().setProvinceId(province.id);
+		q.getData().setQuestId(UUID.randomUUID());
+		q.getData().setQuestType(ID);
+		q.getData().setCompleted(false);
 
 		q.setCurrentAmount(0);
 		q.setTargetAmount(1);
@@ -414,10 +403,10 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
-		setRewardItems(q.data, rewardItems);
-		//setRewardRep(q.data, getRewardRep(q.data));
-		this.setData(q.data);
-		return q.data;
+		setRewardItems(q.getData(), rewardItems);
+		//setRewardRep(q.getData(), getRewardRep(q.getData()));
+		this.setData(q.getData());
+		return q.getData();
 	}
 
 	public static class DataWrapper
@@ -489,20 +478,20 @@ public class QuestCaptureEntity extends QuestBase implements Quest {
 			}
 		}
 
-		private boolean isApplicable()
-		{
-			return isCorrectQuest() && isInCorrectProvince();
-		}
-
-		private boolean isCorrectQuest()
-		{
-			return data.getQuestType() == ID;
-		}
-
-		private boolean isInCorrectProvince()
-		{
-			return data.getProvinceId().equals(getProvinceHuntedIn().id);
-		}
+//		private boolean isApplicable()
+//		{
+//			return isCorrectQuest() && isInCorrectProvince();
+//		}
+//
+//		private boolean isCorrectQuest()
+//		{
+//			return data.getQuestType() == ID;
+//		}
+//
+//		private boolean isInCorrectProvince()
+//		{
+//			return data.getProvinceId().equals(getProvinceHuntedIn().id);
+//		}
 
 	}
 	

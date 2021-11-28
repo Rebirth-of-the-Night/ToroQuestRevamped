@@ -48,7 +48,7 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 		//MapGenStructureIO.registerStructureComponent(VillagePieceBarracks.class, NAME + "_destroyed");
 		VillagerRegistry.instance().registerVillageCreationHandler(new VillageHandlerBarracks());
 	}
-
+	
 	@Override
 	public PieceWeight getVillagePieceWeight(Random random, int i) {
 		return new PieceWeight(VillagePieceBarracks.class, 30, 1);
@@ -65,7 +65,8 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 
 	}
 
-	public static class VillagePieceBarracks extends VillagePieceBlockMap {
+	public static class VillagePieceBarracks extends VillagePieceBlockMap
+	{
 
 		@Override
 		protected int getYOffset() {
@@ -74,6 +75,7 @@ public class VillageHandlerBarracks implements IVillageCreationHandler
 		
 		public static VillagePieceBarracks createPiece(StructureVillagePieces.Start start, List<StructureComponent> structures, Random rand, int x, int y, int z, EnumFacing facing, int p_175850_7_)
 		{
+			if ( ToroQuestConfiguration.disableBarracks ) return null;
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
 			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )

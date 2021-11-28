@@ -89,15 +89,15 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 			return false;
 		}
 
-		if ( !quest.data.getCompleted() )
+		if ( !quest.getData().getCompleted() )
 		{
 			quest.setCurrentAmount(quest.getCurrentAmount() + 1);
-			quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+			quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 	
 			if (quest.getCurrentAmount() >= quest.getTargetAmount())
 			{
-				quest.data.setCompleted(true);
-				this.chatCompletedQuest(quest.data);
+				quest.getData().setCompleted(true);
+				this.chatCompletedQuest(quest.getData());
 			}
 			return true;
 		}
@@ -202,7 +202,7 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 		s.append("|").append(getProvinceName(data.getPlayer(), data.getProvinceId()));
 		s.append("|").append(q.getCurrentAmount());
 		s.append("|").append("\n\n");
-		s.append("|").append(listItems(getRewardItems(q.data)) + ",\n" );
+		s.append("|").append(listItems(getRewardItems(q.getData())) + ",\n" );
 		s.append("|").append(getRewardRep(data));
 		return s.toString();
 	}
@@ -212,12 +212,12 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 	{
 		Random rand = new Random();
 		DataWrapper q = new DataWrapper();
-		q.data.setCiv(province.civilization);
-		q.data.setPlayer(player);
-		q.data.setProvinceId(province.id);
-		q.data.setQuestId(UUID.randomUUID());
-		q.data.setQuestType(ID);
-		q.data.setCompleted(false);
+		q.getData().setCiv(province.civilization);
+		q.getData().setPlayer(player);
+		q.getData().setProvinceId(province.id);
+		q.getData().setQuestId(UUID.randomUUID());
+		q.getData().setQuestType(ID);
+		q.getData().setCompleted(false);
 		int roll = rand.nextInt(5)*2+8;
 		int em = roll;
 		q.setRewardRep(em*2);
@@ -230,9 +230,9 @@ public class QuestTradeWithVillagers extends QuestBase implements Quest
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em);
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
-		setRewardItems(q.data, rewardItems);
-		this.setData(q.data);
-		return q.data;
+		setRewardItems(q.getData(), rewardItems);
+		this.setData(q.getData());
+		return q.getData();
 	}
 
 	public static class DataWrapper

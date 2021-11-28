@@ -76,6 +76,7 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 		
 		public static VillagePieceKeep createPiece(StructureVillagePieces.Start start, List<StructureComponent> structures, Random rand, int x, int y, int z, EnumFacing facing, int p_175850_7_)
 		{
+			if ( ToroQuestConfiguration.disableKeep ) return null;
 			int i = ToroQuestConfiguration.destroyedVillagesNearSpawnDistance;
 			String nameType = NAME;
 			if ( i > 0 && Math.abs(x) < i && Math.abs(z) < i )
@@ -91,6 +92,11 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 		public VillagePieceKeep(String name, Start start, int type, Random rand, StructureBoundingBox bounds, EnumFacing facing)
 		{
 			super(name, start, type, rand, bounds, EnumFacing.NORTH);
+		}
+		
+		public VillagePieceKeep()
+		{
+			super();
 		}
 
 		@Override
@@ -356,11 +362,6 @@ public class VillageHandlerKeep implements IVillageCreationHandler
 				}
 	        }
 	    }
-
-		public VillagePieceKeep()
-		{
-			super();
-		}
 
 		@Override
 		protected void alterPalette(Map<String, IBlockState> palette)

@@ -128,10 +128,20 @@ public class QuestFarm extends QuestBase implements Quest
 		}
 	}
 	
-	public boolean perform(DataWrapper quest, boolean plant)
+	public void perform(DataWrapper quest, boolean plant)
 	{
-		if ( !quest.data.getCompleted() )
+		if ( !quest.getData().getCompleted() )
 		{
+			if (quest.getData().getPlayer().world.isRemote)
+			{
+				return;
+			}
+			
+			if ( !(quest.getData().getQuestType() == ID) )
+			{
+				return;
+			}
+			
 			if (plant)
 			{
 				quest.setCurrentAmount(quest.getCurrentAmount() + 1);
@@ -145,17 +155,17 @@ public class QuestFarm extends QuestBase implements Quest
 				}
 			}
 			
-			quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+			quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 			
 			if ( quest.getCurrentAmount() >= quest.getTargetAmount() )
 			{
 				quest.setCurrentAmount(quest.getTargetAmount());
-				quest.data.setCompleted(true);
-				chatCompletedQuest(quest.data);
+				quest.getData().setCompleted(true);
+				chatCompletedQuest(quest.getData());
 			}
-			return true;
+			return;
 		}
-		return false;
+		return;
 	}
 
 	@Override
@@ -187,12 +197,12 @@ public class QuestFarm extends QuestBase implements Quest
 	{
 		Random rand = new Random();
 		DataWrapper q = new DataWrapper();
-		q.data.setCiv(province.civilization);
-		q.data.setPlayer(player);
-		q.data.setProvinceId(province.id);
-		q.data.setQuestId(UUID.randomUUID());
-		q.data.setQuestType(ID);
-		q.data.setCompleted(false);
+		q.getData().setCiv(province.civilization);
+		q.getData().setPlayer(player);
+		q.getData().setProvinceId(province.id);
+		q.getData().setQuestId(UUID.randomUUID());
+		q.getData().setQuestType(ID);
+		q.getData().setCompleted(false);
 
 		int roll = rand.nextInt(5)*16+32;
 		int em = (int)Math.round((double)roll/16)+2;
@@ -210,9 +220,9 @@ public class QuestFarm extends QuestBase implements Quest
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em);
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
-		setRewardItems(q.data, rewardItems);
-		this.setData(q.data);
-		return q.data;
+		setRewardItems(q.getData(), rewardItems);
+		this.setData(q.getData());
+		return q.getData();
 	}
 
 	@Override

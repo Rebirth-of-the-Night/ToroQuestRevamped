@@ -23,6 +23,7 @@ import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.MapDecoration;
 import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
@@ -150,8 +151,8 @@ public class QuestEnemySpiderPit extends QuestBase implements Quest
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)3, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to Heirloom§r");
-			itemstack.setStackDisplayName("§lMap to Heirloom§r");
+			//itemstack.setTranslatableName("§lMap to Heirloom§r");
+			itemstack.setStackDisplayName(TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.spider_pit.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
 			data.setChatStack( "spider_pit.accept", data.getPlayer(), null );
 			this.setData(data);

@@ -9,41 +9,25 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import com.google.common.base.Predicate;
-import com.jcraft.jorbis.Block;
 
-import net.minecraft.block.BlockChest;
 import net.minecraft.block.BlockColored;
-import net.minecraft.block.BlockSlab;
-import net.minecraft.block.BlockSlab.EnumBlockHalf;
-import net.minecraft.block.BlockStone;
 import net.minecraft.block.BlockStoneBrick;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IEntityLivingData;
 import net.minecraft.entity.item.EntityXPOrb;
-import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.init.Items;
 import net.minecraft.item.EnumDyeColor;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.util.Rotation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.village.Village;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.MapDecoration;
@@ -55,8 +39,6 @@ import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.block.BlockToroSpawner;
 import net.torocraft.toroquest.block.TileEntityToroSpawner;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
-import net.torocraft.toroquest.civilization.CivilizationType;
-import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
 import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityImpl;
 import net.torocraft.toroquest.civilization.quests.util.ItemMapCentered;
@@ -64,7 +46,6 @@ import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
 import net.torocraft.toroquest.entities.EntityConstructQuest;
-import net.torocraft.toroquest.entities.EntityPigLord;
 
 public class QuestEnemyGolem extends QuestBase implements Quest
 {
@@ -91,49 +72,75 @@ public class QuestEnemyGolem extends QuestBase implements Quest
 			return null;
 		}
 		
-		int i = 0;
-		for ( ItemStack item: in )
+		if ( !data.getCompleted() )
 		{
-			try
+			if ( data.getChatStack() == "" )
 			{
-				if ( item.getItem() == Item.getByNameOrId("toroquest:dwarven_artifact") )
-				{
-					data.setCompleted(true);
-					in.remove(i);
-					CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
-					
-					if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
-					{
-						if (!data.getPlayer().world.isRemote)
-				        {
-				            int ii = getRewardRep(data)*2;
-
-				            while (ii > 0)
-				            {
-				                int j = EntityXPOrb.getXPSplit(ii);
-				                ii -= j;
-				                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
-				            }
-				        }
-					}
-					data.setChatStack( "steam_golem.complete", data.getPlayer(), null );
-					this.setData(data);
-					in.addAll(getRewardItems(data));
-					return in;
-				}
+				data.setChatStack( "steam_golem.incomplete", data.getPlayer(), null );
+				this.setData(data);
 			}
-			catch ( Exception e )
-			{
-
-			}
-			i++;
+			return null;
 		}
-		if ( data.getChatStack() == "" )
+		
+//		int i = 0;
+//		for ( ItemStack item: in )
+//		{
+//			try
+//			{
+//				if ( item.getItem() == Item.getByNameOrId("toroquest:dwarven_artifact") )
+//				{
+//					data.setCompleted(true);
+//					in.remove(i);
+//					CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+//					
+//					if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
+//					{
+//						if (!data.getPlayer().world.isRemote)
+//				        {
+//				            int ii = getRewardRep(data)*2;
+//
+//				            while (ii > 0)
+//				            {
+//				                int j = EntityXPOrb.getXPSplit(ii);
+//				                ii -= j;
+//				                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+//				            }
+//				        }
+//					}
+//					data.setChatStack( "steam_golem.complete", data.getPlayer(), null );
+//					this.setData(data);
+//					in.addAll(getRewardItems(data));
+//					return in;
+//				}
+//			}
+//			catch ( Exception e )
+//			{
+//
+//			}
+//			i++;
+//		}
+		
+		CivilizationHandlers.adjustPlayerRep(data.getPlayer(), data.getCiv(), getRewardRep(data));
+		
+		if ( PlayerCivilizationCapabilityImpl.get(data.getPlayer()).getReputation(data.getCiv()) >= 3000 )
 		{
-			data.setChatStack( "steam_golem.incomplete", data.getPlayer(), null );
-			this.setData(data);
+			if (!data.getPlayer().world.isRemote)
+	        {
+	            int ii = getRewardRep(data)*2;
+
+	            while (ii > 0)
+	            {
+	                int j = EntityXPOrb.getXPSplit(ii);
+	                ii -= j;
+	                data.getPlayer().world.spawnEntity(new EntityXPOrb(data.getPlayer().world, data.getPlayer().posX+((rand.nextInt(2)*2-1)*2), data.getPlayer().posY, data.getPlayer().posZ+((rand.nextInt(2)*2-1)*2), j));
+	            }
+	        }
 		}
-		return null;
+		
+		data.setChatStack( "steam_golem.complete", data.getPlayer(), null );
+		in.addAll(getRewardItems(data));
+		this.setData(data);
+		return in;
 		
 	}
 	
@@ -198,40 +205,35 @@ public class QuestEnemyGolem extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
+		try
+		{
 			BlockPos pos = searchForSuitableLocation(data, 600, -30);
-			try
+			
+			int tries = 3;
+			
+			while ( tries > 0 && pos == null )
 			{
-				placeDungeonRoom(data.getPlayer().world, data, pos.getX(), pos.getZ());
+				tries--;
+				pos = searchForSuitableLocation(data, 600, -tries*10);
 			}
-			catch (Exception e)
-			{
-				try
-				{
-					int tries = 3;
-					while ( tries > 0 && pos == null )
-					{
-						tries--;
-						pos = searchForSuitableLocation(data, 600, 0);
-					}
-					placeDungeonRoom(data.getPlayer().world, data, pos.getX(), pos.getZ());
-				}
-				catch (Exception ee)
-				{
-					reject(data,in);
-				}
-	
-			}
+			
+			placeDungeonRoom(data.getPlayer().world, data, pos.getX(), pos.getZ());
 			setSpawnPosition(data, pos);
 
 			ItemStack itemstack = ItemMapCentered.setupNewMap(data.getPlayer().world, (double)pos.getX(), (double)pos.getZ(), (byte)3, true, true);
 			ItemMapCentered.renderBiomePreviewMap(data.getPlayer().world, itemstack);
 			MapData.addTargetDecoration(itemstack, pos, "+", MapDecoration.Type.TARGET_POINT);
-			itemstack.setTranslatableName("§lMap to " + I18n.format("quests.steam_golem.map") + "§r");
-			itemstack.setStackDisplayName("§lMap to " + I18n.format("quests.steam_golem.map") + "§r");
+			//itemstack.setTranslatableName("§lMap to " + TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.steam_golem.map", new Object[0]).getFormattedText() + "§r");
+			itemstack.setStackDisplayName(TextComponentHelper.createComponentTranslation(data.getPlayer(), "quests.steam_golem.map", new Object[0]).getFormattedText() + "§r");
 			in.add(itemstack);
 			data.setChatStack( "steam_golem.accept", data.getPlayer(), null );
 			this.setData(data);
-			return in;
+		}
+		catch (Exception e)
+		{
+			reject(data,in);
+		}
+		return in;
 	}
 	
 	private void placeDungeonRoom(World world, QuestData data, int xCenter, int zCenter)
@@ -536,7 +538,6 @@ public class QuestEnemyGolem extends QuestBase implements Quest
 	private List<String> getDefaultEnemies(QuestData data)
 	{
 		List<String> entity = new ArrayList<String>();
-		//for (int i = 0; i < 6; i++)
 		{
 			entity.add("toroquest:toroquest_construct_quest");
 		}

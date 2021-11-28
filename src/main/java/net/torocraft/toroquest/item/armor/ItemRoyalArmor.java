@@ -49,69 +49,33 @@ public class ItemRoyalArmor extends ItemArmor {
 	public static void init(final RegistryEvent.Register<Item> event)
 	{
 		helmetItem = new ItemRoyalArmor(NAME + "_helmet", 1, EntityEquipmentSlot.HEAD);
-//		chestplateItem = new ItemRoyalArmor(NAME + "_chestplate", 1, EntityEquipmentSlot.CHEST);
-//		leggingsItem = new ItemRoyalArmor(NAME + "_leggings", 2, EntityEquipmentSlot.LEGS);
-//		bootsItem = new ItemRoyalArmor(NAME + "_boots", 1, EntityEquipmentSlot.FEET);
-		
 		helmetItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_helmet"));
 		event.getRegistry().register(helmetItem);
-
-//		chestplateItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_chestplate"));
-//		event.getRegistry().register(chestplateItem);
-//		leggingsItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_leggings"));
-//		event.getRegistry().register(leggingsItem);
-//		bootsItem.setRegistryName(new ResourceLocation(ToroQuest.MODID, NAME + "_boots"));
-//		event.getRegistry().register(bootsItem);
 	}
 	
 	@SideOnly(Side.CLIENT)
     public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flagIn)
     {
-//    	if ( stack.getItem() == Item.getByNameOrId("toroquest:royal_helmet") )
-//    	{
-    		if ( ToroQuestConfiguration.useCrownToCreateNewProvinces )
-    		{
-    			tooltip.add("Crown a Guard within a civilization to create a new Village Lord, or crown a hired Guard to create a new province under a new ruler!\n\n§oWho did you kill to get this crown, Kingslayer?");
-    		}
-    		else
-    		{
-        		tooltip.add("Crown a Guard within a civilization to create a new Village Lord!\n\n§oWho did you kill to get this crown, Kingslayer?");
-    		}
-//    	}
-//		else
-//		{
-//			
-//		}
+		if ( ToroQuestConfiguration.useCrownToCreateNewProvinces )
+		{
+			tooltip.add("Crown a Guard within a civilization to create a new Village Lord, or crown a hired Guard to create a new province under a new ruler!\n\n§oWho did you kill to get this crown, Kingslayer?");
+		}
+		else
+		{
+    		tooltip.add("Crown a Guard within a civilization to create a new Village Lord!\n\n§oWho did you kill to get this crown, Kingslayer?");
+		}
     }
 
 	public static void registerRenders()
 	{
 		registerRendersHelmet();
-//		registerRendersChestPlate();
-//		registerRendersLeggings();
-//		registerRendersBoots();
 	}
-
-//	private static void registerRendersBoots()
-//	{
-//		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(bootsItem, 0, model("boots"));
-//	}
-
-//	private static void registerRendersLeggings()
-//	{
-//		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(leggingsItem, 0, model("leggings"));
-//	}
-
+	
 	private static void registerRendersHelmet()
 	{
 		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(helmetItem, 0, model("helmet"));
 	}
-
-//	private static void registerRendersChestPlate()
-//	{
-//		Minecraft.getMinecraft().getRenderItem().getItemModelMesher().register(chestplateItem, 0, model("chestplate"));
-//	}
-
+	
 	private static ModelResourceLocation model(String model)
 	{
 		return new ModelResourceLocation(ToroQuest.MODID + ":" + NAME + "_" + model, "inventory");
@@ -127,9 +91,10 @@ public class ItemRoyalArmor extends ItemArmor {
 	@Override
 	public boolean getIsRepairable(ItemStack toRepair, ItemStack repair)
     {
-        ItemStack mat = new ItemStack( Items.GOLD_INGOT, 1 );
-        if (!mat.isEmpty() && net.minecraftforge.oredict.OreDictionary.itemMatches(mat,repair,false)) return true;
-        return super.getIsRepairable(toRepair, repair);
+		return false;
+//        ItemStack mat = new ItemStack( Items.GOLD_INGOT, 1 );
+//        if (!mat.isEmpty() && net.minecraftforge.oredict.OreDictionary.itemMatches(mat,repair,false)) return true;
+//        return super.getIsRepairable(toRepair, repair);
     }
 	
 	
@@ -143,7 +108,7 @@ public class ItemRoyalArmor extends ItemArmor {
         
 		ItemStack i = playerIn.getHeldItem(handIn);
 		
-		if ( i != null && !i.isEmpty() ) // && i.getItem() == Item.getByNameOrId("toroquest:royal_helmet") )
+		if ( i != null && !i.isEmpty() )
 		{
 			if ( ToroQuestConfiguration.useCrownToCreateNewProvinces && playerIn.dimension == 0 )
 			{
@@ -216,7 +181,7 @@ public class ItemRoyalArmor extends ItemArmor {
 							if ( CivilizationUtil.getProvinceAt(worldIn, playerIn.chunkCoordX, playerIn.chunkCoordZ) == null )
 							{
 					            EntityVillageLord vl = new EntityVillageLord(guard.getEntityWorld());
-								CivilizationsWorldSaveData.get(worldIn).registerCrown(playerIn.chunkCoordX, playerIn.chunkCoordZ);
+								CivilizationsWorldSaveData.get(worldIn).register(playerIn.chunkCoordX, playerIn.chunkCoordZ, false);
 								provinceOn = CivilizationUtil.getProvinceAt(worldIn, guard.chunkCoordX, guard.chunkCoordZ);
 								if ( provinceOn != null )
 								{

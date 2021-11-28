@@ -66,6 +66,11 @@ public class ToroQuestConfiguration
 	public static int minBaseHealthToBeConsideredBossMob = 500;
 	
 	public static int raiderSiegeChance = 40;
+	
+	public static boolean disableKeep = false;
+	public static boolean disableShop = false;
+	public static boolean disableGuardTower = false;
+	public static boolean disableBarracks = false;
 
 	public static boolean enableBloodParticles = false;
 	public static boolean betterKnockback = true;
@@ -78,7 +83,10 @@ public class ToroQuestConfiguration
 	// a bandit with 50HP over their default base health (20) would have a damage multiplier of...   
 	//1 * ( banditDamageMultiplier + banditDamageBasedOnHealthModifier )  ->  1 * (1.25 * 0.5)  -> 1.75
 	
-	public static int spawnHeight = 96;
+	public static int maxSpawnHeight = 150;
+	public static int minSpawnHeight = 50;
+	
+	public static int villagerUniqueShopInventoryVarients = 4;
 	
 	public static int toroVillagerMateChance = 1200;
 	public static float villageDoorsModifier = 0.4F;
@@ -106,7 +114,7 @@ public class ToroQuestConfiguration
 	public static boolean cartographerMapTrade = true;
 	public static int banditsDropPotions = 6;
 	
-	public static boolean guardWatchClosestTask = false;
+	// public static boolean guardWatchClosestTask = false;
 	public static boolean guardLookIdleTask = false;
 
 	//public static boolean renderGuardCape = true;
@@ -167,7 +175,7 @@ public class ToroQuestConfiguration
 	public static boolean useDefaultVillagers = false;
 	public static boolean villagesSpawnGolems = false;
 
-	public static int banditMountChance = 3;
+	public static int banditMountChance = 10;
 	public static int orcMountChance = 0;
 	public static boolean orcsAreNeutral = false;
 
@@ -357,6 +365,11 @@ public class ToroQuestConfiguration
 			enchantingTableResourceName = config.getString("enchantingTableResourceName", CATEGORY_GEN, "minecraft:enchanting_table",
 					"Resource string for Enchanting Tables that generate in villages.");
 			
+			disableKeep = config.getBoolean("disableKeep", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			disableShop = config.getBoolean("disableShop", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			disableGuardTower = config.getBoolean("disableGuardTower", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			disableBarracks = config.getBoolean("disableBarracks", CATEGORY_GEN, false, "Disable this structure from village generation.");
+			
 			// MOBS =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 			toroVillagerMateChance = config.getInt("toroVillagerMateChance", CATEGORY_MOBS, 1200, 1, Integer.MAX_VALUE,
@@ -430,8 +443,8 @@ public class ToroQuestConfiguration
 			renderBanditMask = config.getBoolean("renderBanditMask", CATEGORY_MOBS, true,
 					"Enable to allow mask to be rendered/ visible on bandits.");
 			
-			guardWatchClosestTask = config.getBoolean("guardWatchClosestTask", CATEGORY_MOBS, false,
-					"Enable to add watch closest task to guards (they look at entities around them randomly). Disable to slightly improve performance.");
+//			guardWatchClosestTask = config.getBoolean("guardWatchClosestTask", CATEGORY_MOBS, false,
+//					"Enable to add watch closest task to guards (they look at entities around them randomly). Disable to slightly improve performance.");
 			
 			guardLookIdleTask = config.getBoolean("guardLookIdleTask", CATEGORY_MOBS, false,
 					"Enable to add look idle task to guards (they look around randomly). Disable to slightly improve performance.");
@@ -538,10 +551,10 @@ public class ToroQuestConfiguration
 			//
 			
 			
-			banditMountChance = config.getInt("banditMountChance", CATEGORY_MOBS, 0, 0, 10,
+			banditMountChance = config.getInt("banditMountChance", CATEGORY_MOBS, 10, 0, 100,
 					"The chance (out of 10) for a group of non-village-raiding bandits to spawn as archers on horse mounts. Set to 0 to disable.");
 			
-			orcMountChance = config.getInt("orcMountChance", CATEGORY_MOBS, 0, 0, 10,
+			orcMountChance = config.getInt("orcMountChance", CATEGORY_MOBS, 0, 0, 100,
 					"The chance (out of 10) for a group of non-village-raiding orcs to spawn as archers on horse mounts. Set to 0 to disable.");
 			
 			banditAndOrcFleeHealthPercentBase = config.getInt("banditAndOrcFleeHealthPercentBase", CATEGORY_MOBS, 15, 0, 100,
@@ -552,8 +565,11 @@ public class ToroQuestConfiguration
 			
 			// SPAWNING =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 			
-			spawnHeight = config.getInt("spawnHeight", CATEGORY_MOBS, 96, -2560, 2560,
-					"***You probably don't want to touch this setting. Max spawn height of toroquest entities. Have this number be ~32 blocks higher than what the y-axis that terrain generates at. Vanilla is 63.");
+			maxSpawnHeight = config.getInt("maxSpawnHeight", CATEGORY_MOBS, 150, -2560, 2560,
+					"Max spawn height of toroquest entities and ender idol teleport, also used for checking villagers and structures for ruined villages.");
+			
+			minSpawnHeight = config.getInt("minSpawnHeight", CATEGORY_MOBS, 50, -2560, 2560,
+					"Min spawn height of toroquest entities and ender idol teleport, also used for checking villagers and structures for ruined villages.");
 			
 			disableMobSpawningNearVillage = config.getInt("disableMobSpawningNearVillage", CATEGORY_SPAWNING, 104, 0, 208,
 					"Disable mob spawns within X blocks from the village center. The higher the number, the further from the center of a province mobs will spawn. 208 blocks is the max distance of a province. Setting this to 208 means mobs can NOT spawn anywhere in a province. Setting this to 0 disables this feature and mobs can spawn anywhere - RIP villages!");
@@ -699,6 +715,9 @@ public class ToroQuestConfiguration
 			
 			cartographerMapTrade = config.getBoolean("cartographerMapTrade", CATEGORY, true,
 					"Set true to torovillager enable map trade.");
+			
+			villagerUniqueShopInventoryVarients = config.getInt("villagerUniqueShopInventoryVarients", CATEGORY, 4, 0 , 256,
+					"The number of unique inventory of trades that villagers can offer. If set to 4 - then for each profession there are 4 different inventories of trades that profession can offer. For example: a varient 0 and 1 blacksmith could sell iron swords, a varient 3 blacksmith could buy iron ingots, and a varient 4 blacksmith could sell shields. YOU MUST MANUALLY CONFIGURE TORO VILLAGER TRADES IF YOU PLAN ON CHANGING THIS SETTING!");
 			
 			tradeList = config.getStringList("tradeList", CATEGORY_TRADES,
 					

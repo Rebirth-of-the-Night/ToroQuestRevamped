@@ -211,7 +211,7 @@ public class ItemTownScroll extends Item
             	return stack;
             }
 
-	        BlockPos loc = new BlockPos(province.getCenterX(),entityplayer.world.getHeight()/2,province.getCenterZ());
+	        BlockPos loc = new BlockPos(province.getCenterX(),0,province.getCenterZ());
 	        
 			BlockPos teleportLocation = CivilizationHandlers.findTeleportLocationFrom(entityplayer.world, loc);
 	        

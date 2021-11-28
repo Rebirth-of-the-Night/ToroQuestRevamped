@@ -12,14 +12,13 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemLead;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
-import net.torocraft.toroquest.block.BlockToroSpawner;
-import net.torocraft.toroquest.block.TileEntityToroSpawner;
+import net.minecraftforge.server.command.TextComponentHelper;
 import net.torocraft.toroquest.civilization.CivilizationHandlers;
 import net.torocraft.toroquest.civilization.CivilizationUtil;
 import net.torocraft.toroquest.civilization.Province;
@@ -27,6 +26,7 @@ import net.torocraft.toroquest.civilization.player.PlayerCivilizationCapabilityI
 import net.torocraft.toroquest.civilization.quests.util.Quest;
 import net.torocraft.toroquest.civilization.quests.util.QuestData;
 import net.torocraft.toroquest.civilization.quests.util.Quests;
+import net.torocraft.toroquest.entities.EntityFugitive;
 
 public class QuestCaptureFugitives extends QuestBase implements Quest
 {
@@ -97,15 +97,15 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 			return false;
 		}
 
-		if ( !quest.data.getCompleted() )
+		if ( !quest.getData().getCompleted() )
 		{
 			quest.setCurrentAmount(quest.getCurrentAmount() + 1);
-			quest.data.getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
+			quest.getData().getPlayer().sendStatusMessage( new TextComponentString(MathHelper.clamp(quest.getCurrentAmount(), 0, quest.getTargetAmount())+"/"+quest.getTargetAmount()), true);
 			
 			if ( quest.getCurrentAmount() >= quest.getTargetAmount() )
 			{
-				quest.data.setCompleted(true);
-				chatCompletedQuest(quest.data);
+				quest.getData().setCompleted(true);
+				chatCompletedQuest(quest.getData());
 			}
 			return true;
 		}
@@ -126,20 +126,13 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		{
 			if ( quest.getChatStack() == "" )
 			{
-				quest.setChatStack( "capture_fugitives.incomplete", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+				quest.setChatStack( "capture_fugitives.incomplete", quest.getPlayer(), quest.getCiv().getDisplayName(quest.getPlayer()));
 				this.setData(quest);
 			}
 			// quest.getPlayer().closeScreen();
 			return null;
 		}
-
-		//PlayerCivilizationCapability playerCiv = PlayerCivilizationCapabilityImpl.get(quest.getPlayer());
-
-		//int amount = new DataWrapper().setData(quest).getRewardRep();
-		//CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), playerCiv.getInCivilization().civilization, amount);
-
-		//playerCiv.adjustReputation(quest.getCiv(), new DataWrapper().setData(quest).getRewardRep());
-
+		
 		CivilizationHandlers.adjustPlayerRep(quest.getPlayer(), quest.getCiv(), getRewardRep(quest));
 
 		if ( PlayerCivilizationCapabilityImpl.get(quest.getPlayer()).getReputation(province.civilization) >= 3000 )
@@ -158,12 +151,13 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		}
 		
 		List<ItemStack> rewards = getRewardItems(quest);
+		
 		if (rewards != null)
 		{
 			items.addAll(rewards);
 		}
 		
-		quest.setChatStack( "capture_fugitives.complete", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+		quest.setChatStack( "capture_fugitives.complete", quest.getPlayer(), quest.getCiv().getDisplayName(quest.getPlayer()));
 		this.setData(quest);
 		return items;
 	}
@@ -205,12 +199,12 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 
 		if ( !toolIncluded && emeraldRemainingCount > 0 )
 		{
-			quest.setChatStack( "rejectreturnitem", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+			quest.setChatStack( "rejectreturnitem", quest.getPlayer(), quest.getCiv().getDisplayName(quest.getPlayer()));
 			this.setData(quest);
 			return null;
 		}
 		
-		quest.setChatStack( "capture_fugitives.reject", quest.getPlayer(), quest.getCiv().getDisplayName(data.getPlayer()));
+		quest.setChatStack( "capture_fugitives.reject", quest.getPlayer(), quest.getCiv().getDisplayName(quest.getPlayer()));
 		this.setData(quest);
 		quest.getPlayer().closeScreen();
 		return items;
@@ -219,30 +213,125 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 	@Override
 	public List<ItemStack> accept(QuestData data, List<ItemStack> in)
 	{
-		try
-		{
-			BlockPos pos = searchForSuitableLocation(data, 88, 0);
-			setSpawnPosition(data, pos);
-			addToroSpawner(data, data.getPlayer().getEntityWorld(), getSpawnPosition(data), getDefaultEnemies(data));
-		}
-		catch (Exception e)
-		{
-			
-		}
+//		try
+//		{
+//			BlockPos pos = searchForSuitableLocation(data);
+//			//addToroSpawner(data, data.getPlayer().getEntityWorld(), pos, getDefaultEnemies(data));
+//		}
+//		catch (Exception e)
+//		{
+//			
+//		}
+		this.spawnFugitives(data.getPlayer().getEntityWorld(), data.getPlayer());
+		
 		ItemStack itemstack = new ItemStack(Items.LEAD, 1);
-		itemstack.setStackDisplayName( I18n.format("item.fugitive_bindings.name") );
+		itemstack.setStackDisplayName(TextComponentHelper.createComponentTranslation(data.getPlayer(), "item.fugitive_bindings.name", new Object[0]).getFormattedText() + "§r");
 		in.add(itemstack);
 		data.setChatStack( "capture_fugitives.accept", data.getPlayer(), data.getCiv().getDisplayName(data.getPlayer()));
 		this.setData(data);
 		return in;
 	}
 	
-	public BlockPos searchForSuitableLocation( QuestData data, int range, int occupiedRange )
+
+	private void spawnFugitives(World world, EntityPlayer player)
+	{	
+		if ( world.isRemote )
+		{
+			return;
+		}
+		
+		try
+		{
+			int tries = 3;
+			while ( tries > 0 )
+			{
+				tries--;
+				
+				{
+					if ( world.provider.getDimension() != 0 )
+					{
+						continue;
+					}
+					
+					Province province = CivilizationUtil.getProvinceAt(world, player.chunkCoordX, player.chunkCoordZ);
+										
+					if ( province == null )
+					{
+						continue;
+					}
+					
+					int villageCenterX = province.getCenterX();
+					int villageCenterZ = province.getCenterZ();
+					
+					double angle = rand.nextDouble()*Math.PI*2.0D;
+
+					int range = 20+rand.nextInt(32);
+
+					int x = (int) (Math.cos(angle)*range);
+					int z = (int) (Math.sin(angle)*range);
+					
+					x += villageCenterX;
+					z += villageCenterZ;
+					
+					BlockPos loc = new BlockPos(x,CivilizationHandlers.MAX_SPAWN_HEIGHT,z);
+					BlockPos spawnPos = CivilizationHandlers.findSpawnLocationFrom(world, loc);
+					
+					if ( spawnPos == null )
+					{
+						continue;
+					}
+					
+					if ( !(world.getEntitiesWithinAABB(EntityPlayer.class, new AxisAlignedBB(spawnPos).grow(16, 10, 16))).isEmpty() )
+					{
+						continue;
+					}
+					
+					int localFugitiveCount = world.getEntitiesWithinAABB(EntityFugitive.class, new AxisAlignedBB(spawnPos).grow(90, 45, 90)).size();
+	
+					if ( localFugitiveCount > 4 )
+					{
+						continue;
+					}
+					
+					if ( localFugitiveCount == 4 )
+					{
+						this.spawnFugitive(world, spawnPos, player);
+						continue;
+					}
+					else if ( localFugitiveCount < 2 )
+					{
+						this.spawnFugitive(world, spawnPos, player);
+						this.spawnFugitive(world, spawnPos, player);
+					}
+					
+					this.spawnFugitive(world, spawnPos, player);
+					this.spawnFugitive(world, spawnPos, player);
+					
+					return;
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			System.out.println("ERROR SPAWNING EntityFugitive: " + e);
+			return;
+		}
+	}
+	
+	public void spawnFugitive(World world, BlockPos spawnPos, EntityPlayer player)
+	{
+		EntityFugitive e = new EntityFugitive(world);
+		e.setPosition(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5);
+		world.spawnEntity(e);
+		e.setAttackTarget(player);
+	}
+	
+	public BlockPos searchForSuitableLocation( QuestData data )
 	{
 		BlockPos pos = null;
 		for (int i = 0; i < 100; i++)
 		{
-			pos = randomLocation(data, rand, range, false, occupiedRange);
+			pos = randomLocation(data, rand, rand.nextInt(16)+16+i, false);
 			if (pos != null)
 			{
 				break;
@@ -252,7 +341,7 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		{
 			for (int i = 0; i < 10; i++)
 			{
-				pos = randomLocation(data, rand, range*2, true, occupiedRange);
+				pos = randomLocation(data, rand, rand.nextInt(64)+16, true);
 				if (pos != null)
 				{
 					break;
@@ -262,7 +351,7 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		return pos;
 	}
 
-	public BlockPos randomLocation(QuestData data, Random random, int range, boolean force, int occupiedRange)
+	public BlockPos randomLocation(QuestData data, Random random, int range, boolean force)
 	{
 		Province province = getQuestProvince(data);
 		EntityPlayer player = data.getPlayer();
@@ -272,20 +361,12 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 			return null;
 		}
 		
-		int x = (random.nextInt(range));
-		int z = (random.nextInt(range));
+		double angle = rand.nextDouble()*Math.PI*2.0D;
+		int x = (int) (Math.cos(angle)*range);
+		int z = (int) (Math.sin(angle)*range);
 		
-		while ( x + z < range/2 )
-		{
-			x = (random.nextInt(range));
-			z = (random.nextInt(range));
-		}
-		
-		x *= (random.nextInt(2)*2-1);
-		z *= (random.nextInt(2)*2-1);
-		
-		x += province.getCenterX();
-		z += province.getCenterZ();
+		x += player.posX;
+		z += player.posZ;
 		
 		BlockPos pos = findSurface(player.world, x, z, force);
 
@@ -314,35 +395,35 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		return pos;
 	}
 	
-	private void addToroSpawner(QuestData data, World world, BlockPos blockpos, List<String> entities)
-	{
-		world.setBlockState(blockpos, BlockToroSpawner.INSTANCE.getDefaultState());
-		TileEntity tileentity = world.getTileEntity(blockpos);
-		if (tileentity instanceof TileEntityToroSpawner)
-		{
-			TileEntityToroSpawner spawner = (TileEntityToroSpawner) tileentity;
-			spawner.setTriggerDistance(64);
-			spawner.setEntityIds(entities);
-			spawner.setSpawnRadius(16);
-			spawner.addEntityTag(data.getQuestId().toString());
-			spawner.addEntityTag("capture_fugitives");
-		}
-		else
-		{
-			System.out.println("tile entity is missing");
-		}
-	}
-
-	private List<String> getDefaultEnemies(QuestData data)
-	{
-		List<String> entity = new ArrayList<String>();
-		
-		for ( int i = data.getiData().get("target") + 1; i > 0; i-- )
-		{
-			entity.add("toroquest:toroquest_fugitive");
-		}
-		return entity;
-	}
+//	private void addToroSpawner(QuestData data, World world, BlockPos blockpos, List<String> entities)
+//	{
+//		world.setBlockState(blockpos, BlockToroSpawner.INSTANCE.getDefaultState());
+//		TileEntity tileentity = world.getTileEntity(blockpos);
+//		if (tileentity instanceof TileEntityToroSpawner)
+//		{
+//			TileEntityToroSpawner spawner = (TileEntityToroSpawner) tileentity;
+//			spawner.setTriggerDistance(28);
+//			spawner.setEntityIds(entities);
+//			spawner.setSpawnRadius(8);
+//			spawner.addEntityTag(data.getQuestId().toString());
+//			spawner.addEntityTag("capture_fugitives");
+//		}
+//		else
+//		{
+//			System.out.println("tile entity is missing");
+//		}
+//	}
+//
+//	private List<String> getDefaultEnemies(QuestData data)
+//	{
+//		List<String> entity = new ArrayList<String>();
+//		
+//		for ( int i = data.getiData().get("target") + 1; i > 0; i-- )
+//		{
+//			entity.add("toroquest:toroquest_fugitive");
+//		}
+//		return entity;
+//	}
 	
 	@Override
 	public String getTitle(QuestData data)
@@ -363,7 +444,7 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		s.append("|").append(q.getTargetAmount());
 		s.append("|").append(getProvinceName(data.getPlayer(), data.getProvinceId()));
 		s.append("|").append(q.getCurrentAmount()  + "\n\n" );
-		s.append("|").append(listItems(getRewardItems(q.data))  + ",\n" );
+		s.append("|").append(listItems(getRewardItems(q.getData()))  + ",\n" );
 		s.append("|").append(getRewardRep(data));
 		return s.toString();
 	}
@@ -374,15 +455,15 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 
 		Random rand = new Random();
 		DataWrapper q = new DataWrapper();
-		q.data.setCiv(province.civilization);
-		q.data.setPlayer(player);
-		q.data.setProvinceId(province.id);
-		q.data.setQuestId(UUID.randomUUID());
-		q.data.setQuestType(ID);
-		q.data.setCompleted(false);
+		q.getData().setCiv(province.civilization);
+		q.getData().setPlayer(player);
+		q.getData().setProvinceId(province.id);
+		q.getData().setQuestId(UUID.randomUUID());
+		q.getData().setQuestType(ID);
+		q.getData().setCompleted(false);
 		
 		int roll = rand.nextInt(3)+2;
-		int em = roll*4+4;
+		int em = roll*3+4;
 		q.setRewardRep(em*2);
 		if ( PlayerCivilizationCapabilityImpl.get(player).getReputation(province.civilization) >= 2000 )
 		{
@@ -394,10 +475,10 @@ public class QuestCaptureFugitives extends QuestBase implements Quest
 		ItemStack emeralds = new ItemStack(Items.EMERALD, em); // emerald reward
 		List<ItemStack> rewardItems = new ArrayList<ItemStack>();
 		rewardItems.add(emeralds);
-		setRewardItems(q.data, rewardItems);
-		//setRewardRep(q.data, getRewardRep(q.data));
-		this.setData(q.data);
-		return q.data;
+		setRewardItems(q.getData(), rewardItems);
+		//setRewardRep(q.getData(), getRewardRep(q.getData()));
+		this.setData(q.getData());
+		return q.getData();
 	}
 
 	public static class DataWrapper

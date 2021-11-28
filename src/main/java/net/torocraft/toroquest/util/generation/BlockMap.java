@@ -55,19 +55,26 @@ public class BlockMap {
 		this.origin = origin;
 	}
 
-	public void loadLocalFile(String path) {
+	public void loadLocalFile(String path)
+	{
 		InputStream is = this.getClass().getResourceAsStream(path);
-		if (is == null) {
+		
+		if (is == null)
+		{
 			throw new RuntimeException("file not found: " + path);
 		}
-		try {
+		try
+		{
 			blockMap = IOUtils.toString(is);
-		} catch (IOException e) {
+		}
+		catch (IOException e)
+		{
 			throw new RuntimeException(e);
 		}
 	}
 
-	public void generate() {
+	public void generate()
+	{
 		palette = new HashMap<Character, PaletteEntry>();
 		palette.put(' ', DEFAULT_PALETTE_ENTRY);
 		splitIntoLines();
