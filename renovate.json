@@ -3,6 +3,7 @@
     "config:base"
   ],
   "ignoreDeps": [
-    "gradle"
+    "gradle",
+    "net.minecraftforge.gradle:ForgeGradle"
   ]
 }
