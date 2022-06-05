@@ -1,0 +1,9 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "ignoreDeps": [
+    "gradle",
+    "net.minecraftforge.gradle:ForgeGradle"
+  ]
+}
